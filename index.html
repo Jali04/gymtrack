@@ -869,22 +869,35 @@ function renderStats() {
 
     if (workoutsWithEx.length < 1) return '';
 
-    const getMaxWeight = (workout) => {
+    const getStats = (workout) => {
       const e = workout.exercises.find(e => e.exId === ex.id);
-      return Math.max(...e.sets.map(s => s.weight));
+      const maxWeight = Math.max(...e.sets.map(s => s.weight));
+      const totalReps = e.sets.reduce((a, s) => a + s.reps, 0);
+      return { maxWeight, totalReps };
     };
 
     const last = workoutsWithEx[workoutsWithEx.length - 1];
-    const lastMax = getMaxWeight(last);
+    const lastStats = getStats(last);
+    const lastMax = lastStats.maxWeight;
     let progressTag = '';
 
     if (workoutsWithEx.length >= 2) {
       const prev = workoutsWithEx[workoutsWithEx.length - 2];
-      const prevMax = getMaxWeight(prev);
-      const diff = lastMax - prevMax;
-      if (diff > 0) progressTag = `<span class="progress-tag up">↑ +${diff}kg</span>`;
-      else if (diff < 0) progressTag = `<span class="progress-tag down">↓ ${diff}kg</span>`;
-      else progressTag = `<span class="progress-tag same">= Gleich</span>`;
+      const prevStats = getStats(prev);
+      const weightDiff = lastStats.maxWeight - prevStats.maxWeight;
+      const repsDiff = lastStats.totalReps - prevStats.totalReps;
+
+      if (weightDiff > 0) {
+        progressTag = `<span class="progress-tag up">↑ +${weightDiff}kg Gewicht</span>`;
+      } else if (weightDiff < 0) {
+        progressTag = `<span class="progress-tag down">↓ ${weightDiff}kg Gewicht</span>`;
+      } else if (repsDiff > 0) {
+        progressTag = `<span class="progress-tag up">↑ +${repsDiff} Wdh (gleich Gewicht)</span>`;
+      } else if (repsDiff < 0) {
+        progressTag = `<span class="progress-tag down">↓ ${repsDiff} Wdh (gleich Gewicht)</span>`;
+      } else {
+        progressTag = `<span class="progress-tag same">= Gleich</span>`;
+      }
     }
 
     const lastSets = last.exercises.find(e => e.exId === ex.id).sets;
