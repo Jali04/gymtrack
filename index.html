@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="1.3">
+<meta name="version" content="1.4">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -360,11 +360,23 @@
   <button class="btn btn-secondary" onclick="openImportModal()">📥 Daten importieren</button>
 </div>
 
+<div class="page" id="page-cardio">
+  <div class="section-title">Cardio</div>
+  <button class="btn btn-primary btn-sm" onclick="openLogCardio()">+ Cardio eintragen</button>
+  <div class="divider"></div>
+  <div class="section-title" style="font-size:18px;">Verlauf</div>
+  <div id="cardioList"></div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="nav">
   <button class="nav-btn active" onclick="showPage('log', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
     Training
+  </button>
+  <button class="nav-btn" onclick="showPage('cardio', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    Cardio
   </button>
   <button class="nav-btn" onclick="showPage('exercises', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -416,6 +428,50 @@
     <button class="btn btn-primary" onclick="saveExercise()">Speichern</button>
     <button class="btn btn-danger" id="deleteExBtn" style="display:none;" onclick="deleteExercise()">Übung löschen</button>
     <button class="btn btn-secondary" onclick="closeModal('addExerciseModal')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Cardio Modal -->
+<div class="modal-overlay" id="cardioModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div class="modal-title">Cardio eintragen</div>
+      <div class="close-btn" onclick="closeModal('cardioModal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Art</label>
+      <select class="form-input" id="cardioType">
+        <option value="laufen">🏃 Laufen</option>
+        <option value="radfahren">🚴 Radfahren</option>
+        <option value="rudern">🚣 Rudern / Ergometer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Distanz (km)</label>
+      <input class="form-input" id="cardioDistance" type="number" placeholder="z.B. 5.5" inputmode="decimal" step="0.1" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group">
+        <label class="form-label">Minuten</label>
+        <input class="form-input" id="cardioMinutes" type="number" placeholder="25" inputmode="numeric" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sekunden</label>
+        <input class="form-input" id="cardioSeconds" type="number" placeholder="30" inputmode="numeric" min="0" max="59" />
+      </div>
+    </div>
+    <div id="cardioPacePreview" style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:14px;display:none;">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Berechnetes Tempo</div>
+      <div id="cardioPaceValue" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);"></div>
+      <div style="font-size:11px;color:var(--muted);">min/km</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notiz (optional)</label>
+      <input class="form-input" id="cardioNote" type="text" placeholder="z.B. Intervalltraining" />
+    </div>
+    <button class="btn btn-primary" onclick="saveCardio()">Speichern</button>
+    <button class="btn btn-secondary" onclick="closeModal('cardioModal')">Abbrechen</button>
   </div>
 </div>
 
@@ -510,6 +566,7 @@ function showPage(id, btn) {
   if (id === 'exercises') renderExercises();
   if (id === 'history') renderHistory();
   if (id === 'stats') renderStats();
+  if (id === 'cardio') renderCardio();
 }
 
 // ---- DATE ----
@@ -943,6 +1000,140 @@ function renderStats() {
   }).join('');
 }
 
+// ---- CARDIO ----
+function openLogCardio() {
+  document.getElementById('cardioType').value = 'laufen';
+  document.getElementById('cardioDistance').value = '';
+  document.getElementById('cardioMinutes').value = '';
+  document.getElementById('cardioSeconds').value = '';
+  document.getElementById('cardioNote').value = '';
+  document.getElementById('cardioPacePreview').style.display = 'none';
+  openModal('cardioModal');
+}
+
+function calcPace() {
+  const dist = parseFloat(document.getElementById('cardioDistance').value);
+  const mins = parseInt(document.getElementById('cardioMinutes').value) || 0;
+  const secs = parseInt(document.getElementById('cardioSeconds').value) || 0;
+  const totalMins = mins + secs / 60;
+  const preview = document.getElementById('cardioPacePreview');
+  if (dist > 0 && totalMins > 0) {
+    const pace = totalMins / dist;
+    const paceMin = Math.floor(pace);
+    const paceSec = Math.round((pace - paceMin) * 60).toString().padStart(2, '0');
+    document.getElementById('cardioPaceValue').textContent = `${paceMin}:${paceSec}`;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+function saveCardio() {
+  const type = document.getElementById('cardioType').value;
+  const dist = parseFloat(document.getElementById('cardioDistance').value);
+  const mins = parseInt(document.getElementById('cardioMinutes').value) || 0;
+  const secs = parseInt(document.getElementById('cardioSeconds').value) || 0;
+  const note = document.getElementById('cardioNote').value.trim();
+
+  if (!dist || dist <= 0) { alert('Bitte Distanz eingeben!'); return; }
+  if (mins === 0 && secs === 0) { alert('Bitte Zeit eingeben!'); return; }
+
+  const totalMins = mins + secs / 60;
+  const pace = totalMins / dist;
+  const paceMin = Math.floor(pace);
+  const paceSec = Math.round((pace - paceMin) * 60).toString().padStart(2, '0');
+
+  const entry = {
+    id: uid(),
+    date: Date.now(),
+    type,
+    distance: dist,
+    minutes: mins,
+    seconds: secs,
+    pace: `${paceMin}:${paceSec}`,
+    note
+  };
+
+  if (!db.cardio) db.cardio = [];
+  db.cardio.push(entry);
+  save();
+  closeModal('cardioModal');
+  renderCardio();
+}
+
+const cardioLabels = { laufen: '🏃 Laufen', radfahren: '🚴 Radfahren', rudern: '🚣 Rudern' };
+
+function renderCardio() {
+  const list = document.getElementById('cardioList');
+  if (!db.cardio || db.cardio.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-text">Noch kein Cardio aufgezeichnet</div></div>';
+    return;
+  }
+
+  const entries = [...db.cardio].reverse();
+
+  // Group by type for personal bests
+  const bests = {};
+  db.cardio.forEach(e => {
+    if (!bests[e.type] || e.distance > bests[e.type].distance ||
+       (e.distance === bests[e.type].distance && (e.minutes * 60 + e.seconds) < (bests[e.type].minutes * 60 + bests[e.type].seconds))) {
+      bests[e.type] = e;
+    }
+  });
+
+  list.innerHTML = entries.map((e, idx) => {
+    const d = new Date(e.date).toLocaleDateString('de-DE', {weekday:'short', day:'numeric', month:'short'});
+    const timeStr = `${e.minutes}:${e.seconds.toString().padStart(2,'0')}`;
+    const isPB = bests[e.type] && bests[e.type].id === e.id && db.cardio.filter(x => x.type === e.type).length > 1;
+
+    // Compare to previous same-type entry
+    const sameType = [...db.cardio].filter(x => x.type === e.type).sort((a,b) => a.date - b.date);
+    const thisIdx = sameType.findIndex(x => x.id === e.id);
+    let progressTag = '';
+    if (thisIdx > 0) {
+      const prev = sameType[thisIdx - 1];
+      const distDiff = +(e.distance - prev.distance).toFixed(2);
+      const timeCurr = e.minutes * 60 + e.seconds;
+      const timePrev = prev.minutes * 60 + prev.seconds;
+      const paceCurr = timeCurr / e.distance;
+      const pacePrev = timePrev / prev.distance;
+      const paceDiff = paceCurr - pacePrev;
+
+      if (distDiff > 0) progressTag = `<span class="progress-tag up">↑ +${distDiff}km Distanz</span>`;
+      else if (distDiff < 0) progressTag = `<span class="progress-tag down">↓ ${distDiff}km Distanz</span>`;
+      else if (paceDiff < 0) progressTag = `<span class="progress-tag up">↑ Schneller (gleiche Distanz)</span>`;
+      else if (paceDiff > 0) progressTag = `<span class="progress-tag down">↓ Langsamer (gleiche Distanz)</span>`;
+      else progressTag = `<span class="progress-tag same">= Gleich</span>`;
+    }
+
+    return `<div class="history-entry">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:600;font-size:15px;">${cardioLabels[e.type] || e.type}</div>
+          <div style="font-size:12px;color:var(--muted);">${d}</div>
+        </div>
+        ${isPB ? '<span class="tag">🏆 Bestzeit</span>' : ''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${e.distance}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">km</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${timeStr}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Zeit</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${e.pace}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">min/km</div>
+        </div>
+      </div>
+      ${progressTag}
+      ${e.note ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;">📝 ${e.note}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
 // ---- EXPORT / IMPORT ----
 function openExportModal() {
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
@@ -995,7 +1186,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '1.3';
+const CURRENT_VERSION = '1.4';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
   // New version detected — force reload to clear cache
@@ -1013,6 +1204,11 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.classList.remove('open');
   });
+});
+
+// Live pace calculation
+['cardioDistance','cardioMinutes','cardioSeconds'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcPace);
 });
 </script>
 </body>
