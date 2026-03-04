@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="1.2">
+<meta name="version" content="1.3">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -902,7 +902,28 @@ function renderStats() {
     }
 
     const lastSets = last.exercises.find(e => e.exId === ex.id).sets;
-    const setsHtml = lastSets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+    const prevSets = workoutsWithEx.length >= 2
+      ? workoutsWithEx[workoutsWithEx.length - 2].exercises.find(e => e.exId === ex.id).sets
+      : null;
+
+    const setsHtml = lastSets.map((s, i) => {
+      let diff = '';
+      if (prevSets && prevSets[i]) {
+        const wDiff = s.weight - prevSets[i].weight;
+        const rDiff = s.reps - prevSets[i].reps;
+        if (wDiff > 0) diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${wDiff}kg</span>`;
+        else if (wDiff < 0) diff = `<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${wDiff}kg</span>`;
+        else if (rDiff > 0) diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${rDiff} Wdh</span>`;
+        else if (rDiff < 0) diff = `<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${rDiff} Wdh</span>`;
+      } else if (prevSets && !prevSets[i]) {
+        diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">neu</span>`;
+      }
+      return `<div style="display:inline-flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
+        <span style="color:var(--muted);font-size:11px;margin-right:4px;">S${i+1}</span>
+        ${s.weight}kg × ${s.reps}${diff}
+      </div>`;
+    }).join('');
+
     const d = new Date(last.date).toLocaleDateString('de-DE', {day:'numeric', month:'short'});
 
     return `<div class="card">
@@ -974,7 +995,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '1.2';
+const CURRENT_VERSION = '1.3';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
   // New version detected — force reload to clear cache
