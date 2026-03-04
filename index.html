@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
+<meta name="version" content="1.2">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -970,6 +971,17 @@ function doImport() {
   } catch(e) {
     alert('Ungültiger Code. Bitte den kompletten Export-Code einfügen.');
   }
+}
+
+// ---- AUTO UPDATE CHECK ----
+const CURRENT_VERSION = '1.2';
+const savedVersion = localStorage.getItem('gymtrack_version');
+if (savedVersion && savedVersion !== CURRENT_VERSION) {
+  // New version detected — force reload to clear cache
+  localStorage.setItem('gymtrack_version', CURRENT_VERSION);
+  window.location.reload(true);
+} else if (!savedVersion) {
+  localStorage.setItem('gymtrack_version', CURRENT_VERSION);
 }
 
 // ---- INIT ----
