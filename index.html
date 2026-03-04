@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="1.7">
+<meta name="version" content="1.8">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -521,8 +521,8 @@
     <div id="lastPerformance" style="margin-bottom:16px;"></div>
     <div class="set-col-labels">
       <div></div>
-      <div class="set-col-label">kg</div>
-      <div class="set-col-label">Wdh</div>
+      <div class="set-col-label" id="colLabelKg">kg</div>
+      <div class="set-col-label" id="colLabelReps">Wdh</div>
       <div></div>
     </div>
     <div class="sets-container" id="setsContainer"></div>
@@ -734,11 +734,12 @@ function applyTranslations() {
   set('#importModal .btn-secondary', 'cancel');
 
   // Sets modal
+  const colKg = document.getElementById('colLabelKg');
+  const colReps = document.getElementById('colLabelReps');
+  if (colKg) colKg.textContent = t('kg');
+  if (colReps) colReps.textContent = t('reps');
   set('#logSetsModal .btn-secondary', 'addSet');
   set('#logSetsModal .btn-primary', 'saveSets');
-  const setColLabels = document.querySelectorAll('.set-col-label');
-  setEl(setColLabels[1], 'kg');
-  setEl(setColLabels[2], 'reps');
 
   // Date & lang button
   const now2 = new Date();
@@ -1427,7 +1428,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '1.7';
+const CURRENT_VERSION = '1.8';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
   // New version detected — force reload to clear cache
