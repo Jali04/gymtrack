@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="1.4">
+<meta name="version" content="1.5">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -862,6 +862,15 @@ function deleteExercise() {
 }
 
 // ---- HISTORY PAGE ----
+function deleteWorkout(id) {
+  if (!confirm('Training wirklich löschen?')) return;
+  db.workouts = db.workouts.filter(w => w.id !== id);
+  save();
+  renderHistory();
+  renderStats();
+  renderLog();
+}
+
 function renderHistory() {
   const list = document.getElementById('historyList');
   const ws = [...db.workouts].reverse();
@@ -883,7 +892,10 @@ function renderHistory() {
     return `<div class="history-entry">
       <div class="history-entry-header">
         <div><div class="history-exercise-name">${d}</div></div>
-        <span class="tag">${totalSets} Sätze</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="tag">${totalSets} Sätze</span>
+          <button class="close-btn" onclick="deleteWorkout('${w.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
+        </div>
       </div>
       ${exHtml}
     </div>`;
@@ -1063,6 +1075,13 @@ function saveCardio() {
 
 const cardioLabels = { laufen: '🏃 Laufen', radfahren: '🚴 Radfahren', rudern: '🚣 Rudern' };
 
+function deleteCardio(id) {
+  if (!confirm('Cardio-Einheit wirklich löschen?')) return;
+  db.cardio = db.cardio.filter(e => e.id !== id);
+  save();
+  renderCardio();
+}
+
 function renderCardio() {
   const list = document.getElementById('cardioList');
   if (!db.cardio || db.cardio.length === 0) {
@@ -1112,7 +1131,10 @@ function renderCardio() {
           <div style="font-weight:600;font-size:15px;">${cardioLabels[e.type] || e.type}</div>
           <div style="font-size:12px;color:var(--muted);">${d}</div>
         </div>
-        ${isPB ? '<span class="tag">🏆 Bestzeit</span>' : ''}
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${isPB ? '<span class="tag">🏆 Bestzeit</span>' : ''}
+          <button class="close-btn" onclick="deleteCardio('${e.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
         <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
@@ -1186,7 +1208,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '1.4';
+const CURRENT_VERSION = '1.5';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
   // New version detected — force reload to clear cache
