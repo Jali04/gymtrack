@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="1.8">
+<meta name="version" content="2.1">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -327,16 +327,16 @@
   <div id="activeWorkout" style="display:none;">
     <div class="workout-header">
       <div>
-        <div style="font-size:13px;color:var(--muted);">Aktives Training</div>
+        <div id="activeWorkoutLabel" style="font-size:13px;color:var(--muted);">Aktives Training</div>
         <div class="timer-display" id="timerDisplay">00:00</div>
       </div>
-      <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="finishWorkout()">Fertig ✓</button>
+      <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="finishWorkout()">Fertig ✓</button>
     </div>
 
     <div id="workoutExercises"></div>
 
-    <button class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
-    <button class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:8px;">Training abbrechen</button>
+    <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
+    <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:8px;">Training abbrechen</button>
   </div>
 </div>
 
@@ -424,8 +424,13 @@
     <div class="form-group">
       <label class="form-label">Kategorie</label>
       <select class="form-input" id="exCategory">
-        <option>Brust</option><option>Rücken</option><option>Schultern</option>
-        <option>Arme</option><option>Beine</option><option>Core</option><option>Cardio</option>
+        <option value="Brust">Brust</option>
+        <option value="Rücken">Rücken</option>
+        <option value="Schultern">Schultern</option>
+        <option value="Arme">Arme</option>
+        <option value="Beine">Beine</option>
+        <option value="Core">Core</option>
+        <option value="Cardio">Cardio</option>
       </select>
     </div>
     <button class="btn btn-primary" onclick="saveExercise()">Speichern</button>
@@ -676,11 +681,14 @@ function applyTranslations() {
   set('#page-cardio .btn-primary', 'logCardio');
 
   // Active workout
-  set('#activeWorkout .btn-primary', 'done');
-  set('#activeWorkout .btn-secondary', 'addExercise');
-  set('#activeWorkout .btn-danger', 'cancelWorkout');
-  const activeHeader = document.querySelector('#activeWorkout > .workout-header > div > div:first-child');
-  if (activeHeader) activeHeader.textContent = t('activeWorkout');
+  const btnFinish = document.getElementById('btnFinishWorkout');
+  const btnAdd = document.getElementById('btnAddExercise');
+  const btnCancel = document.getElementById('btnCancelWorkout');
+  const activeLabel = document.getElementById('activeWorkoutLabel');
+  if (btnFinish) btnFinish.textContent = t('done');
+  if (btnAdd) btnAdd.textContent = t('addExercise');
+  if (btnCancel) btnCancel.textContent = t('cancelWorkout');
+  if (activeLabel) activeLabel.textContent = t('activeWorkout');
 
   // Exercise picker modal
   set('#exercisePickerModal .modal-title', 'chooseExercise');
@@ -693,6 +701,10 @@ function applyTranslations() {
   set('#addExerciseModal .btn-secondary', 'cancel');
   set('#addExerciseModal .btn-danger', 'deleteExercise');
   setPlaceholder('exName', 'namePlaceholder');
+  // Translate category options (value stays German as DB key)
+  document.querySelectorAll('#exCategory option').forEach(opt => {
+    opt.textContent = t('cats')[opt.value] || opt.value;
+  });
 
   // Cardio modal
   set('#cardioModal .modal-title', 'cardioTitle');
@@ -847,6 +859,15 @@ function openNewWorkout() {
 function renderActiveWorkout() {
   const container = document.getElementById('workoutExercises');
   const cw = db.currentWorkout;
+  // Always refresh static button labels with current language
+  const btnFinish = document.getElementById('btnFinishWorkout');
+  const btnAdd = document.getElementById('btnAddExercise');
+  const btnCancel = document.getElementById('btnCancelWorkout');
+  const activeLabel = document.getElementById('activeWorkoutLabel');
+  if (btnFinish) btnFinish.textContent = t('done');
+  if (btnAdd) btnAdd.textContent = t('addExercise');
+  if (btnCancel) btnCancel.textContent = t('cancelWorkout');
+  if (activeLabel) activeLabel.textContent = t('activeWorkout');
   if (!cw || cw.exercises.length === 0) {
     container.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('enterExercise')}</div></div>`;
     return;
@@ -1428,7 +1449,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '1.8';
+const CURRENT_VERSION = '2.1';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
   // New version detected — force reload to clear cache
