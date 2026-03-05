@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="2.1">
+<meta name="version" content="2.3">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -313,11 +313,12 @@
 </div>
 
 <!-- PAGES -->
-<div class="page active" id="page-log">
+<div class="page" id="page-log">
   <div class="section-title">Training starten</div>
 
   <div id="quickStart">
     <button class="btn btn-primary" onclick="openNewWorkout()">+ Neues Training</button>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="showPage('templates', document.querySelector('.nav-btn[data-page=templates]'))">📋 Aus Vorlage starten</button>
     <div class="divider"></div>
     <div class="section-title" style="font-size:18px;">Letzte Trainings</div>
     <div id="recentWorkouts"></div>
@@ -338,6 +339,13 @@
     <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
     <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:8px;">Training abbrechen</button>
   </div>
+</div>
+
+<div class="page" id="page-templates">
+  <div class="section-title">Vorlagen</div>
+  <button class="btn btn-primary btn-sm" onclick="openCreateTemplate()">+ Vorlage erstellen</button>
+  <div class="divider"></div>
+  <div id="templatesList"></div>
 </div>
 
 <div class="page" id="page-exercises">
@@ -371,25 +379,41 @@
   <div id="cardioList"></div>
 </div>
 
+<div class="page" id="page-stretch">
+  <div class="section-title">Dehnen</div>
+  <button class="btn btn-primary btn-sm" onclick="openLogStretch()">+ Dehnung eintragen</button>
+  <div class="divider"></div>
+  <div class="section-title" style="font-size:18px;">Verlauf</div>
+  <div id="stretchList"></div>
+</div>
+
 <!-- BOTTOM NAV -->
-<nav class="nav">
-  <button class="nav-btn active" onclick="showPage('log', this)">
+<nav class="nav" style="overflow-x:auto;justify-content:flex-start;gap:0;padding-left:0;padding-right:0;">
+  <button class="nav-btn active" data-page="log" onclick="showPage('log', this)" style="min-width:60px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
     Training
   </button>
-  <button class="nav-btn" onclick="showPage('cardio', this)">
+  <button class="nav-btn" data-page="templates" onclick="showPage('templates', this)" style="min-width:60px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    Vorlagen
+  </button>
+  <button class="nav-btn" data-page="cardio" onclick="showPage('cardio', this)" style="min-width:60px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
     Cardio
   </button>
-  <button class="nav-btn" onclick="showPage('exercises', this)">
+  <button class="nav-btn" data-page="stretch" onclick="showPage('stretch', this)" style="min-width:60px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3c0 1.5-1 2.5-2 3.5L12 10l-1-1.5C10 7.5 9 6.5 9 5a3 3 0 0 1 3-3z"/><path d="M6.5 15.5c1-2 3-3.5 5.5-3.5s4.5 1.5 5.5 3.5"/><path d="M5 20c1-2.5 4-4 7-4s6 1.5 7 4"/></svg>
+    Dehnen
+  </button>
+  <button class="nav-btn" data-page="exercises" onclick="showPage('exercises', this)" style="min-width:60px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     Übungen
   </button>
-  <button class="nav-btn" onclick="showPage('history', this)">
+  <button class="nav-btn" data-page="history" onclick="showPage('history', this)" style="min-width:60px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     Verlauf
   </button>
-  <button class="nav-btn" onclick="showPage('stats', this)">
+  <button class="nav-btn" data-page="stats" onclick="showPage('stats', this)" style="min-width:60px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Stats
   </button>
@@ -538,16 +562,84 @@
   </div>
 </div>
 
+<!-- Template Modal -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="templateModalTitle">Vorlage erstellen</div>
+      <div class="close-btn" onclick="closeModal('templateModal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="tmplNameLabel">Name</label>
+      <input class="form-input" id="tmplName" placeholder="z.B. Push Day" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="tmplExLabel">Übungen</label>
+      <div id="tmplExerciseList" style="margin-bottom:8px;"></div>
+      <button class="btn btn-secondary btn-sm" onclick="openTmplExPicker()">+ Übung hinzufügen</button>
+    </div>
+    <button class="btn btn-primary" style="margin-top:8px;" onclick="saveTemplate()">Speichern</button>
+    <button class="btn btn-danger" id="deleteTmplBtn" style="display:none;" onclick="deleteTemplate()">Vorlage löschen</button>
+    <button class="btn btn-secondary" onclick="closeModal('templateModal')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Template Exercise Picker Modal -->
+<div class="modal-overlay" id="tmplExPickerModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="tmplExPickerTitle">Übung hinzufügen</div>
+      <div class="close-btn" onclick="closeModal('tmplExPickerModal')">✕</div>
+    </div>
+    <div id="tmplExPickerList"></div>
+  </div>
+</div>
+
+<!-- Stretch Modal -->
+<div class="modal-overlay" id="stretchModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="stretchModalTitle">Dehnung eintragen</div>
+      <div class="close-btn" onclick="closeModal('stretchModal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="stretchNameLabel">Übung</label>
+      <input class="form-input" id="stretchName" placeholder="z.B. Hüftbeuger links" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="stretchDurLabel">Dauer (Minuten)</label>
+      <input class="form-input" id="stretchDuration" type="number" placeholder="z.B. 2" inputmode="decimal" step="0.5" min="0.5" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="stretchNoteLabel">Notiz (optional)</label>
+      <input class="form-input" id="stretchNote" placeholder="z.B. beide Seiten" />
+    </div>
+    <button class="btn btn-primary" onclick="saveStretch()">Speichern</button>
+    <button class="btn btn-secondary" onclick="closeModal('stretchModal')">Abbrechen</button>
+  </div>
+</div>
+
 <script>
 // ---- LANGUAGE ----
 const TRANSLATIONS = {
   de: {
     // Header & Nav
     navTraining: 'Training', navCardio: 'Cardio', navExercises: 'Übungen', navHistory: 'Verlauf', navStats: 'Stats',
+    navTemplates: 'Vorlagen', navStretch: 'Dehnen',
     // Log page
     startTraining: 'Training starten', newWorkout: '+ Neues Training', lastWorkouts: 'Letzte Trainings',
-    noWorkoutYet: 'Noch kein Training aufgezeichnet',
+    noWorkoutYet: 'Noch kein Training aufgezeichnet', startFromTemplate: '📋 Aus Vorlage starten',
     activeWorkout: 'Aktives Training', done: 'Fertig ✓', addExercise: '+ Übung hinzufügen', cancelWorkout: 'Training abbrechen',
+    // Templates page
+    templates: 'Vorlagen', createTemplate: '+ Vorlage erstellen', noTemplatesYet: 'Noch keine Vorlagen erstellt',
+    templateExercises: 'Übungen', startWorkout: '▶ Training starten', editTemplate: 'Bearbeiten',
+    templateModalTitleNew: 'Vorlage erstellen', templateModalTitleEdit: 'Vorlage bearbeiten',
+    tmplName: 'Name', tmplNamePlaceholder: 'z.B. Push Day', tmplExercisesLabel: 'Übungen',
+    addExerciseToTemplate: '+ Übung hinzufügen', deleteTemplate: 'Vorlage löschen',
+    confirmDeleteTemplate: 'Vorlage wirklich löschen?', tmplExPickerTitle: 'Übung hinzufügen',
     // Exercises page
     myExercises: 'Meine Übungen', createExercise: '+ Übung erstellen', noTrainingYet: 'Noch kein Training',
     lastTime: 'Letztes Mal', kgMax: 'kg max',
@@ -560,6 +652,12 @@ const TRANSLATIONS = {
     exportData: '📤 Daten exportieren', importData: '📥 Daten importieren',
     // Cardio page
     cardio: 'Cardio', logCardio: '+ Cardio eintragen', noCardioYet: 'Noch kein Cardio aufgezeichnet',
+    // Stretch page
+    stretch: 'Dehnen', logStretch: '+ Dehnung eintragen', noStretchYet: 'Noch keine Dehnungen eingetragen',
+    stretchExercise: 'Übung', stretchDuration: 'Dauer (Minuten)', stretchNote: 'Notiz (optional)',
+    stretchNotePlaceholder: 'z.B. beide Seiten', stretchNamePlaceholder: 'z.B. Hüftbeuger links',
+    stretchModalTitle: 'Dehnung eintragen', minutes: 'Minuten', minUnit: 'Min',
+    confirmDeleteStretch: 'Dehnung wirklich löschen?',
     // Modals
     chooseExercise: 'Übung wählen', newExercise: 'Neue Übung', editExercise: 'Übung bearbeiten',
     name: 'Name', category: 'Kategorie', save: 'Speichern', cancel: 'Abbrechen', deleteExercise: 'Übung löschen',
@@ -575,7 +673,7 @@ const TRANSLATIONS = {
     importSuccess: '✓ Import erfolgreich! Daten wurden zusammengeführt.', importError: 'Ungültiger Code. Bitte den kompletten Export-Code einfügen.',
     // Cardio modal
     cardioTitle: 'Cardio eintragen', cardioType: 'Art', cardioRun: '🏃 Laufen', cardioBike: '🚴 Radfahren', cardioRow: '🚣 Rudern / Ergometer',
-    distanceKm: 'Distanz (km)', distancePlaceholder: 'z.B. 5.5', minutes: 'Minuten', seconds: 'Sekunden',
+    distanceKm: 'Distanz (km)', distancePlaceholder: 'z.B. 5.5', seconds: 'Sekunden',
     calcPace: 'Berechnetes Tempo', minKm: 'min/km', note: 'Notiz (optional)', notePlaceholder: 'z.B. Intervalltraining',
     // Progress tags
     weightUp: 'kg Gewicht', weightDown: 'kg Gewicht', repsUp: ' Wdh (gleich Gewicht)', repsDown: ' Wdh (gleich Gewicht)', same: '= Gleich',
@@ -624,6 +722,21 @@ const TRANSLATIONS = {
     alreadyAdded: 'Exercise already in workout!', enterName: 'Enter a name!', minValidSet: 'Enter at least one valid set!',
     enterDistance: 'Please enter distance!', enterTime: 'Please enter time!', enterExportCode: 'Please paste export code!',
     editSets: 'Edit Sets', enterSets: '+ Enter Sets', newBadge: 'new',
+    // Templates
+    navTemplates: 'Templates', navStretch: 'Stretch',
+    templates: 'Templates', createTemplate: '+ Create Template', noTemplatesYet: 'No templates created yet',
+    templateExercises: 'Exercises', startWorkout: '▶ Start Workout', editTemplate: 'Edit',
+    templateModalTitleNew: 'Create Template', templateModalTitleEdit: 'Edit Template',
+    tmplName: 'Name', tmplNamePlaceholder: 'e.g. Push Day', tmplExercisesLabel: 'Exercises',
+    addExerciseToTemplate: '+ Add Exercise', deleteTemplate: 'Delete Template',
+    confirmDeleteTemplate: 'Really delete template?', tmplExPickerTitle: 'Add Exercise',
+    startFromTemplate: '📋 Start from Template',
+    // Stretch
+    stretch: 'Stretch', logStretch: '+ Log Stretch', noStretchYet: 'No stretches recorded yet',
+    stretchExercise: 'Exercise', stretchDuration: 'Duration (minutes)', stretchNote: 'Note (optional)',
+    stretchNotePlaceholder: 'e.g. both sides', stretchNamePlaceholder: 'e.g. Hip flexor left',
+    stretchModalTitle: 'Log Stretch', minUnit: 'Min',
+    confirmDeleteStretch: 'Really delete stretch entry?',
   }
 };
 
@@ -633,9 +746,7 @@ function t(key) { return TRANSLATIONS[lang][key] || key; }
 function toggleLang() {
   lang = lang === 'de' ? 'en' : 'de';
   localStorage.setItem('gymLang', lang);
-  document.getElementById('langBtn').textContent = lang === 'de' ? 'EN' : 'DE';
   applyTranslations();
-  // Re-render current active page
   const activePage = document.querySelector('.page.active');
   if (activePage) {
     const id = activePage.id.replace('page-', '');
@@ -644,27 +755,35 @@ function toggleLang() {
     if (id === 'history') renderHistory();
     if (id === 'stats') renderStats();
     if (id === 'cardio') renderCardio();
+    if (id === 'templates') renderTemplates();
+    if (id === 'stretch') renderStretch();
   }
 }
 
 function applyTranslations() {
-  // Helper: safely set textContent
   const set = (sel, key) => { const el = document.querySelector(sel); if (el) el.textContent = t(key); };
   const setEl = (el, key) => { if (el) el.textContent = t(key); };
   const setPlaceholder = (id, key) => { const el = document.getElementById(id); if (el) el.placeholder = t(key); };
 
-  // Nav labels
-  document.querySelectorAll('.nav-btn').forEach((btn, i) => {
-    const keys = ['navTraining','navCardio','navExercises','navHistory','navStats'];
+  // Nav labels — use data-page attribute to map correctly
+  const navKeyMap = { log:'navTraining', templates:'navTemplates', cardio:'navCardio', stretch:'navStretch', exercises:'navExercises', history:'navHistory', stats:'navStats' };
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    const page = btn.dataset.page;
+    if (!page) return;
     const textNode = [...btn.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
-    if (textNode && keys[i]) textNode.textContent = '\n    ' + t(keys[i]) + '\n  ';
+    if (textNode && navKeyMap[page]) textNode.textContent = '\n    ' + t(navKeyMap[page]) + '\n  ';
   });
 
   // Pages
   set('#page-log .section-title', 'startTraining');
   set('#page-log #quickStart .btn-primary', 'newWorkout');
+  set('#page-log #quickStart .btn-secondary', 'startFromTemplate');
   const logTitles = document.querySelectorAll('#page-log .section-title');
   setEl(logTitles[1], 'lastWorkouts');
+  // Templates page
+  const tmplTitles = document.querySelectorAll('#page-templates .section-title');
+  setEl(tmplTitles[0], 'templates');
+  set('#page-templates .btn-primary', 'createTemplate');
   set('#page-exercises .section-title', 'myExercises');
   set('#page-exercises .btn-primary', 'createExercise');
   set('#page-history .section-title', 'history');
@@ -679,6 +798,30 @@ function applyTranslations() {
   setEl(cardioTitles[0], 'cardio');
   setEl(cardioTitles[1], 'history');
   set('#page-cardio .btn-primary', 'logCardio');
+  // Stretch page
+  const stretchTitles = document.querySelectorAll('#page-stretch .section-title');
+  setEl(stretchTitles[0], 'stretch');
+  setEl(stretchTitles[1], 'history');
+  set('#page-stretch .btn-primary', 'logStretch');
+  // Template modal
+  const tmplLabels = document.querySelectorAll('#templateModal .form-label');
+  setEl(tmplLabels[0], 'tmplName');
+  setEl(tmplLabels[1], 'tmplExercisesLabel');
+  setPlaceholder('tmplName', 'tmplNamePlaceholder');
+  set('#templateModal .btn-primary', 'save');
+  set('#templateModal .btn-secondary', 'cancel');
+  set('#templateModal .btn-danger', 'deleteTemplate');
+  set('#tmplExPickerModal .modal-title', 'tmplExPickerTitle');
+  // Stretch modal
+  set('#stretchModal .modal-title', 'stretchModalTitle');
+  const stretchLabels = document.querySelectorAll('#stretchModal .form-label');
+  setEl(stretchLabels[0], 'stretchExercise');
+  setEl(stretchLabels[1], 'stretchDuration');
+  setEl(stretchLabels[2], 'stretchNote');
+  setPlaceholder('stretchName', 'stretchNamePlaceholder');
+  setPlaceholder('stretchNote', 'stretchNotePlaceholder');
+  set('#stretchModal .btn-primary', 'save');
+  set('#stretchModal .btn-secondary', 'cancel');
 
   // Active workout
   const btnFinish = document.getElementById('btnFinishWorkout');
@@ -790,13 +933,16 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  btn.classList.add('active');
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  if (btn) btn.classList.add('active');
   if (id === 'log') renderLog();
   if (id === 'exercises') renderExercises();
   if (id === 'history') renderHistory();
   if (id === 'stats') renderStats();
   if (id === 'cardio') renderCardio();
+  if (id === 'templates') renderTemplates();
+  if (id === 'stretch') renderStretch();
 }
 
 // ---- DATE ----
@@ -1401,6 +1547,194 @@ function renderCardio() {
   }).join('');
 }
 
+// ---- TEMPLATES ----
+let editingTemplateId = null;
+let tmplExercises = []; // exercise IDs in current template being edited
+
+function renderTemplates() {
+  const list = document.getElementById('templatesList');
+  if (!db.templates || db.templates.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">${t('noTemplatesYet')}</div></div>`;
+    return;
+  }
+  list.innerHTML = db.templates.map(tmpl => {
+    const exNames = tmpl.exerciseIds.map(id => getExName(id)).join(', ');
+    const count = tmpl.exerciseIds.length;
+    return `<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div style="font-weight:700;font-size:17px;">${tmpl.name}</div>
+        <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="font-size:11px;width:auto;padding:4px 10px;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTemplate')}</button>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${count} ${t('templateExercises')} · ${exNames}</div>
+      <button class="btn btn-primary" style="padding:10px;" onclick="startWorkoutFromTemplate('${tmpl.id}')">${t('startWorkout')}</button>
+    </div>`;
+  }).join('');
+}
+
+function openCreateTemplate() {
+  editingTemplateId = null;
+  tmplExercises = [];
+  document.getElementById('tmplName').value = '';
+  document.getElementById('templateModalTitle').textContent = t('templateModalTitleNew');
+  document.getElementById('deleteTmplBtn').style.display = 'none';
+  renderTmplExerciseList();
+  openModal('templateModal');
+}
+
+function openEditTemplate(id) {
+  const tmpl = db.templates.find(t => t.id === id);
+  if (!tmpl) return;
+  editingTemplateId = id;
+  tmplExercises = [...tmpl.exerciseIds];
+  document.getElementById('tmplName').value = tmpl.name;
+  document.getElementById('templateModalTitle').textContent = t('templateModalTitleEdit');
+  document.getElementById('deleteTmplBtn').style.display = 'block';
+  renderTmplExerciseList();
+  openModal('templateModal');
+}
+
+function renderTmplExerciseList() {
+  const container = document.getElementById('tmplExerciseList');
+  if (tmplExercises.length === 0) {
+    container.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">${t('noTemplatesYet').split(' ')[0] === 'No' ? 'No exercises added yet' : 'Noch keine Übungen hinzugefügt'}</div>`;
+    return;
+  }
+  container.innerHTML = tmplExercises.map((exId, i) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:14px;font-weight:500;">${getExName(exId)}</span>
+      <button class="close-btn" onclick="removeTmplExercise(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removeTmplExercise(idx) {
+  tmplExercises.splice(idx, 1);
+  renderTmplExerciseList();
+}
+
+function openTmplExPicker() {
+  const list = document.getElementById('tmplExPickerList');
+  const categories = [...new Set(db.exercises.map(e => e.category))];
+  list.innerHTML = categories.map(cat => {
+    const catLabel = t('cats')[cat] || cat;
+    const exs = db.exercises.filter(e => e.category === cat);
+    return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>` +
+      exs.map(e => `<div class="exercise-list-item" onclick="addExToTemplate('${e.id}')">
+        <div class="exercise-list-name">${e.name}</div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>`).join('');
+  }).join('<div class="divider"></div>');
+  openModal('tmplExPickerModal');
+}
+
+function addExToTemplate(exId) {
+  if (tmplExercises.includes(exId)) { alert(t('alreadyAdded')); return; }
+  tmplExercises.push(exId);
+  closeModal('tmplExPickerModal');
+  renderTmplExerciseList();
+}
+
+function saveTemplate() {
+  const name = document.getElementById('tmplName').value.trim();
+  if (!name) { alert(t('enterName')); return; }
+  if (tmplExercises.length === 0) { alert(lang === 'de' ? 'Mindestens eine Übung hinzufügen!' : 'Add at least one exercise!'); return; }
+  if (!db.templates) db.templates = [];
+  if (editingTemplateId) {
+    const tmpl = db.templates.find(t => t.id === editingTemplateId);
+    tmpl.name = name;
+    tmpl.exerciseIds = [...tmplExercises];
+  } else {
+    db.templates.push({ id: uid(), name, exerciseIds: [...tmplExercises] });
+  }
+  save();
+  closeModal('templateModal');
+  renderTemplates();
+}
+
+function deleteTemplate() {
+  if (!confirm(t('confirmDeleteTemplate'))) return;
+  db.templates = db.templates.filter(t => t.id !== editingTemplateId);
+  save();
+  closeModal('templateModal');
+  renderTemplates();
+}
+
+function startWorkoutFromTemplate(tmplId) {
+  const tmpl = db.templates.find(t => t.id === tmplId);
+  if (!tmpl) return;
+  db.currentWorkout = {
+    id: uid(), date: Date.now(), startTime: Date.now(),
+    templateId: tmplId,
+    exercises: tmpl.exerciseIds.map(exId => ({ exId, sets: [] }))
+  };
+  save();
+  // Navigate to log page
+  const logBtn = document.querySelector('.nav-btn[data-page="log"]');
+  showPage('log', logBtn);
+}
+
+// ---- STRETCH ----
+function openLogStretch() {
+  document.getElementById('stretchName').value = '';
+  document.getElementById('stretchDuration').value = '';
+  document.getElementById('stretchNote').value = '';
+  openModal('stretchModal');
+}
+
+function saveStretch() {
+  const name = document.getElementById('stretchName').value.trim();
+  const duration = parseFloat(document.getElementById('stretchDuration').value);
+  const note = document.getElementById('stretchNote').value.trim();
+  if (!name) { alert(t('enterName')); return; }
+  if (!duration || duration <= 0) { alert(lang === 'de' ? 'Bitte Dauer eingeben!' : 'Please enter duration!'); return; }
+  if (!db.stretches) db.stretches = [];
+  db.stretches.push({ id: uid(), date: Date.now(), name, duration, note });
+  save();
+  closeModal('stretchModal');
+  renderStretch();
+}
+
+function deleteStretch(id) {
+  if (!confirm(t('confirmDeleteStretch'))) return;
+  db.stretches = db.stretches.filter(s => s.id !== id);
+  save();
+  renderStretch();
+}
+
+function renderStretch() {
+  const list = document.getElementById('stretchList');
+  if (!db.stretches || db.stretches.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🧘</div><div class="empty-text">${t('noStretchYet')}</div></div>`;
+    return;
+  }
+  const locale = lang === 'de' ? 'de-DE' : 'en-GB';
+  const entries = [...db.stretches].reverse();
+  // Group by date
+  const grouped = {};
+  entries.forEach(s => {
+    const day = new Date(s.date).toLocaleDateString(locale, {weekday:'long', day:'numeric', month:'long'});
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(s);
+  });
+  list.innerHTML = Object.entries(grouped).map(([day, items]) => `
+    <div class="history-entry">
+      <div class="history-entry-header">
+        <div class="history-exercise-name">${day}</div>
+        <span class="tag">${items.reduce((a,s) => a + s.duration, 0)} ${t('minUnit')}</span>
+      </div>
+      ${items.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-weight:600;font-size:14px;">${s.name}</div>
+            ${s.note ? `<div style="font-size:12px;color:var(--muted);">📝 ${s.note}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);">${s.duration} <span style="font-size:12px;color:var(--muted);font-family:'DM Sans',sans-serif;">${t('minUnit')}</span></span>
+            <button class="close-btn" onclick="deleteStretch('${s.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
 // ---- EXPORT / IMPORT ----
 function openExportModal() {
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
@@ -1449,7 +1783,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '2.1';
+const CURRENT_VERSION = '2.3';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
   // New version detected — force reload to clear cache
@@ -1461,9 +1795,60 @@ if (savedVersion && savedVersion !== CURRENT_VERSION) {
 
 // ---- INIT ----
 applyTranslations();
+document.getElementById('page-log').classList.add('active');
 renderLog();
 
-// Close modals on backdrop click
+// ---- SWIPE NAVIGATION ----
+const PAGE_ORDER = ['log', 'templates', 'cardio', 'stretch', 'exercises', 'history', 'stats'];
+
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeStartTime = 0;
+
+document.addEventListener('touchstart', e => {
+  // Don't intercept swipes inside open modals or scrollable containers
+  if (document.querySelector('.modal-overlay.open')) return;
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+  swipeStartTime = Date.now();
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  if (document.querySelector('.modal-overlay.open')) return;
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  const dy = e.changedTouches[0].clientY - swipeStartY;
+  const dt = Date.now() - swipeStartTime;
+
+  // Must be fast enough, horizontal enough, and long enough
+  if (dt > 400) return;
+  if (Math.abs(dx) < 60) return;
+  if (Math.abs(dy) > Math.abs(dx) * 0.8) return; // too vertical
+
+  const activePage = document.querySelector('.page.active');
+  if (!activePage) return;
+  const currentId = activePage.id.replace('page-', '');
+  const currentIdx = PAGE_ORDER.indexOf(currentId);
+  if (currentIdx === -1) return;
+
+  let nextIdx;
+  if (dx < 0) {
+    // Swipe left → next page
+    nextIdx = Math.min(currentIdx + 1, PAGE_ORDER.length - 1);
+  } else {
+    // Swipe right → previous page
+    nextIdx = Math.max(currentIdx - 1, 0);
+  }
+
+  if (nextIdx === currentIdx) return;
+
+  const nextPage = PAGE_ORDER[nextIdx];
+  const navBtn = document.querySelector(`.nav-btn[data-page="${nextPage}"]`);
+  showPage(nextPage, navBtn);
+
+  // Scroll nav button into view
+  if (navBtn) navBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}, { passive: true });
+
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.classList.remove('open');
