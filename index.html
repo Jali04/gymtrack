@@ -6,300 +6,93 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="2.4">
+<meta name="version" content="3.0">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0a;
-    --surface: #141414;
-    --surface2: #1e1e1e;
-    --accent: #c8f135;
-    --accent2: #ff4d4d;
-    --text: #f0f0f0;
-    --muted: #666;
-    --border: #2a2a2a;
-    --radius: 14px;
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
+    --accent: #c8f135; --accent2: #ff4d4d; --text: #f0f0f0;
+    --muted: #666; --border: #2a2a2a; --radius: 14px;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100dvh;
-    padding-bottom: 80px;
-    overscroll-behavior: none;
-  }
-
-  /* HEADER */
-  .header {
-    background: var(--bg);
-    padding: 54px 20px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    border-bottom: 1px solid var(--border);
-  }
-  .header h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px;
-    letter-spacing: 2px;
-    color: var(--accent);
-  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; padding-bottom: 80px; overscroll-behavior: none; }
+  .header { background: var(--bg); padding: 54px 20px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--border); }
+  .header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; color: var(--accent); }
   .header-date { font-size: 13px; color: var(--muted); }
-
-  /* NAV */
-  .nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    display: flex;
-    padding: 8px 0 24px;
-    z-index: 100;
-  }
-  .nav-btn {
-    flex: 1; background: none; border: none; color: var(--muted);
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 10px; font-family: 'DM Sans', sans-serif;
-    cursor: pointer; padding: 6px 0; transition: color 0.2s;
-  }
+  .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; padding: 8px 0 24px; z-index: 100; }
+  .nav-btn { flex: 1; background: none; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-family: 'DM Sans', sans-serif; cursor: pointer; padding: 6px 0; transition: color 0.2s; }
   .nav-btn.active { color: var(--accent); }
   .nav-btn svg { width: 22px; height: 22px; }
-
-  /* PAGES */
   .page { display: none; padding: 20px; }
   .page.active { display: block; }
-
-  /* SECTION TITLE */
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 1.5px;
-    margin-bottom: 16px;
-    color: var(--text);
-  }
-
-  /* CARDS */
-  .card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-  }
-
-  /* EXERCISE CARD */
-  .exercise-card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: border-color 0.2s, transform 0.1s;
-    active: transform: scale(0.98);
-  }
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1.5px; margin-bottom: 16px; color: var(--text); }
+  .card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .exercise-card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); cursor: pointer; transition: border-color 0.2s, transform 0.1s; }
   .exercise-card:active { transform: scale(0.98); border-color: var(--accent); }
-  .exercise-name {
-    font-weight: 600; font-size: 16px; margin-bottom: 4px;
-  }
+  .exercise-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
   .exercise-meta { font-size: 13px; color: var(--muted); }
-  .exercise-last {
-    margin-top: 10px;
-    background: var(--surface2);
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 13px;
-  }
+  .exercise-last { margin-top: 10px; background: var(--surface2); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
   .exercise-last .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
   .exercise-last .sets-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .set-badge {
-    background: var(--bg);
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 12px;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  /* PROGRESS INDICATOR */
-  .progress-tag {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 12px; font-weight: 600;
-    padding: 3px 8px; border-radius: 100px;
-    margin-top: 6px;
-  }
+  .set-badge { background: var(--bg); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--text); border: 1px solid var(--border); }
+  .progress-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 100px; margin-top: 6px; }
   .progress-tag.up { background: rgba(200,241,53,0.15); color: var(--accent); }
   .progress-tag.down { background: rgba(255,77,77,0.15); color: var(--accent2); }
   .progress-tag.same { background: rgba(255,255,255,0.08); color: var(--muted); }
-
-  /* FORM */
   .form-group { margin-bottom: 14px; }
   .form-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
-  .form-input {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 14px; color: var(--text);
-    font-size: 15px; font-family: 'DM Sans', sans-serif;
-    outline: none; transition: border-color 0.2s;
-    -webkit-appearance: none;
-  }
+  .form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
   .form-input:focus { border-color: var(--accent); }
   .form-input::placeholder { color: var(--muted); }
-
-  /* SETS INPUT */
   .sets-container { display: flex; flex-direction: column; gap: 10px; }
-  .set-row {
-    display: grid; grid-template-columns: 32px 1fr 1fr 36px;
-    gap: 8px; align-items: center;
-  }
+  .set-row { display: grid; grid-template-columns: 32px 1fr 1fr 36px; gap: 8px; align-items: center; }
+  .set-row.cardio-row { grid-template-columns: 32px 1fr 1fr 1fr 36px; }
+  .set-row.stretch-row { grid-template-columns: 32px 1fr 36px; }
   .set-num { color: var(--muted); font-size: 14px; text-align: center; }
-  .set-input {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 11px 12px; color: var(--text);
-    font-size: 15px; font-family: 'DM Sans', sans-serif;
-    text-align: center; outline: none; width: 100%;
-    transition: border-color 0.2s; -webkit-appearance: none;
-  }
+  .set-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; color: var(--text); font-size: 15px; font-family: 'DM Sans', sans-serif; text-align: center; outline: none; width: 100%; transition: border-color 0.2s; -webkit-appearance: none; }
   .set-input:focus { border-color: var(--accent); }
-  .remove-set {
-    background: none; border: none; color: var(--muted);
-    cursor: pointer; padding: 6px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    transition: color 0.2s;
-  }
+  .set-input.pace-display { color: var(--accent); font-weight: 600; cursor: default; }
+  .remove-set { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
   .remove-set:active { color: var(--accent2); }
-  .set-col-labels {
-    display: grid; grid-template-columns: 32px 1fr 1fr 36px;
-    gap: 8px; margin-bottom: 4px;
-  }
+  .set-col-labels { gap: 8px; margin-bottom: 4px; display: grid; grid-template-columns: 32px 1fr 1fr 36px; }
+  .set-col-labels.cardio-labels { grid-template-columns: 32px 1fr 1fr 1fr 36px; }
+  .set-col-labels.stretch-labels { grid-template-columns: 32px 1fr 36px; }
   .set-col-label { font-size: 11px; color: var(--muted); text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
-
-  /* BUTTONS */
-  .btn {
-    width: 100%; padding: 14px; border-radius: 12px;
-    font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-    cursor: pointer; border: none; transition: opacity 0.2s, transform 0.1s;
-  }
+  .btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: opacity 0.2s, transform 0.1s; }
   .btn:active { transform: scale(0.98); opacity: 0.9; }
   .btn-primary { background: var(--accent); color: #0a0a0a; }
-  .btn-secondary {
-    background: var(--surface2); color: var(--text);
-    border: 1px solid var(--border); margin-top: 10px;
-  }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); margin-top: 10px; }
   .btn-danger { background: rgba(255,77,77,0.15); color: var(--accent2); border: 1px solid rgba(255,77,77,0.3); margin-top: 10px; }
-  .btn-sm {
-    width: auto; padding: 9px 16px; font-size: 13px;
-    border-radius: 10px; margin-top: 12px;
-  }
-
-  /* MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.8); z-index: 200;
-    padding: 20px; align-items: flex-end;
-    backdrop-filter: blur(4px);
-  }
+  .btn-sm { width: auto; padding: 9px 16px; font-size: 13px; border-radius: 10px; margin-top: 12px; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; padding: 20px; align-items: flex-end; backdrop-filter: blur(4px); }
   .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border-radius: 20px 20px 0 0;
-    width: 100%; max-height: 90dvh; overflow-y: auto;
-    padding: 20px; padding-bottom: 40px;
-    position: fixed; bottom: 0; left: 0; right: 0;
-    animation: slideUp 0.3s ease;
-  }
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  .modal-handle {
-    width: 40px; height: 4px; background: var(--border);
-    border-radius: 2px; margin: 0 auto 20px;
-  }
-  .modal-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px; letter-spacing: 1.5px; margin-bottom: 20px;
-  }
-
-  /* STATS */
+  .modal { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-height: 90dvh; overflow-y: auto; padding: 20px; padding-bottom: 40px; position: fixed; bottom: 0; left: 0; right: 0; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1.5px; margin-bottom: 20px; }
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-  .stat-card {
-    background: var(--surface);
-    border-radius: var(--radius); padding: 16px;
-    border: 1px solid var(--border);
-  }
+  .stat-card { background: var(--surface); border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); }
   .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--accent); line-height: 1; }
   .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
-
-  /* HISTORY */
-  .history-entry {
-    background: var(--surface); border-radius: var(--radius);
-    padding: 14px 16px; margin-bottom: 10px;
-    border: 1px solid var(--border);
-  }
+  .history-entry { background: var(--surface); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--border); }
   .history-entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
   .history-exercise-name { font-weight: 600; font-size: 15px; }
-  .history-date { font-size: 12px; color: var(--muted); }
-  .history-sets { display: flex; gap: 6px; flex-wrap: wrap; }
-
-  /* EMPTY STATE */
-  .empty-state {
-    text-align: center; padding: 60px 20px; color: var(--muted);
-  }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
   .empty-icon { font-size: 48px; margin-bottom: 12px; }
   .empty-text { font-size: 15px; }
-
-  /* EXERCISE PICKER */
-  .exercise-list-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 14px 0; border-bottom: 1px solid var(--border);
-    cursor: pointer;
-  }
+  .exercise-list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
   .exercise-list-item:last-child { border-bottom: none; }
   .exercise-list-name { font-weight: 500; font-size: 15px; }
-  .exercise-list-category { font-size: 12px; color: var(--muted); }
-
-  /* TAG */
-  .tag {
-    display: inline-block; padding: 3px 10px; border-radius: 100px;
-    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-    background: rgba(200,241,53,0.1); color: var(--accent); border: 1px solid rgba(200,241,53,0.2);
-  }
-
-  /* WORKOUT MODE */
-  .workout-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-  }
-  .timer-display {
-    font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent);
-    letter-spacing: 2px;
-  }
-
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(200,241,53,0.1); color: var(--accent); border: 1px solid rgba(200,241,53,0.2); }
+  .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .timer-display { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent); letter-spacing: 2px; }
   .divider { height: 1px; background: var(--border); margin: 20px 0; }
-
-  .checkbox-row {
-    display: flex; align-items: center; gap: 10px; padding: 4px 0;
-  }
-  .checkbox {
-    width: 22px; height: 22px; border-radius: 6px;
-    border: 2px solid var(--border); background: none;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: all 0.2s;
-  }
-  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
-  .checkbox-label { font-size: 14px; color: var(--text); }
-
-  .close-btn {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 50%; width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--muted); flex-shrink: 0;
-  }
+  .close-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); flex-shrink: 0; }
+  .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+  .cat-cardio { background: rgba(255,165,0,0.15); color: orange; }
+  .cat-stretch { background: rgba(100,200,255,0.15); color: #64c8ff; }
+  .cat-strength { background: rgba(200,241,53,0.1); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -313,18 +106,15 @@
 </div>
 
 <!-- PAGES -->
-<div class="page" id="page-log">
-  <div class="section-title">Training starten</div>
-
+<div class="page active" id="page-log">
+  <div class="section-title" id="ttlStartTraining">Training starten</div>
   <div id="quickStart">
-    <button class="btn btn-primary" onclick="openNewWorkout()">+ Neues Training</button>
-    <button class="btn btn-secondary" style="margin-top:10px;" onclick="showPage('templates', document.querySelector('.nav-btn[data-page=templates]'))">📋 Aus Vorlage starten</button>
+    <button class="btn btn-primary" id="btnNewWorkout" onclick="openNewWorkout()">+ Neues Training</button>
+    <button class="btn btn-secondary" id="btnFromTemplate" style="margin-top:10px;" onclick="showPage('templates', document.querySelector('.nav-btn[data-page=templates]'))">📋 Aus Vorlage starten</button>
     <div class="divider"></div>
-    <div class="section-title" style="font-size:18px;">Letzte Trainings</div>
+    <div class="section-title" style="font-size:18px;" id="ttlLastWorkouts">Letzte Trainings</div>
     <div id="recentWorkouts"></div>
   </div>
-
-  <!-- Active Workout -->
   <div id="activeWorkout" style="display:none;">
     <div class="workout-header">
       <div>
@@ -333,87 +123,61 @@
       </div>
       <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="finishWorkout()">Fertig ✓</button>
     </div>
-
     <div id="workoutExercises"></div>
-
     <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
     <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:8px;">Training abbrechen</button>
   </div>
 </div>
 
 <div class="page" id="page-templates">
-  <div class="section-title">Vorlagen</div>
-  <button class="btn btn-primary btn-sm" onclick="openCreateTemplate()">+ Vorlage erstellen</button>
+  <div class="section-title" id="ttlTemplates">Vorlagen</div>
+  <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+ Vorlage erstellen</button>
   <div class="divider"></div>
   <div id="templatesList"></div>
 </div>
 
 <div class="page" id="page-exercises">
-  <div class="section-title">Meine Übungen</div>
-  <button class="btn btn-primary btn-sm" onclick="openAddExercise()">+ Übung erstellen</button>
+  <div class="section-title" id="ttlExercises">Meine Übungen</div>
+  <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+ Übung erstellen</button>
   <div class="divider"></div>
   <div id="exercisesList"></div>
 </div>
 
 <div class="page" id="page-history">
-  <div class="section-title">Verlauf</div>
+  <div class="section-title" id="ttlHistory">Verlauf</div>
   <div id="historyList"></div>
 </div>
 
 <div class="page" id="page-stats">
-  <div class="section-title">Statistiken</div>
+  <div class="section-title" id="ttlStats">Statistiken</div>
   <div class="stats-grid" id="statsGrid"></div>
-  <div class="section-title" style="font-size:18px;">Progress pro Übung</div>
+  <div class="section-title" style="font-size:18px;" id="ttlProgress">Progress pro Übung</div>
   <div id="progressList"></div>
   <div class="divider"></div>
-  <div class="section-title" style="font-size:18px;">Daten</div>
-  <button class="btn btn-secondary" onclick="openExportModal()" style="margin-bottom:10px;">📤 Daten exportieren</button>
-  <button class="btn btn-secondary" onclick="openImportModal()">📥 Daten importieren</button>
+  <div class="section-title" style="font-size:18px;" id="ttlData">Daten</div>
+  <button class="btn btn-secondary" id="btnExport" onclick="openExportModal()" style="margin-bottom:10px;">📤 Daten exportieren</button>
+  <button class="btn btn-secondary" id="btnImport" onclick="openImportModal()">📥 Daten importieren</button>
 </div>
 
-<div class="page" id="page-cardio">
-  <div class="section-title">Cardio</div>
-  <button class="btn btn-primary btn-sm" onclick="openLogCardio()">+ Cardio eintragen</button>
-  <div class="divider"></div>
-  <div class="section-title" style="font-size:18px;">Verlauf</div>
-  <div id="cardioList"></div>
-</div>
-
-<div class="page" id="page-stretch">
-  <div class="section-title">Dehnen</div>
-  <button class="btn btn-primary btn-sm" onclick="openLogStretch()">+ Dehnung eintragen</button>
-  <div class="divider"></div>
-  <div class="section-title" style="font-size:18px;">Verlauf</div>
-  <div id="stretchList"></div>
-</div>
-
-<!-- BOTTOM NAV -->
-<nav class="nav" style="overflow-x:auto;justify-content:flex-start;gap:0;padding-left:0;padding-right:0;">
-  <button class="nav-btn active" data-page="log" onclick="showPage('log', this)" style="min-width:60px;">
+<!-- NAV -->
+<nav class="nav" style="overflow-x:auto;justify-content:flex-start;">
+  <button class="nav-btn active" data-page="log" onclick="showPage('log',this)" style="min-width:62px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
     Training
   </button>
-  <button class="nav-btn" data-page="templates" onclick="showPage('templates', this)" style="min-width:60px;">
+  <button class="nav-btn" data-page="templates" onclick="showPage('templates',this)" style="min-width:62px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
     Vorlagen
   </button>
-  <button class="nav-btn" data-page="cardio" onclick="showPage('cardio', this)" style="min-width:60px;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-    Cardio
-  </button>
-  <button class="nav-btn" data-page="stretch" onclick="showPage('stretch', this)" style="min-width:60px;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3c0 1.5-1 2.5-2 3.5L12 10l-1-1.5C10 7.5 9 6.5 9 5a3 3 0 0 1 3-3z"/><path d="M6.5 15.5c1-2 3-3.5 5.5-3.5s4.5 1.5 5.5 3.5"/><path d="M5 20c1-2.5 4-4 7-4s6 1.5 7 4"/></svg>
-    Dehnen
-  </button>
-  <button class="nav-btn" data-page="exercises" onclick="showPage('exercises', this)" style="min-width:60px;">
+  <button class="nav-btn" data-page="exercises" onclick="showPage('exercises',this)" style="min-width:62px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     Übungen
   </button>
-  <button class="nav-btn" data-page="history" onclick="showPage('history', this)" style="min-width:60px;">
+  <button class="nav-btn" data-page="history" onclick="showPage('history',this)" style="min-width:62px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     Verlauf
   </button>
-  <button class="nav-btn" data-page="stats" onclick="showPage('stats', this)" style="min-width:60px;">
+  <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)" style="min-width:62px;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Stats
   </button>
@@ -421,19 +185,19 @@
 
 <!-- MODALS -->
 
-<!-- Exercise Picker Modal -->
+<!-- Exercise Picker -->
 <div class="modal-overlay" id="exercisePickerModal">
   <div class="modal">
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title">Übung wählen</div>
+      <div class="modal-title" id="ttlChooseExercise">Übung wählen</div>
       <div class="close-btn" onclick="closeModal('exercisePickerModal')">✕</div>
     </div>
     <div id="exercisePickerList"></div>
   </div>
 </div>
 
-<!-- Add Exercise Modal -->
+<!-- Add/Edit Exercise -->
 <div class="modal-overlay" id="addExerciseModal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -442,12 +206,12 @@
       <div class="close-btn" onclick="closeModal('addExerciseModal')">✕</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Name</label>
+      <label class="form-label" id="lblExName">Name</label>
       <input class="form-input" id="exName" placeholder="z.B. Bankdrücken" />
     </div>
     <div class="form-group">
-      <label class="form-label">Kategorie</label>
-      <select class="form-input" id="exCategory">
+      <label class="form-label" id="lblExCategory">Kategorie</label>
+      <select class="form-input" id="exCategory" onchange="updateCategoryHint()">
         <option value="Brust">Brust</option>
         <option value="Rücken">Rücken</option>
         <option value="Schultern">Schultern</option>
@@ -455,91 +219,17 @@
         <option value="Beine">Beine</option>
         <option value="Core">Core</option>
         <option value="Cardio">Cardio</option>
+        <option value="Dehnen">Dehnen</option>
       </select>
     </div>
-    <button class="btn btn-primary" onclick="saveExercise()">Speichern</button>
+    <div id="categoryHint" style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;"></div>
+    <button class="btn btn-primary" onclick="saveExercise()" id="btnSaveExercise">Speichern</button>
     <button class="btn btn-danger" id="deleteExBtn" style="display:none;" onclick="deleteExercise()">Übung löschen</button>
-    <button class="btn btn-secondary" onclick="closeModal('addExerciseModal')">Abbrechen</button>
+    <button class="btn btn-secondary" onclick="closeModal('addExerciseModal')" id="btnCancelExercise">Abbrechen</button>
   </div>
 </div>
 
-<!-- Cardio Modal -->
-<div class="modal-overlay" id="cardioModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div class="modal-title">Cardio eintragen</div>
-      <div class="close-btn" onclick="closeModal('cardioModal')">✕</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Art</label>
-      <select class="form-input" id="cardioType">
-        <option value="laufen">🏃 Laufen</option>
-        <option value="radfahren">🚴 Radfahren</option>
-        <option value="rudern">🚣 Rudern / Ergometer</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Distanz (km)</label>
-      <input class="form-input" id="cardioDistance" type="number" placeholder="z.B. 5.5" inputmode="decimal" step="0.1" />
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="form-group">
-        <label class="form-label">Minuten</label>
-        <input class="form-input" id="cardioMinutes" type="number" placeholder="25" inputmode="numeric" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Sekunden</label>
-        <input class="form-input" id="cardioSeconds" type="number" placeholder="30" inputmode="numeric" min="0" max="59" />
-      </div>
-    </div>
-    <div id="cardioPacePreview" style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:14px;display:none;">
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Berechnetes Tempo</div>
-      <div id="cardioPaceValue" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);"></div>
-      <div style="font-size:11px;color:var(--muted);">min/km</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notiz (optional)</label>
-      <input class="form-input" id="cardioNote" type="text" placeholder="z.B. Intervalltraining" />
-    </div>
-    <button class="btn btn-primary" onclick="saveCardio()">Speichern</button>
-    <button class="btn btn-secondary" onclick="closeModal('cardioModal')">Abbrechen</button>
-  </div>
-</div>
-
-<!-- Export Modal -->
-<div class="modal-overlay" id="exportModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title">Daten exportieren</div>
-      <div class="close-btn" onclick="closeModal('exportModal')">✕</div>
-    </div>
-    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">Kopiere diesen Code und schicke ihn per WhatsApp, iMessage oder E-Mail an dein anderes Gerät oder einen Kollegen. Dort bei "Importieren" einfügen.</p>
-    <textarea id="exportText" readonly style="width:100%;height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:none;outline:none;"></textarea>
-    <button class="btn btn-primary" style="margin-top:12px;" onclick="copyExport()">📋 Code kopieren</button>
-    <div id="copyConfirm" style="display:none;text-align:center;color:var(--accent);font-size:14px;margin-top:10px;font-weight:600;">✓ Kopiert!</div>
-    <button class="btn btn-secondary" onclick="closeModal('exportModal')">Schließen</button>
-  </div>
-</div>
-
-<!-- Import Modal -->
-<div class="modal-overlay" id="importModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title">Daten importieren</div>
-      <div class="close-btn" onclick="closeModal('importModal')">✕</div>
-    </div>
-    <p style="font-size:14px;color:var(--muted);margin-bottom:4px;">Export-Code hier einfügen:</p>
-    <p style="font-size:12px;color:var(--accent2);margin-bottom:16px;">⚠️ Achtung: Bestehende Daten werden zusammengeführt, nichts geht verloren.</p>
-    <textarea id="importText" placeholder="Export-Code hier einfügen..." style="width:100%;height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:none;outline:none;"></textarea>
-    <button class="btn btn-primary" style="margin-top:12px;" onclick="doImport()">✓ Importieren</button>
-    <button class="btn btn-secondary" onclick="closeModal('importModal')">Abbrechen</button>
-  </div>
-</div>
-
-<!-- Log Sets Modal -->
+<!-- Log Sets Modal (smart — adapts to category) -->
 <div class="modal-overlay" id="logSetsModal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -548,16 +238,16 @@
       <div class="close-btn" onclick="closeModal('logSetsModal')">✕</div>
     </div>
     <div id="lastPerformance" style="margin-bottom:16px;"></div>
-    <div class="set-col-labels">
+    <div class="set-col-labels" id="setColLabels">
       <div></div>
-      <div class="set-col-label" id="colLabelKg">kg</div>
-      <div class="set-col-label" id="colLabelReps">Wdh</div>
+      <div class="set-col-label" id="colLabel1">kg</div>
+      <div class="set-col-label" id="colLabel2">Wdh</div>
       <div></div>
     </div>
     <div class="sets-container" id="setsContainer"></div>
-    <button class="btn btn-secondary btn-sm" onclick="addSetRow()">+ Satz</button>
+    <button class="btn btn-secondary btn-sm" id="btnAddRow" onclick="addSetRow()">+ Satz</button>
     <div style="margin-top:16px;">
-      <button class="btn btn-primary" onclick="saveSets()">Sätze speichern</button>
+      <button class="btn btn-primary" id="btnSaveSets" onclick="saveSets()">Sätze speichern</button>
     </div>
   </div>
 </div>
@@ -571,412 +261,300 @@
       <div class="close-btn" onclick="closeModal('templateModal')">✕</div>
     </div>
     <div class="form-group">
-      <label class="form-label" id="tmplNameLabel">Name</label>
+      <label class="form-label" id="lblTmplName">Name</label>
       <input class="form-input" id="tmplName" placeholder="z.B. Push Day" />
     </div>
     <div class="form-group">
-      <label class="form-label" id="tmplExLabel">Übungen</label>
+      <label class="form-label" id="lblTmplEx">Übungen</label>
       <div id="tmplExerciseList" style="margin-bottom:8px;"></div>
-      <button class="btn btn-secondary btn-sm" onclick="openTmplExPicker()">+ Übung hinzufügen</button>
+      <button class="btn btn-secondary btn-sm" id="btnAddExToTemplate" onclick="openTmplExPicker()" style="margin-top:4px;">+ Übung hinzufügen</button>
     </div>
-    <button class="btn btn-primary" style="margin-top:8px;" onclick="saveTemplate()">Speichern</button>
+    <button class="btn btn-primary" style="margin-top:8px;" onclick="saveTemplate()" id="btnSaveTemplate">Speichern</button>
     <button class="btn btn-danger" id="deleteTmplBtn" style="display:none;" onclick="deleteTemplate()">Vorlage löschen</button>
-    <button class="btn btn-secondary" onclick="closeModal('templateModal')">Abbrechen</button>
+    <button class="btn btn-secondary" onclick="closeModal('templateModal')" id="btnCancelTemplate">Abbrechen</button>
   </div>
 </div>
 
-<!-- Template Exercise Picker Modal -->
+<!-- Template Exercise Picker -->
 <div class="modal-overlay" id="tmplExPickerModal">
   <div class="modal">
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="tmplExPickerTitle">Übung hinzufügen</div>
-      <div class="close-btn" onclick="closeModal('tmplExPickerModal'); openModal('templateModal');">✕</div>
+      <div class="modal-title" id="ttlTmplExPicker">Übung hinzufügen</div>
+      <div class="close-btn" onclick="closeModal('tmplExPickerModal');openModal('templateModal');">✕</div>
     </div>
     <div id="tmplExPickerList"></div>
   </div>
 </div>
 
-<!-- Stretch Modal -->
-<div class="modal-overlay" id="stretchModal">
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="stretchModalTitle">Dehnung eintragen</div>
-      <div class="close-btn" onclick="closeModal('stretchModal')">✕</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="modal-title" id="ttlExport">Daten exportieren</div>
+      <div class="close-btn" onclick="closeModal('exportModal')">✕</div>
     </div>
-    <div class="form-group">
-      <label class="form-label" id="stretchNameLabel">Übung</label>
-      <input class="form-input" id="stretchName" placeholder="z.B. Hüftbeuger links" />
+    <p id="txtExportDesc" style="font-size:14px;color:var(--muted);margin-bottom:16px;">Kopiere diesen Code...</p>
+    <textarea id="exportText" readonly style="width:100%;height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:none;outline:none;"></textarea>
+    <button class="btn btn-primary" style="margin-top:12px;" id="btnCopyExport" onclick="copyExport()">📋 Code kopieren</button>
+    <div id="copyConfirm" style="display:none;text-align:center;color:var(--accent);font-size:14px;margin-top:10px;font-weight:600;">✓ Kopiert!</div>
+    <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('exportModal')">Schließen</button>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="modal-title" id="ttlImport">Daten importieren</div>
+      <div class="close-btn" onclick="closeModal('importModal')">✕</div>
     </div>
-    <div class="form-group">
-      <label class="form-label" id="stretchDurLabel">Dauer (Minuten)</label>
-      <input class="form-input" id="stretchDuration" type="number" placeholder="z.B. 2" inputmode="decimal" step="0.5" min="0.5" />
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="stretchNoteLabel">Notiz (optional)</label>
-      <input class="form-input" id="stretchNote" placeholder="z.B. beide Seiten" />
-    </div>
-    <button class="btn btn-primary" onclick="saveStretch()">Speichern</button>
-    <button class="btn btn-secondary" onclick="closeModal('stretchModal')">Abbrechen</button>
+    <p id="txtImportDesc" style="font-size:14px;color:var(--muted);margin-bottom:4px;">Export-Code hier einfügen:</p>
+    <p id="txtImportWarn" style="font-size:12px;color:var(--accent2);margin-bottom:16px;">⚠️ Achtung: Bestehende Daten werden zusammengeführt.</p>
+    <textarea id="importText" placeholder="Export-Code hier einfügen..." style="width:100%;height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:none;outline:none;"></textarea>
+    <button class="btn btn-primary" style="margin-top:12px;" id="btnDoImport" onclick="doImport()">✓ Importieren</button>
+    <button class="btn btn-secondary" id="btnCancelImport" onclick="closeModal('importModal')">Abbrechen</button>
   </div>
 </div>
 
 <script>
+// ---- CATEGORY TYPES ----
+// 'strength' = kg + reps, 'cardio' = km + time + pace, 'stretch' = minutes
+const CAT_TYPE = {
+  Brust:'strength', Rücken:'strength', Schultern:'strength',
+  Arme:'strength', Beine:'strength', Core:'strength',
+  Cardio:'cardio', Dehnen:'stretch'
+};
+function getCatType(category) { return CAT_TYPE[category] || 'strength'; }
+
 // ---- LANGUAGE ----
-const TRANSLATIONS = {
+const TR = {
   de: {
-    // Header & Nav
-    navTraining: 'Training', navCardio: 'Cardio', navExercises: 'Übungen', navHistory: 'Verlauf', navStats: 'Stats',
-    navTemplates: 'Vorlagen', navStretch: 'Dehnen',
-    // Log page
-    startTraining: 'Training starten', newWorkout: '+ Neues Training', lastWorkouts: 'Letzte Trainings',
-    noWorkoutYet: 'Noch kein Training aufgezeichnet', startFromTemplate: '📋 Aus Vorlage starten',
-    activeWorkout: 'Aktives Training', done: 'Fertig ✓', addExercise: '+ Übung hinzufügen', cancelWorkout: 'Training abbrechen',
-    // Templates page
-    templates: 'Vorlagen', createTemplate: '+ Vorlage erstellen', noTemplatesYet: 'Noch keine Vorlagen erstellt',
-    templateExercises: 'Übungen', startWorkout: '▶ Training starten', editTemplate: 'Bearbeiten',
-    templateModalTitleNew: 'Vorlage erstellen', templateModalTitleEdit: 'Vorlage bearbeiten',
-    tmplName: 'Name', tmplNamePlaceholder: 'z.B. Push Day', tmplExercisesLabel: 'Übungen',
-    addExerciseToTemplate: '+ Übung hinzufügen', deleteTemplate: 'Vorlage löschen',
-    confirmDeleteTemplate: 'Vorlage wirklich löschen?', tmplExPickerTitle: 'Übung hinzufügen',
-    // Exercises page
-    myExercises: 'Meine Übungen', createExercise: '+ Übung erstellen', noTrainingYet: 'Noch kein Training',
-    lastTime: 'Letztes Mal', kgMax: 'kg max',
-    // History
-    history: 'Verlauf', noHistoryYet: 'Noch kein Training gespeichert', sets: 'Sätze',
-    // Stats
-    stats: 'Statistiken', totalWorkouts: 'Trainings gesamt', thisWeek: 'Diese Woche',
-    totalSets: 'Sätze gesamt', exercises: 'Übungen', progressPerExercise: 'Progress pro Übung',
-    noDataYet: 'Noch keine Daten', trainedX: '× trainiert', max: 'Max', data: 'Daten',
-    exportData: '📤 Daten exportieren', importData: '📥 Daten importieren',
-    // Cardio page
-    cardio: 'Cardio', logCardio: '+ Cardio eintragen', noCardioYet: 'Noch kein Cardio aufgezeichnet',
-    // Stretch page
-    stretch: 'Dehnen', logStretch: '+ Dehnung eintragen', noStretchYet: 'Noch keine Dehnungen eingetragen',
-    stretchExercise: 'Übung', stretchDuration: 'Dauer (Minuten)', stretchNote: 'Notiz (optional)',
-    stretchNotePlaceholder: 'z.B. beide Seiten', stretchNamePlaceholder: 'z.B. Hüftbeuger links',
-    stretchModalTitle: 'Dehnung eintragen', minutes: 'Minuten', minUnit: 'Min',
-    confirmDeleteStretch: 'Dehnung wirklich löschen?',
-    // Modals
-    chooseExercise: 'Übung wählen', newExercise: 'Neue Übung', editExercise: 'Übung bearbeiten',
-    name: 'Name', category: 'Kategorie', save: 'Speichern', cancel: 'Abbrechen', deleteExercise: 'Übung löschen',
-    namePlaceholder: 'z.B. Bankdrücken',
-    cats: { Brust:'Brust', Rücken:'Rücken', Schultern:'Schultern', Arme:'Arme', Beine:'Beine', Core:'Core', Cardio:'Cardio' },
-    // Sets modal
-    lastPerf: 'Letztes Mal', kg: 'kg', reps: 'Wdh', addSet: '+ Satz', saveSets: 'Sätze speichern',
-    // Export/Import
-    exportTitle: 'Daten exportieren', exportDesc: 'Kopiere diesen Code und schicke ihn per WhatsApp, iMessage oder E-Mail an dein anderes Gerät oder einen Kollegen. Dort bei "Importieren" einfügen.',
-    copyCode: '📋 Code kopieren', copied: '✓ Kopiert!', close: 'Schließen',
-    importTitle: 'Daten importieren', importDesc: 'Export-Code hier einfügen:', importWarning: '⚠️ Achtung: Bestehende Daten werden zusammengeführt, nichts geht verloren.',
-    importPlaceholder: 'Export-Code hier einfügen...', doImport: '✓ Importieren',
-    importSuccess: '✓ Import erfolgreich! Daten wurden zusammengeführt.', importError: 'Ungültiger Code. Bitte den kompletten Export-Code einfügen.',
-    // Cardio modal
-    cardioTitle: 'Cardio eintragen', cardioType: 'Art', cardioRun: '🏃 Laufen', cardioBike: '🚴 Radfahren', cardioRow: '🚣 Rudern / Ergometer',
-    distanceKm: 'Distanz (km)', distancePlaceholder: 'z.B. 5.5', seconds: 'Sekunden',
-    calcPace: 'Berechnetes Tempo', minKm: 'min/km', note: 'Notiz (optional)', notePlaceholder: 'z.B. Intervalltraining',
-    // Progress tags
-    weightUp: 'kg Gewicht', weightDown: 'kg Gewicht', repsUp: ' Wdh (gleich Gewicht)', repsDown: ' Wdh (gleich Gewicht)', same: '= Gleich',
-    distanceUp: 'km Distanz', distanceDown: 'km Distanz', fasterSame: '↑ Schneller (gleiche Distanz)', slowerSame: '↓ Langsamer (gleiche Distanz)',
-    pb: '🏆 Bestzeit',
-    // Confirms
-    confirmCancelWorkout: 'Training wirklich abbrechen?', confirmDeleteExercise: 'Übung wirklich löschen?',
-    confirmDeleteWorkout: 'Training wirklich löschen?', confirmDeleteCardio: 'Cardio-Einheit wirklich löschen?',
-    noSets: 'Keine Sätze', enterExercise: 'Füge eine Übung hinzu', minOneSet: 'Füge mindestens einen Satz hinzu!',
-    alreadyAdded: 'Übung ist bereits im Training!', enterName: 'Name eingeben!', minValidSet: 'Mindestens einen gültigen Satz eingeben!',
-    enterDistance: 'Bitte Distanz eingeben!', enterTime: 'Bitte Zeit eingeben!', enterExportCode: 'Bitte Export-Code einfügen!',
-    editSets: 'Sätze bearbeiten', enterSets: '+ Sätze eingeben', newBadge: 'neu',
+    navTraining:'Training', navTemplates:'Vorlagen', navExercises:'Übungen', navHistory:'Verlauf', navStats:'Stats',
+    startTraining:'Training starten', newWorkout:'+ Neues Training', lastWorkouts:'Letzte Trainings',
+    fromTemplate:'📋 Aus Vorlage starten', noWorkoutYet:'Noch kein Training aufgezeichnet',
+    activeWorkout:'Aktives Training', done:'Fertig ✓', addExercise:'+ Übung hinzufügen', cancelWorkout:'Training abbrechen',
+    templates:'Vorlagen', createTemplate:'+ Vorlage erstellen', noTemplatesYet:'Noch keine Vorlagen erstellt',
+    startWorkout:'▶ Training starten', editTmpl:'Bearbeiten', tmplNewTitle:'Vorlage erstellen', tmplEditTitle:'Vorlage bearbeiten',
+    tmplName:'Name', tmplNamePlaceholder:'z.B. Push Day', tmplExercises:'Übungen',
+    addExToTmpl:'+ Übung hinzufügen', deleteTmpl:'Vorlage löschen', confirmDeleteTmpl:'Vorlage wirklich löschen?', tmplExPickerTitle:'Übung hinzufügen',
+    myExercises:'Meine Übungen', createExercise:'+ Übung erstellen',
+    noTrainingYet:'Noch kein Training', lastTime:'Letztes Mal',
+    history:'Verlauf', noHistoryYet:'Noch kein Training gespeichert', sets:'Sätze',
+    stats:'Statistiken', totalWorkouts:'Trainings gesamt', thisWeek:'Diese Woche',
+    totalSets:'Sätze gesamt', exercises:'Übungen', progressPerEx:'Progress pro Übung',
+    noDataYet:'Noch keine Daten', trainedX:'× trainiert', max:'Max', data:'Daten',
+    exportData:'📤 Daten exportieren', importData:'📥 Daten importieren',
+    chooseExercise:'Übung wählen', newExercise:'Neue Übung', editExercise:'Übung bearbeiten',
+    name:'Name', category:'Kategorie', save:'Speichern', cancel:'Abbrechen', deleteExercise:'Übung löschen',
+    namePlaceholder:'z.B. Bankdrücken',
+    cats:{ Brust:'Brust', Rücken:'Rücken', Schultern:'Schultern', Arme:'Arme', Beine:'Beine', Core:'Core', Cardio:'Cardio', Dehnen:'Dehnen' },
+    catHint:{ strength:'📊 Kraft: kg & Wiederholungen', cardio:'🏃 Cardio: Distanz (km) & Zeit → Tempo wird berechnet', stretch:'🧘 Dehnen: Dauer in Minuten' },
+    lastPerf:'Letztes Mal', kg:'kg', reps:'Wdh', addSet:'+ Satz', saveSets:'Speichern',
+    colKm:'km', colTime:'Zeit', colPace:'Tempo', colMin:'Min',
+    exportTitle:'Daten exportieren', exportDesc:'Kopiere diesen Code und schicke ihn per WhatsApp oder E-Mail an dein anderes Gerät.',
+    copyCode:'📋 Code kopieren', copied:'✓ Kopiert!', close:'Schließen',
+    importTitle:'Daten importieren', importDesc:'Export-Code hier einfügen:', importWarn:'⚠️ Achtung: Bestehende Daten werden zusammengeführt, nichts geht verloren.',
+    importPlaceholder:'Export-Code hier einfügen...', doImport:'✓ Importieren',
+    importSuccess:'✓ Import erfolgreich! Daten wurden zusammengeführt.', importError:'Ungültiger Code.',
+    weightUp:'kg Gewicht', weightDown:'kg Gewicht', repsUp:' Wdh (gleich Gewicht)', repsDown:' Wdh (gleich Gewicht)', same:'= Gleich',
+    distanceUp:' km Distanz', distanceDown:' km Distanz', fasterSame:'↑ Schneller (gleiche Distanz)', slowerSame:'↓ Langsamer (gleiche Distanz)',
+    longerStretch:' Min länger', shorterStretch:' Min kürzer',
+    pb:'🏆 Bestzeit',
+    confirmCancelWorkout:'Training wirklich abbrechen?', confirmDeleteExercise:'Übung wirklich löschen?',
+    confirmDeleteWorkout:'Training wirklich löschen?',
+    noEntries:'Keine Einträge', enterExercise:'Füge eine Übung hinzu', minOneSet:'Mindestens einen Eintrag hinzufügen!',
+    alreadyAdded:'Übung ist bereits im Training!', enterName:'Name eingeben!',
+    minValidSet:'Mindestens einen gültigen Eintrag!', enterExportCode:'Bitte Export-Code einfügen!',
+    editSets:'Bearbeiten', enterSets:'+ Eintragen', newBadge:'neu',
+    noExercisesYet:'Noch keine Übungen', minOneExercise:'Mindestens eine Übung hinzufügen!',
+    paceLabel:'Tempo',
   },
   en: {
-    navTraining: 'Workout', navCardio: 'Cardio', navExercises: 'Exercises', navHistory: 'History', navStats: 'Stats',
-    startTraining: 'Start Workout', newWorkout: '+ New Workout', lastWorkouts: 'Recent Workouts',
-    noWorkoutYet: 'No workouts recorded yet',
-    activeWorkout: 'Active Workout', done: 'Done ✓', addExercise: '+ Add Exercise', cancelWorkout: 'Cancel Workout',
-    myExercises: 'My Exercises', createExercise: '+ Create Exercise', noTrainingYet: 'No training yet',
-    lastTime: 'Last time', kgMax: 'kg max',
-    history: 'History', noHistoryYet: 'No workouts saved yet', sets: 'Sets',
-    stats: 'Statistics', totalWorkouts: 'Total Workouts', thisWeek: 'This Week',
-    totalSets: 'Total Sets', exercises: 'Exercises', progressPerExercise: 'Progress per Exercise',
-    noDataYet: 'No data yet', trainedX: '× trained', max: 'Max', data: 'Data',
-    exportData: '📤 Export Data', importData: '📥 Import Data',
-    cardio: 'Cardio', logCardio: '+ Log Cardio', noCardioYet: 'No cardio recorded yet',
-    chooseExercise: 'Choose Exercise', newExercise: 'New Exercise', editExercise: 'Edit Exercise',
-    name: 'Name', category: 'Category', save: 'Save', cancel: 'Cancel', deleteExercise: 'Delete Exercise',
-    namePlaceholder: 'e.g. Bench Press',
-    cats: { Brust:'Chest', Rücken:'Back', Schultern:'Shoulders', Arme:'Arms', Beine:'Legs', Core:'Core', Cardio:'Cardio' },
-    lastPerf: 'Last Time', kg: 'kg', reps: 'Reps', addSet: '+ Set', saveSets: 'Save Sets',
-    exportTitle: 'Export Data', exportDesc: 'Copy this code and send it via WhatsApp, iMessage or Email to your other device or a friend. Paste it there under "Import".',
-    copyCode: '📋 Copy Code', copied: '✓ Copied!', close: 'Close',
-    importTitle: 'Import Data', importDesc: 'Paste export code here:', importWarning: '⚠️ Warning: Existing data will be merged, nothing will be lost.',
-    importPlaceholder: 'Paste export code here...', doImport: '✓ Import',
-    importSuccess: '✓ Import successful! Data has been merged.', importError: 'Invalid code. Please paste the complete export code.',
-    cardioTitle: 'Log Cardio', cardioType: 'Type', cardioRun: '🏃 Running', cardioBike: '🚴 Cycling', cardioRow: '🚣 Rowing / Ergometer',
-    distanceKm: 'Distance (km)', distancePlaceholder: 'e.g. 5.5', minutes: 'Minutes', seconds: 'Seconds',
-    calcPace: 'Calculated Pace', minKm: 'min/km', note: 'Note (optional)', notePlaceholder: 'e.g. Interval training',
-    weightUp: 'kg weight', weightDown: 'kg weight', repsUp: ' reps (same weight)', repsDown: ' reps (same weight)', same: '= Same',
-    distanceUp: 'km distance', distanceDown: 'km distance', fasterSame: '↑ Faster (same distance)', slowerSame: '↓ Slower (same distance)',
-    pb: '🏆 Personal Best',
-    confirmCancelWorkout: 'Really cancel workout?', confirmDeleteExercise: 'Really delete exercise?',
-    confirmDeleteWorkout: 'Really delete workout?', confirmDeleteCardio: 'Really delete cardio entry?',
-    noSets: 'No sets', enterExercise: 'Add an exercise', minOneSet: 'Add at least one set!',
-    alreadyAdded: 'Exercise already in workout!', enterName: 'Enter a name!', minValidSet: 'Enter at least one valid set!',
-    enterDistance: 'Please enter distance!', enterTime: 'Please enter time!', enterExportCode: 'Please paste export code!',
-    editSets: 'Edit Sets', enterSets: '+ Enter Sets', newBadge: 'new',
-    // Templates
-    navTemplates: 'Templates', navStretch: 'Stretch',
-    templates: 'Templates', createTemplate: '+ Create Template', noTemplatesYet: 'No templates created yet',
-    templateExercises: 'Exercises', startWorkout: '▶ Start Workout', editTemplate: 'Edit',
-    templateModalTitleNew: 'Create Template', templateModalTitleEdit: 'Edit Template',
-    tmplName: 'Name', tmplNamePlaceholder: 'e.g. Push Day', tmplExercisesLabel: 'Exercises',
-    addExerciseToTemplate: '+ Add Exercise', deleteTemplate: 'Delete Template',
-    confirmDeleteTemplate: 'Really delete template?', tmplExPickerTitle: 'Add Exercise',
-    startFromTemplate: '📋 Start from Template',
-    // Stretch
-    stretch: 'Stretch', logStretch: '+ Log Stretch', noStretchYet: 'No stretches recorded yet',
-    stretchExercise: 'Exercise', stretchDuration: 'Duration (minutes)', stretchNote: 'Note (optional)',
-    stretchNotePlaceholder: 'e.g. both sides', stretchNamePlaceholder: 'e.g. Hip flexor left',
-    stretchModalTitle: 'Log Stretch', minUnit: 'Min',
-    confirmDeleteStretch: 'Really delete stretch entry?',
+    navTraining:'Workout', navTemplates:'Templates', navExercises:'Exercises', navHistory:'History', navStats:'Stats',
+    startTraining:'Start Workout', newWorkout:'+ New Workout', lastWorkouts:'Recent Workouts',
+    fromTemplate:'📋 Start from Template', noWorkoutYet:'No workouts recorded yet',
+    activeWorkout:'Active Workout', done:'Done ✓', addExercise:'+ Add Exercise', cancelWorkout:'Cancel Workout',
+    templates:'Templates', createTemplate:'+ Create Template', noTemplatesYet:'No templates created yet',
+    startWorkout:'▶ Start Workout', editTmpl:'Edit', tmplNewTitle:'Create Template', tmplEditTitle:'Edit Template',
+    tmplName:'Name', tmplNamePlaceholder:'e.g. Push Day', tmplExercises:'Exercises',
+    addExToTmpl:'+ Add Exercise', deleteTmpl:'Delete Template', confirmDeleteTmpl:'Really delete template?', tmplExPickerTitle:'Add Exercise',
+    myExercises:'My Exercises', createExercise:'+ Create Exercise',
+    noTrainingYet:'No training yet', lastTime:'Last time',
+    history:'History', noHistoryYet:'No workouts saved yet', sets:'Sets',
+    stats:'Statistics', totalWorkouts:'Total Workouts', thisWeek:'This Week',
+    totalSets:'Total Sets', exercises:'Exercises', progressPerEx:'Progress per Exercise',
+    noDataYet:'No data yet', trainedX:'× trained', max:'Max', data:'Data',
+    exportData:'📤 Export Data', importData:'📥 Import Data',
+    chooseExercise:'Choose Exercise', newExercise:'New Exercise', editExercise:'Edit Exercise',
+    name:'Name', category:'Category', save:'Save', cancel:'Cancel', deleteExercise:'Delete Exercise',
+    namePlaceholder:'e.g. Bench Press',
+    cats:{ Brust:'Chest', Rücken:'Back', Schultern:'Shoulders', Arme:'Arms', Beine:'Legs', Core:'Core', Cardio:'Cardio', Dehnen:'Stretching' },
+    catHint:{ strength:'📊 Strength: kg & reps', cardio:'🏃 Cardio: distance (km) & time → pace calculated automatically', stretch:'🧘 Stretching: duration in minutes' },
+    lastPerf:'Last Time', kg:'kg', reps:'Reps', addSet:'+ Set', saveSets:'Save',
+    colKm:'km', colTime:'Time', colPace:'Pace', colMin:'Min',
+    exportTitle:'Export Data', exportDesc:'Copy this code and send it via WhatsApp or Email to your other device.',
+    copyCode:'📋 Copy Code', copied:'✓ Copied!', close:'Close',
+    importTitle:'Import Data', importDesc:'Paste export code here:', importWarn:'⚠️ Warning: Data will be merged, nothing will be lost.',
+    importPlaceholder:'Paste export code here...', doImport:'✓ Import',
+    importSuccess:'✓ Import successful! Data has been merged.', importError:'Invalid code.',
+    weightUp:' kg weight', weightDown:' kg weight', repsUp:' reps (same weight)', repsDown:' reps (same weight)', same:'= Same',
+    distanceUp:' km distance', distanceDown:' km distance', fasterSame:'↑ Faster (same distance)', slowerSame:'↓ Slower (same distance)',
+    longerStretch:' min longer', shorterStretch:' min shorter',
+    pb:'🏆 Personal Best',
+    confirmCancelWorkout:'Really cancel workout?', confirmDeleteExercise:'Really delete exercise?',
+    confirmDeleteWorkout:'Really delete workout?',
+    noEntries:'No entries', enterExercise:'Add an exercise', minOneSet:'Add at least one entry!',
+    alreadyAdded:'Exercise already in workout!', enterName:'Enter a name!',
+    minValidSet:'Enter at least one valid entry!', enterExportCode:'Please paste export code!',
+    editSets:'Edit', enterSets:'+ Log', newBadge:'new',
+    noExercisesYet:'No exercises yet', minOneExercise:'Add at least one exercise!',
+    paceLabel:'Pace',
   }
 };
 
 let lang = localStorage.getItem('gymLang') || 'de';
-function t(key) { return TRANSLATIONS[lang][key] || key; }
+function t(key) { return TR[lang][key] || key; }
 
 function toggleLang() {
   lang = lang === 'de' ? 'en' : 'de';
   localStorage.setItem('gymLang', lang);
   applyTranslations();
-  const activePage = document.querySelector('.page.active');
-  if (activePage) {
-    const id = activePage.id.replace('page-', '');
-    if (id === 'log') renderLog();
-    if (id === 'exercises') renderExercises();
-    if (id === 'history') renderHistory();
-    if (id === 'stats') renderStats();
-    if (id === 'cardio') renderCardio();
-    if (id === 'templates') renderTemplates();
-    if (id === 'stretch') renderStretch();
+  const active = document.querySelector('.page.active');
+  if (active) {
+    const id = active.id.replace('page-','');
+    if (id==='log') renderLog();
+    if (id==='exercises') renderExercises();
+    if (id==='history') renderHistory();
+    if (id==='stats') renderStats();
+    if (id==='templates') renderTemplates();
   }
 }
 
 function applyTranslations() {
-  const set = (sel, key) => { const el = document.querySelector(sel); if (el) el.textContent = t(key); };
-  const setEl = (el, key) => { if (el) el.textContent = t(key); };
-  const setPlaceholder = (id, key) => { const el = document.getElementById(id); if (el) el.placeholder = t(key); };
-
-  // Nav labels — use data-page attribute to map correctly
-  const navKeyMap = { log:'navTraining', templates:'navTemplates', cardio:'navCardio', stretch:'navStretch', exercises:'navExercises', history:'navHistory', stats:'navStats' };
+  const s = (id, key) => { const el=document.getElementById(id); if(el) el.textContent=t(key); };
+  const sp = (id, key) => { const el=document.getElementById(id); if(el) el.placeholder=t(key); };
+  // Nav
+  const navMap = {log:'navTraining',templates:'navTemplates',exercises:'navExercises',history:'navHistory',stats:'navStats'};
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    const page = btn.dataset.page;
-    if (!page) return;
-    const textNode = [...btn.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
-    if (textNode && navKeyMap[page]) textNode.textContent = '\n    ' + t(navKeyMap[page]) + '\n  ';
+    const pg = btn.dataset.page;
+    if (!pg || !navMap[pg]) return;
+    const tn = [...btn.childNodes].find(n => n.nodeType===3 && n.textContent.trim());
+    if (tn) tn.textContent = '\n    '+t(navMap[pg])+'\n  ';
   });
-
-  // Pages
-  set('#page-log .section-title', 'startTraining');
-  set('#page-log #quickStart .btn-primary', 'newWorkout');
-  set('#page-log #quickStart .btn-secondary', 'startFromTemplate');
-  const logTitles = document.querySelectorAll('#page-log .section-title');
-  setEl(logTitles[1], 'lastWorkouts');
-  // Templates page
-  const tmplTitles = document.querySelectorAll('#page-templates .section-title');
-  setEl(tmplTitles[0], 'templates');
-  set('#page-templates .btn-primary', 'createTemplate');
-  set('#page-exercises .section-title', 'myExercises');
-  set('#page-exercises .btn-primary', 'createExercise');
-  set('#page-history .section-title', 'history');
-  const statsTitles = document.querySelectorAll('#page-stats .section-title');
-  setEl(statsTitles[0], 'stats');
-  setEl(statsTitles[1], 'progressPerExercise');
-  setEl(statsTitles[2], 'data');
-  const statsBtns = document.querySelectorAll('#page-stats .btn-secondary');
-  setEl(statsBtns[0], 'exportData');
-  setEl(statsBtns[1], 'importData');
-  const cardioTitles = document.querySelectorAll('#page-cardio .section-title');
-  setEl(cardioTitles[0], 'cardio');
-  setEl(cardioTitles[1], 'history');
-  set('#page-cardio .btn-primary', 'logCardio');
-  // Stretch page
-  const stretchTitles = document.querySelectorAll('#page-stretch .section-title');
-  setEl(stretchTitles[0], 'stretch');
-  setEl(stretchTitles[1], 'history');
-  set('#page-stretch .btn-primary', 'logStretch');
-  // Template modal
-  const tmplLabels = document.querySelectorAll('#templateModal .form-label');
-  setEl(tmplLabels[0], 'tmplName');
-  setEl(tmplLabels[1], 'tmplExercisesLabel');
-  setPlaceholder('tmplName', 'tmplNamePlaceholder');
-  set('#templateModal .btn-primary', 'save');
-  set('#templateModal .btn-secondary', 'cancel');
-  set('#templateModal .btn-danger', 'deleteTemplate');
-  set('#tmplExPickerModal .modal-title', 'tmplExPickerTitle');
-  // Stretch modal
-  set('#stretchModal .modal-title', 'stretchModalTitle');
-  const stretchLabels = document.querySelectorAll('#stretchModal .form-label');
-  setEl(stretchLabels[0], 'stretchExercise');
-  setEl(stretchLabels[1], 'stretchDuration');
-  setEl(stretchLabels[2], 'stretchNote');
-  setPlaceholder('stretchName', 'stretchNamePlaceholder');
-  setPlaceholder('stretchNote', 'stretchNotePlaceholder');
-  set('#stretchModal .btn-primary', 'save');
-  set('#stretchModal .btn-secondary', 'cancel');
-
-  // Active workout
-  const btnFinish = document.getElementById('btnFinishWorkout');
-  const btnAdd = document.getElementById('btnAddExercise');
-  const btnCancel = document.getElementById('btnCancelWorkout');
-  const activeLabel = document.getElementById('activeWorkoutLabel');
-  if (btnFinish) btnFinish.textContent = t('done');
-  if (btnAdd) btnAdd.textContent = t('addExercise');
-  if (btnCancel) btnCancel.textContent = t('cancelWorkout');
-  if (activeLabel) activeLabel.textContent = t('activeWorkout');
-
-  // Exercise picker modal
-  set('#exercisePickerModal .modal-title', 'chooseExercise');
-
-  // Add exercise modal
-  const addExLabels = document.querySelectorAll('#addExerciseModal .form-label');
-  setEl(addExLabels[0], 'name');
-  setEl(addExLabels[1], 'category');
-  set('#addExerciseModal .btn-primary', 'save');
-  set('#addExerciseModal .btn-secondary', 'cancel');
-  set('#addExerciseModal .btn-danger', 'deleteExercise');
-  setPlaceholder('exName', 'namePlaceholder');
-  // Translate category options (value stays German as DB key)
-  document.querySelectorAll('#exCategory option').forEach(opt => {
-    opt.textContent = t('cats')[opt.value] || opt.value;
-  });
-
-  // Cardio modal
-  set('#cardioModal .modal-title', 'cardioTitle');
-  const cardioLabelsEls = document.querySelectorAll('#cardioModal .form-label');
-  setEl(cardioLabelsEls[0], 'cardioType');
-  setEl(cardioLabelsEls[1], 'distanceKm');
-  setEl(cardioLabelsEls[2], 'minutes');
-  setEl(cardioLabelsEls[3], 'seconds');
-  setEl(cardioLabelsEls[4], 'note');
-  const runOpt = document.querySelector('#cardioModal option[value="laufen"]');
-  const bikeOpt = document.querySelector('#cardioModal option[value="radfahren"]');
-  const rowOpt = document.querySelector('#cardioModal option[value="rudern"]');
-  if (runOpt) runOpt.textContent = t('cardioRun');
-  if (bikeOpt) bikeOpt.textContent = t('cardioBike');
-  if (rowOpt) rowOpt.textContent = t('cardioRow');
-  setPlaceholder('cardioDistance', 'distancePlaceholder');
-  setPlaceholder('cardioNote', 'notePlaceholder');
-  set('#cardioModal .btn-primary', 'save');
-  set('#cardioModal .btn-secondary', 'cancel');
-  // Pace preview label
-  const paceLabel = document.querySelector('#cardioPacePreview div:first-child');
-  if (paceLabel) paceLabel.textContent = t('calcPace');
-  const paceUnit = document.querySelector('#cardioPacePreview div:last-child');
-  if (paceUnit) paceUnit.textContent = t('minKm');
-
-  // Export modal
-  set('#exportModal .modal-title', 'exportTitle');
-  set('#exportModal p', 'exportDesc');
-  set('#exportModal .btn-primary', 'copyCode');
-  set('#exportModal .btn-secondary', 'close');
-
-  // Import modal
-  set('#importModal .modal-title', 'importTitle');
-  const importPs = document.querySelectorAll('#importModal p');
-  setEl(importPs[0], 'importDesc');
-  setEl(importPs[1], 'importWarning');
-  setPlaceholder('importText', 'importPlaceholder');
-  set('#importModal .btn-primary', 'doImport');
-  set('#importModal .btn-secondary', 'cancel');
-
+  // Log page
+  s('ttlStartTraining','startTraining'); s('btnNewWorkout','newWorkout'); s('btnFromTemplate','fromTemplate');
+  s('ttlLastWorkouts','lastWorkouts'); s('activeWorkoutLabel','activeWorkout');
+  s('btnFinishWorkout','done'); s('btnAddExercise','addExercise'); s('btnCancelWorkout','cancelWorkout');
+  // Templates
+  s('ttlTemplates','templates'); s('btnCreateTemplate','createTemplate');
+  s('templateModalTitle', editingTemplateId ? 'tmplEditTitle' : 'tmplNewTitle');
+  s('lblTmplName','tmplName'); sp('tmplName','tmplNamePlaceholder');
+  s('lblTmplEx','tmplExercises'); s('btnAddExToTemplate','addExToTmpl');
+  s('btnSaveTemplate','save'); s('deleteTmplBtn','deleteTmpl'); s('btnCancelTemplate','cancel');
+  s('ttlTmplExPicker','tmplExPickerTitle');
+  // Exercises
+  s('ttlExercises','myExercises'); s('btnCreateExercise','createExercise');
+  s('lblExName','name'); s('lblExCategory','category');
+  s('btnSaveExercise','save'); s('deleteExBtn','deleteExercise'); s('btnCancelExercise','cancel');
+  sp('exName','namePlaceholder');
+  document.querySelectorAll('#exCategory option').forEach(o => { o.textContent = t('cats')[o.value] || o.value; });
+  updateCategoryHint();
+  // History
+  s('ttlHistory','history');
+  // Stats
+  s('ttlStats','stats'); s('ttlProgress','progressPerEx'); s('ttlData','data');
+  s('btnExport','exportData'); s('btnImport','importData');
   // Sets modal
-  const colKg = document.getElementById('colLabelKg');
-  const colReps = document.getElementById('colLabelReps');
-  if (colKg) colKg.textContent = t('kg');
-  if (colReps) colReps.textContent = t('reps');
-  set('#logSetsModal .btn-secondary', 'addSet');
-  set('#logSetsModal .btn-primary', 'saveSets');
-
-  // Date & lang button
-  const now2 = new Date();
+  s('btnAddRow','addSet'); s('btnSaveSets','saveSets');
+  // Export/import
+  s('ttlExport','exportTitle'); s('txtExportDesc','exportDesc');
+  s('btnCopyExport','copyCode'); s('btnCloseExport','close');
+  s('ttlImport','importTitle'); s('txtImportDesc','importDesc'); s('txtImportWarn','importWarn');
+  sp('importText','importPlaceholder'); s('btnDoImport','doImport'); s('btnCancelImport','cancel');
+  s('ttlChooseExercise','chooseExercise');
+  // Date
+  const now = new Date();
   const dateEl = document.getElementById('headerDate');
-  if (dateEl) dateEl.textContent = now2.toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB', {weekday:'short', day:'numeric', month:'short'});
+  if (dateEl) dateEl.textContent = now.toLocaleDateString(lang==='de'?'de-DE':'en-GB',{weekday:'short',day:'numeric',month:'short'});
   const langBtn = document.getElementById('langBtn');
-  if (langBtn) langBtn.textContent = lang === 'de' ? 'EN' : 'DE';
+  if (langBtn) langBtn.textContent = lang==='de' ? 'EN' : 'DE';
+}
+
+function updateCategoryHint() {
+  const sel = document.getElementById('exCategory');
+  const hint = document.getElementById('categoryHint');
+  if (!sel || !hint) return;
+  const type = getCatType(sel.value);
+  hint.textContent = t('catHint')[type] || '';
 }
 
 // ---- DATA ----
 let db = JSON.parse(localStorage.getItem('gymdb') || '{"exercises":[],"workouts":[],"currentWorkout":null}');
+if (!db.templates) db.templates = [];
 let editingExId = null;
 let currentWorkoutExIdx = null;
+let currentExCategory = 'strength';
 let timerInterval = null;
+let editingTemplateId = null;
+let tmplExercises = [];
 
 const DEFAULT_EXERCISES = [
-  {id:'e1', name:'Bankdrücken', category:'Brust'},
-  {id:'e2', name:'Kniebeugen', category:'Beine'},
-  {id:'e3', name:'Kreuzheben', category:'Rücken'},
-  {id:'e4', name:'Schulterdrücken', category:'Schultern'},
-  {id:'e5', name:'Klimmzüge', category:'Rücken'},
-  {id:'e6', name:'Bizeps Curls', category:'Arme'},
-  {id:'e7', name:'Trizeps Dips', category:'Arme'},
-  {id:'e8', name:'Beinpresse', category:'Beine'},
+  {id:'e1',name:'Bankdrücken',category:'Brust'},
+  {id:'e2',name:'Kniebeugen',category:'Beine'},
+  {id:'e3',name:'Kreuzheben',category:'Rücken'},
+  {id:'e4',name:'Schulterdrücken',category:'Schultern'},
+  {id:'e5',name:'Klimmzüge',category:'Rücken'},
+  {id:'e6',name:'Bizeps Curls',category:'Arme'},
+  {id:'e7',name:'Trizeps Dips',category:'Arme'},
+  {id:'e8',name:'Beinpresse',category:'Beine'},
+  {id:'e9',name:'Laufen',category:'Cardio'},
+  {id:'e10',name:'Hüftbeuger',category:'Dehnen'},
 ];
-
-if (db.exercises.length === 0) {
-  db.exercises = DEFAULT_EXERCISES;
-  save();
-}
+if (db.exercises.length === 0) { db.exercises = DEFAULT_EXERCISES; save(); }
 
 function save() { localStorage.setItem('gymdb', JSON.stringify(db)); }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function getExName(id) { const e=db.exercises.find(x=>x.id===id); return e?e.name:(lang==='de'?'Unbekannt':'Unknown'); }
+function getEx(id) { return db.exercises.find(x=>x.id===id); }
 
 // ---- NAV ----
+const PAGE_ORDER = ['log','templates','exercises','history','stats'];
 function showPage(id, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const page = document.getElementById('page-' + id);
-  if (page) page.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const pg = document.getElementById('page-'+id);
+  if (pg) pg.classList.add('active');
   if (btn) btn.classList.add('active');
-  if (id === 'log') renderLog();
-  if (id === 'exercises') renderExercises();
-  if (id === 'history') renderHistory();
-  if (id === 'stats') renderStats();
-  if (id === 'cardio') renderCardio();
-  if (id === 'templates') renderTemplates();
-  if (id === 'stretch') renderStretch();
+  if (id==='log') renderLog();
+  if (id==='exercises') renderExercises();
+  if (id==='history') renderHistory();
+  if (id==='stats') renderStats();
+  if (id==='templates') renderTemplates();
 }
 
-// ---- DATE ----
-const headerDate = document.getElementById('headerDate');
-const now = new Date();
-headerDate.textContent = now.toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB', {weekday:'short', day:'numeric', month:'short'});
-document.getElementById('langBtn').textContent = lang === 'de' ? 'EN' : 'DE';
-
-// ---- MODAL ----
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-// ---- LOG PAGE ----
+// ---- LOG ----
 function renderLog() {
   if (db.currentWorkout) {
-    document.getElementById('quickStart').style.display = 'none';
-    document.getElementById('activeWorkout').style.display = 'block';
-    renderActiveWorkout();
-    startTimer();
-    return;
+    document.getElementById('quickStart').style.display='none';
+    document.getElementById('activeWorkout').style.display='block';
+    renderActiveWorkout(); startTimer(); return;
   }
-  document.getElementById('quickStart').style.display = 'block';
-  document.getElementById('activeWorkout').style.display = 'none';
+  document.getElementById('quickStart').style.display='block';
+  document.getElementById('activeWorkout').style.display='none';
+  const locale = lang==='de'?'de-DE':'en-GB';
   const recent = document.getElementById('recentWorkouts');
-  const ws = [...db.workouts].reverse().slice(0, 5);
-  if (ws.length === 0) {
-    recent.innerHTML = `<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">${t('noWorkoutYet')}</div></div>`;
+  const ws = [...db.workouts].reverse().slice(0,5);
+  if (ws.length===0) {
+    recent.innerHTML=`<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">${t('noWorkoutYet')}</div></div>`;
     return;
   }
-  const locale = lang === 'de' ? 'de-DE' : 'en-GB';
   recent.innerHTML = ws.map(w => {
-    const d = new Date(w.date).toLocaleDateString(locale, {weekday:'short', day:'numeric', month:'short'});
-    const exNames = w.exercises.map(e => getExName(e.exId)).join(', ');
-    const totalSets = w.exercises.reduce((a,e) => a + e.sets.length, 0);
+    const d = new Date(w.date).toLocaleDateString(locale,{weekday:'short',day:'numeric',month:'short'});
+    const exNames = w.exercises.map(e=>getExName(e.exId)).join(', ');
+    const totalSets = w.exercises.reduce((a,e)=>a+e.sets.length,0);
     return `<div class="exercise-card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="exercise-name">${d}</div>
@@ -987,110 +565,104 @@ function renderLog() {
   }).join('');
 }
 
-function getExName(exId) {
-  const ex = db.exercises.find(e => e.id === exId);
-  return ex ? ex.name : (lang === 'de' ? 'Unbekannt' : 'Unknown');
-}
-
-// ---- WORKOUT ----
 function openNewWorkout() {
-  db.currentWorkout = { id: uid(), date: Date.now(), startTime: Date.now(), exercises: [] };
+  db.currentWorkout={id:uid(),date:Date.now(),startTime:Date.now(),exercises:[]};
   save();
-  document.getElementById('quickStart').style.display = 'none';
-  document.getElementById('activeWorkout').style.display = 'block';
-  renderActiveWorkout();
-  startTimer();
+  document.getElementById('quickStart').style.display='none';
+  document.getElementById('activeWorkout').style.display='block';
+  renderActiveWorkout(); startTimer();
 }
 
 function renderActiveWorkout() {
   const container = document.getElementById('workoutExercises');
   const cw = db.currentWorkout;
-  // Always refresh static button labels with current language
   const btnFinish = document.getElementById('btnFinishWorkout');
   const btnAdd = document.getElementById('btnAddExercise');
   const btnCancel = document.getElementById('btnCancelWorkout');
   const activeLabel = document.getElementById('activeWorkoutLabel');
-  if (btnFinish) btnFinish.textContent = t('done');
-  if (btnAdd) btnAdd.textContent = t('addExercise');
-  if (btnCancel) btnCancel.textContent = t('cancelWorkout');
-  if (activeLabel) activeLabel.textContent = t('activeWorkout');
-  if (!cw || cw.exercises.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('enterExercise')}</div></div>`;
+  if (btnFinish) btnFinish.textContent=t('done');
+  if (btnAdd) btnAdd.textContent=t('addExercise');
+  if (btnCancel) btnCancel.textContent=t('cancelWorkout');
+  if (activeLabel) activeLabel.textContent=t('activeWorkout');
+  if (!cw||cw.exercises.length===0) {
+    container.innerHTML=`<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('enterExercise')}</div></div>`;
     return;
   }
-  container.innerHTML = cw.exercises.map((e, i) => {
-    const name = getExName(e.exId);
-    const setsHtml = e.sets.length > 0
-      ? e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('')
-      : `<span style="color:var(--muted);font-size:13px;">${t('noSets')}</span>`;
+  container.innerHTML = cw.exercises.map((e,i) => {
+    const ex = getEx(e.exId);
+    const name = ex?ex.name:t('noEntries');
+    const type = ex?getCatType(ex.category):'strength';
+    let setsHtml = '';
+    if (e.sets.length>0) {
+      if (type==='cardio') setsHtml = e.sets.map(s=>`<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
+      else if (type==='stretch') setsHtml = e.sets.map(s=>`<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+      else setsHtml = e.sets.map(s=>`<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+    } else {
+      setsHtml = `<span style="color:var(--muted);font-size:13px;">${t('noEntries')}</span>`;
+    }
+    const catLabel = ex ? (t('cats')[ex.category]||ex.category) : '';
+    const catClass = type==='cardio'?'cat-cardio':type==='stretch'?'cat-stretch':'cat-strength';
     return `<div class="exercise-card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="exercise-name">${name}</div>
+        <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span></div>
         <button class="close-btn" onclick="removeWorkoutExercise(${i})">✕</button>
       </div>
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
       <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="openLogSets(${i})">
-        ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
+        ${e.sets.length>0?t('editSets'):t('enterSets')}
       </button>
     </div>`;
   }).join('');
 }
 
 function removeWorkoutExercise(idx) {
-  db.currentWorkout.exercises.splice(idx, 1);
-  save();
-  renderActiveWorkout();
+  db.currentWorkout.exercises.splice(idx,1); save(); renderActiveWorkout();
 }
 
 function finishWorkout() {
   const cw = db.currentWorkout;
   if (!cw) return;
-  const hasData = cw.exercises.some(e => e.sets.length > 0);
+  const hasData = cw.exercises.some(e=>e.sets.length>0);
   if (!hasData) { alert(t('minOneSet')); return; }
-  cw.exercises = cw.exercises.filter(e => e.sets.length > 0);
-  db.workouts.push(cw);
-  db.currentWorkout = null;
-  stopTimer();
-  save();
-  document.getElementById('activeWorkout').style.display = 'none';
-  document.getElementById('quickStart').style.display = 'block';
-  renderLog();
-  renderHistory();
+  cw.exercises = cw.exercises.filter(e=>e.sets.length>0);
+  db.workouts.push(cw); db.currentWorkout=null; stopTimer(); save();
+  document.getElementById('activeWorkout').style.display='none';
+  document.getElementById('quickStart').style.display='block';
+  renderLog(); renderHistory();
 }
 
 function cancelWorkout() {
   if (!confirm(t('confirmCancelWorkout'))) return;
-  db.currentWorkout = null;
-  stopTimer();
-  save();
-  document.getElementById('activeWorkout').style.display = 'none';
-  document.getElementById('quickStart').style.display = 'block';
+  db.currentWorkout=null; stopTimer(); save();
+  document.getElementById('activeWorkout').style.display='none';
+  document.getElementById('quickStart').style.display='block';
 }
 
-// ---- TIMER ----
 function startTimer() {
   stopTimer();
   const cw = db.currentWorkout;
   if (!cw) return;
-  timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - cw.startTime) / 1000);
-    const m = Math.floor(elapsed / 60).toString().padStart(2,'0');
-    const s = (elapsed % 60).toString().padStart(2,'0');
-    document.getElementById('timerDisplay').textContent = m + ':' + s;
-  }, 1000);
+  timerInterval = setInterval(()=>{
+    const el = Math.floor((Date.now()-cw.startTime)/1000);
+    const m = Math.floor(el/60).toString().padStart(2,'0');
+    const s = (el%60).toString().padStart(2,'0');
+    document.getElementById('timerDisplay').textContent=m+':'+s;
+  },1000);
 }
-function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+function stopTimer() { if (timerInterval){clearInterval(timerInterval);timerInterval=null;} }
 
 // ---- EXERCISE PICKER ----
 function openExercisePicker() {
   const list = document.getElementById('exercisePickerList');
-  const categories = [...new Set(db.exercises.map(e => e.category))];
+  const categories = [...new Set(db.exercises.map(e=>e.category))];
   list.innerHTML = categories.map(cat => {
-    const exs = db.exercises.filter(e => e.category === cat);
-    const catLabel = t('cats')[cat] || cat;
-    return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>` +
-      exs.map(e => `<div class="exercise-list-item" onclick="addExerciseToWorkout('${e.id}')">
-        <div class="exercise-list-name">${e.name}</div>
+    const catLabel = t('cats')[cat]||cat;
+    const type = getCatType(cat);
+    const catClass = type==='cardio'?'cat-cardio':type==='stretch'?'cat-stretch':'cat-strength';
+    const exs = db.exercises.filter(e=>e.category===cat);
+    return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>`+
+      exs.map(e=>`<div class="exercise-list-item" onclick="addExerciseToWorkout('${e.id}')">
+        <div class="exercise-list-name">${e.name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </div>`).join('');
   }).join('<div class="divider"></div>');
@@ -1099,182 +671,241 @@ function openExercisePicker() {
 
 function addExerciseToWorkout(exId) {
   if (!db.currentWorkout) return;
-  const exists = db.currentWorkout.exercises.find(e => e.exId === exId);
-  if (exists) { alert(t('alreadyAdded')); return; }
-  db.currentWorkout.exercises.push({ exId, sets: [] });
-  save();
-  closeModal('exercisePickerModal');
-  renderActiveWorkout();
+  if (db.currentWorkout.exercises.find(e=>e.exId===exId)) { alert(t('alreadyAdded')); return; }
+  db.currentWorkout.exercises.push({exId,sets:[]});
+  save(); closeModal('exercisePickerModal'); renderActiveWorkout();
 }
 
-// ---- LOG SETS ----
+// ---- LOG SETS (smart) ----
 function openLogSets(idx) {
   currentWorkoutExIdx = idx;
   const cw = db.currentWorkout;
   const we = cw.exercises[idx];
-  const ex = db.exercises.find(e => e.id === we.exId);
-  document.getElementById('logSetsTitle').textContent = ex ? ex.name : '';
+  const ex = getEx(we.exId);
+  const type = ex ? getCatType(ex.category) : 'strength';
+  currentExCategory = type;
+  document.getElementById('logSetsTitle').textContent = ex?ex.name:'';
+
+  // Update column headers & layout
+  const colLabels = document.getElementById('setColLabels');
+  const col1 = document.getElementById('colLabel1');
+  const col2 = document.getElementById('colLabel2');
+  const btnAddRow = document.getElementById('btnAddRow');
+  if (type==='cardio') {
+    colLabels.className='set-col-labels cardio-labels';
+    colLabels.innerHTML=`<div></div><div class="set-col-label">${t('colKm')}</div><div class="set-col-label">${t('colTime')}</div><div class="set-col-label">${t('colPace')}</div><div></div>`;
+    btnAddRow.textContent='+ '+t('addSet').replace('+ ','');
+  } else if (type==='stretch') {
+    colLabels.className='set-col-labels stretch-labels';
+    colLabels.innerHTML=`<div></div><div class="set-col-label">${t('colMin')}</div><div></div>`;
+    btnAddRow.textContent='+ '+t('addSet').replace('+ ','');
+  } else {
+    colLabels.className='set-col-labels';
+    colLabels.innerHTML=`<div></div><div class="set-col-label" id="colLabel1">${t('kg')}</div><div class="set-col-label" id="colLabel2">${t('reps')}</div><div></div>`;
+    btnAddRow.textContent=t('addSet');
+  }
 
   // Last performance
   const lastPerf = getLastPerformance(we.exId, cw.id);
   const lpDiv = document.getElementById('lastPerformance');
-  if (lastPerf) {
-    const sets = lastPerf.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
-    lpDiv.innerHTML = `<div class="exercise-last"><div class="label">${t('lastPerf')}</div><div class="sets-row">${sets}</div></div>`;
-  } else {
-    lpDiv.innerHTML = '';
-  }
+  if (lastPerf && lastPerf.sets.length>0) {
+    let setsHtml='';
+    if (type==='cardio') setsHtml=lastPerf.sets.map(s=>`<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
+    else if (type==='stretch') setsHtml=lastPerf.sets.map(s=>`<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+    else setsHtml=lastPerf.sets.map(s=>`<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+    lpDiv.innerHTML=`<div class="exercise-last"><div class="label">${t('lastPerf')}</div><div class="sets-row">${setsHtml}</div></div>`;
+  } else { lpDiv.innerHTML=''; }
 
   const container = document.getElementById('setsContainer');
-  container.innerHTML = '';
-  const setsToLoad = we.sets.length > 0 ? we.sets : (lastPerf ? lastPerf.sets : []);
-  if (setsToLoad.length === 0) {
-    addSetRow();
-  } else {
-    setsToLoad.forEach(s => addSetRow(s.weight, s.reps));
-  }
+  container.innerHTML='';
+  const setsToLoad = we.sets.length>0 ? we.sets : (lastPerf?lastPerf.sets:[]);
+  if (setsToLoad.length===0) addSetRow();
+  else setsToLoad.forEach(s=>addSetRow(s));
   openModal('logSetsModal');
 }
 
 function getLastPerformance(exId, currentWorkoutId) {
-  const relevant = db.workouts
-    .filter(w => w.id !== currentWorkoutId)
-    .filter(w => w.exercises.some(e => e.exId === exId))
-    .sort((a,b) => b.date - a.date);
-  if (relevant.length === 0) return null;
-  return relevant[0].exercises.find(e => e.exId === exId);
+  const relevant = db.workouts.filter(w=>w.id!==currentWorkoutId&&w.exercises.some(e=>e.exId===exId)).sort((a,b)=>b.date-a.date);
+  if (relevant.length===0) return null;
+  return relevant[0].exercises.find(e=>e.exId===exId);
 }
 
-function addSetRow(weight='', reps='') {
+function addSetRow(data) {
   const container = document.getElementById('setsContainer');
-  const idx = container.children.length + 1;
+  const idx = container.children.length+1;
   const row = document.createElement('div');
-  row.className = 'set-row';
-  row.innerHTML = `
-    <span class="set-num">${idx}</span>
-    <input class="set-input" type="number" placeholder="0" value="${weight}" inputmode="decimal" />
-    <input class="set-input" type="number" placeholder="0" value="${reps}" inputmode="numeric" />
-    <button class="remove-set" onclick="this.parentElement.remove(); reindexSets();">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>`;
+  const type = currentExCategory;
+  if (type==='cardio') {
+    row.className='set-row cardio-row';
+    const km=data?data.km:''; const time=data?data.time:''; const pace=data?data.pace:'';
+    row.innerHTML=`
+      <span class="set-num">${idx}</span>
+      <input class="set-input" type="number" placeholder="0.0" value="${km}" inputmode="decimal" oninput="recalcPace(this.parentElement)"/>
+      <input class="set-input" type="text" placeholder="0:00" value="${time}" inputmode="numeric" oninput="recalcPace(this.parentElement)" style="ime-mode:disabled;"/>
+      <input class="set-input pace-display" type="text" placeholder="–" value="${pace}" readonly/>
+      <button class="remove-set" onclick="this.parentElement.remove();reindexSets();">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+  } else if (type==='stretch') {
+    row.className='set-row stretch-row';
+    const min=data?data.minutes:'';
+    row.innerHTML=`
+      <span class="set-num">${idx}</span>
+      <input class="set-input" type="number" placeholder="2" value="${min}" inputmode="decimal" step="0.5" min="0.5"/>
+      <button class="remove-set" onclick="this.parentElement.remove();reindexSets();">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+  } else {
+    row.className='set-row';
+    const w=data?data.weight:''; const r=data?data.reps:'';
+    row.innerHTML=`
+      <span class="set-num">${idx}</span>
+      <input class="set-input" type="number" placeholder="0" value="${w}" inputmode="decimal"/>
+      <input class="set-input" type="number" placeholder="0" value="${r}" inputmode="numeric"/>
+      <button class="remove-set" onclick="this.parentElement.remove();reindexSets();">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+  }
   container.appendChild(row);
 }
 
+function recalcPace(row) {
+  const inputs = row.querySelectorAll('.set-input');
+  const km = parseFloat(inputs[0].value);
+  const timeStr = inputs[1].value.trim();
+  const paceInput = inputs[2];
+  if (!km || !timeStr || !timeStr.includes(':')) { paceInput.value='–'; return; }
+  const parts = timeStr.split(':');
+  const totalMins = parseInt(parts[0]||0) + (parseInt(parts[1]||0)/60);
+  if (km>0 && totalMins>0) {
+    const pace = totalMins/km;
+    const pm = Math.floor(pace);
+    const ps = Math.round((pace-pm)*60).toString().padStart(2,'0');
+    paceInput.value=`${pm}:${ps}`;
+  } else { paceInput.value='–'; }
+}
+
 function reindexSets() {
-  document.querySelectorAll('.set-row').forEach((r, i) => {
-    r.querySelector('.set-num').textContent = i + 1;
-  });
+  document.querySelectorAll('.set-row').forEach((r,i)=>{ const n=r.querySelector('.set-num'); if(n) n.textContent=i+1; });
 }
 
 function saveSets() {
-  const rows = document.querySelectorAll('.set-row');
+  const rows = document.querySelectorAll('#setsContainer .set-row');
   const sets = [];
+  const type = currentExCategory;
   rows.forEach(row => {
     const inputs = row.querySelectorAll('.set-input');
-    const weight = parseFloat(inputs[0].value);
-    const reps = parseInt(inputs[1].value);
-    if (!isNaN(weight) && !isNaN(reps) && reps > 0) {
-      sets.push({ weight, reps });
+    if (type==='cardio') {
+      const km=parseFloat(inputs[0].value); const time=inputs[1].value.trim(); const pace=inputs[2].value;
+      if (km>0&&time) sets.push({km,time,pace});
+    } else if (type==='stretch') {
+      const minutes=parseFloat(inputs[0].value);
+      if (minutes>0) sets.push({minutes});
+    } else {
+      const weight=parseFloat(inputs[0].value); const reps=parseInt(inputs[1].value);
+      if (!isNaN(weight)&&!isNaN(reps)&&reps>0) sets.push({weight,reps});
     }
   });
-  if (sets.length === 0) { alert(t('minValidSet')); return; }
-  db.currentWorkout.exercises[currentWorkoutExIdx].sets = sets;
-  save();
-  closeModal('logSetsModal');
-  renderActiveWorkout();
+  if (sets.length===0) { alert(t('minValidSet')); return; }
+  db.currentWorkout.exercises[currentWorkoutExIdx].sets=sets;
+  save(); closeModal('logSetsModal'); renderActiveWorkout();
 }
 
 // ---- EXERCISES PAGE ----
 function renderExercises() {
   const list = document.getElementById('exercisesList');
-  const categories = [...new Set(db.exercises.map(e => e.category))];
+  const categories = [...new Set(db.exercises.map(e=>e.category))];
   list.innerHTML = categories.map(cat => {
-    const exs = db.exercises.filter(e => e.category === cat);
-    const catLabel = t('cats')[cat] || cat;
-    return `<div style="margin-bottom:4px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>` +
-      exs.map(e => `<div class="exercise-card" onclick="openEditExercise('${e.id}')">
+    const catLabel = t('cats')[cat]||cat;
+    const type = getCatType(cat);
+    const catClass = type==='cardio'?'cat-cardio':type==='stretch'?'cat-stretch':'cat-strength';
+    const exs = db.exercises.filter(e=>e.category===cat);
+    return `<div style="margin-bottom:4px;"><span class="cat-badge ${catClass}" style="font-size:11px;">${catLabel}</span></div>`+
+      exs.map(e=>`<div class="exercise-card" onclick="openEditExercise('${e.id}')">
         <div class="exercise-name">${e.name}</div>
         <div class="exercise-meta" style="margin-top:4px;">${getProgressSummary(e.id)}</div>
-      </div>`).join('') + '<div class="divider"></div>';
+      </div>`).join('')+'<div class="divider"></div>';
   }).join('');
 }
 
 function getProgressSummary(exId) {
-  const workouts = db.workouts.filter(w => w.exercises.some(e => e.exId === exId)).sort((a,b) => b.date-a.date);
-  if (workouts.length === 0) return t('noTrainingYet');
-  const last = workouts[0].exercises.find(e => e.exId === exId);
-  const maxW = Math.max(...last.sets.map(s => s.weight));
-  return `${t('lastTime')}: ${maxW}${t('kgMax')}`;
+  const ex = getEx(exId);
+  const type = ex ? getCatType(ex.category) : 'strength';
+  const workouts = db.workouts.filter(w=>w.exercises.some(e=>e.exId===exId)).sort((a,b)=>b.date-a.date);
+  if (workouts.length===0) return t('noTrainingYet');
+  const last = workouts[0].exercises.find(e=>e.exId===exId);
+  if (type==='cardio') {
+    const maxKm = Math.max(...last.sets.map(s=>s.km));
+    return `${t('lastTime')}: ${maxKm}km max`;
+  } else if (type==='stretch') {
+    const total = last.sets.reduce((a,s)=>a+s.minutes,0);
+    return `${t('lastTime')}: ${total} ${t('colMin')}`;
+  } else {
+    const maxW = Math.max(...last.sets.map(s=>s.weight));
+    return `${t('lastTime')}: ${maxW}kg max`;
+  }
 }
 
 function openAddExercise() {
-  editingExId = null;
-  document.getElementById('addExerciseTitle').textContent = t('newExercise');
-  document.getElementById('exName').value = '';
-  document.getElementById('exCategory').value = 'Brust';
-  document.getElementById('deleteExBtn').style.display = 'none';
+  editingExId=null;
+  document.getElementById('addExerciseTitle').textContent=t('newExercise');
+  document.getElementById('exName').value='';
+  document.getElementById('exCategory').value='Brust';
+  document.getElementById('deleteExBtn').style.display='none';
+  updateCategoryHint();
   openModal('addExerciseModal');
 }
 
 function openEditExercise(id) {
-  const ex = db.exercises.find(e => e.id === id);
-  if (!ex) return;
-  editingExId = id;
-  document.getElementById('addExerciseTitle').textContent = t('editExercise');
-  document.getElementById('exName').value = ex.name;
-  document.getElementById('exCategory').value = ex.category;
-  document.getElementById('deleteExBtn').style.display = 'block';
+  const ex=getEx(id); if(!ex) return;
+  editingExId=id;
+  document.getElementById('addExerciseTitle').textContent=t('editExercise');
+  document.getElementById('exName').value=ex.name;
+  document.getElementById('exCategory').value=ex.category;
+  document.getElementById('deleteExBtn').style.display='block';
+  updateCategoryHint();
   openModal('addExerciseModal');
 }
 
 function saveExercise() {
-  const name = document.getElementById('exName').value.trim();
-  const category = document.getElementById('exCategory').value;
+  const name=document.getElementById('exName').value.trim();
+  const category=document.getElementById('exCategory').value;
   if (!name) { alert(t('enterName')); return; }
-  if (editingExId) {
-    const ex = db.exercises.find(e => e.id === editingExId);
-    ex.name = name; ex.category = category;
-  } else {
-    db.exercises.push({ id: uid(), name, category });
-  }
+  if (editingExId) { const ex=getEx(editingExId); ex.name=name; ex.category=category; }
+  else db.exercises.push({id:uid(),name,category});
   save(); closeModal('addExerciseModal'); renderExercises();
 }
 
 function deleteExercise() {
   if (!confirm(t('confirmDeleteExercise'))) return;
-  db.exercises = db.exercises.filter(e => e.id !== editingExId);
+  db.exercises=db.exercises.filter(e=>e.id!==editingExId);
   save(); closeModal('addExerciseModal'); renderExercises();
 }
 
-// ---- HISTORY PAGE ----
+// ---- HISTORY ----
 function deleteWorkout(id) {
   if (!confirm(t('confirmDeleteWorkout'))) return;
-  db.workouts = db.workouts.filter(w => w.id !== id);
-  save();
-  renderHistory();
-  renderStats();
-  renderLog();
+  db.workouts=db.workouts.filter(w=>w.id!==id);
+  save(); renderHistory(); renderLog();
 }
 
 function renderHistory() {
   const list = document.getElementById('historyList');
   const ws = [...db.workouts].reverse();
-  if (ws.length === 0) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Noch kein Training gespeichert</div></div>';
-    return;
-  }
+  const locale = lang==='de'?'de-DE':'en-GB';
+  if (ws.length===0) { list.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">${t('noHistoryYet')}</div></div>`; return; }
   list.innerHTML = ws.map(w => {
-    const locale = lang === 'de' ? 'de-DE' : 'en-GB';
-    const d = new Date(w.date).toLocaleDateString(locale, {weekday:'long', day:'numeric', month:'long'});
-    const exHtml = w.exercises.map(e => {
-      const name = getExName(e.exId);
-      const sets = e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
-      return `<div style="margin-bottom:10px;">
-        <div style="font-weight:600;font-size:14px;margin-bottom:6px;">${name}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">${sets}</div>
-      </div>`;
+    const d=new Date(w.date).toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long'});
+    const exHtml=w.exercises.map(e=>{
+      const ex=getEx(e.exId); const type=ex?getCatType(ex.category):'strength';
+      const name=getExName(e.exId);
+      let setsHtml='';
+      if (type==='cardio') setsHtml=e.sets.map(s=>`<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
+      else if (type==='stretch') setsHtml=e.sets.map(s=>`<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+      else setsHtml=e.sets.map(s=>`<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+      return `<div style="margin-bottom:10px;"><div style="font-weight:600;font-size:14px;margin-bottom:6px;">${name}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div></div>`;
     }).join('');
-    const totalSets = w.exercises.reduce((a,e) => a+e.sets.length, 0);
+    const totalSets=w.exercises.reduce((a,e)=>a+e.sets.length,0);
     return `<div class="history-entry">
       <div class="history-entry-header">
         <div><div class="history-exercise-name">${d}</div></div>
@@ -1282,115 +913,104 @@ function renderHistory() {
           <span class="tag">${totalSets} ${t('sets')}</span>
           <button class="close-btn" onclick="deleteWorkout('${w.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
         </div>
-      </div>
-      ${exHtml}
-    </div>`;
+      </div>${exHtml}</div>`;
   }).join('');
 }
 
-// ---- STATS PAGE ----
+// ---- STATS ----
 function renderStats() {
-  const total = db.workouts.length;
-  const totalSets = db.workouts.reduce((a,w) => a + w.exercises.reduce((b,e) => b+e.sets.length, 0), 0);
-  const totalExs = db.exercises.length;
-  const thisWeek = db.workouts.filter(w => {
-    const d = new Date(w.date);
-    const now2 = new Date();
-    const diff = (now2 - d) / (1000*60*60*24);
-    return diff < 7;
-  }).length;
-
-  document.getElementById('statsGrid').innerHTML = `
+  const total=db.workouts.length;
+  const totalSets=db.workouts.reduce((a,w)=>a+w.exercises.reduce((b,e)=>b+e.sets.length,0),0);
+  const totalExs=db.exercises.length;
+  const thisWeek=db.workouts.filter(w=>(Date.now()-w.date)<7*86400000).length;
+  document.getElementById('statsGrid').innerHTML=`
     <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">${t('totalWorkouts')}</div></div>
     <div class="stat-card"><div class="stat-value">${thisWeek}</div><div class="stat-label">${t('thisWeek')}</div></div>
     <div class="stat-card"><div class="stat-value">${totalSets}</div><div class="stat-label">${t('totalSets')}</div></div>
-    <div class="stat-card"><div class="stat-value">${totalExs}</div><div class="stat-label">${t('exercises')}</div></div>
-  `;
-
-  // Progress per exercise
-  const progList = document.getElementById('progressList');
-  const activeExs = db.exercises.filter(ex => {
-    return db.workouts.some(w => w.exercises.some(e => e.exId === ex.id));
-  });
-
-  if (activeExs.length === 0) {
-    progList.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('noDataYet')}</div></div>`;
-    return;
-  }
-
+    <div class="stat-card"><div class="stat-value">${totalExs}</div><div class="stat-label">${t('exercises')}</div></div>`;
+  const progList=document.getElementById('progressList');
+  const activeExs=db.exercises.filter(ex=>db.workouts.some(w=>w.exercises.some(e=>e.exId===ex.id)));
+  if (activeExs.length===0) { progList.innerHTML=`<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('noDataYet')}</div></div>`; return; }
+  const locale=lang==='de'?'de-DE':'en-GB';
   progList.innerHTML = activeExs.map(ex => {
-    const workoutsWithEx = db.workouts
-      .filter(w => w.exercises.some(e => e.exId === ex.id))
-      .sort((a,b) => a.date - b.date);
+    const type = getCatType(ex.category);
+    const workoutsWithEx = db.workouts.filter(w=>w.exercises.some(e=>e.exId===ex.id)).sort((a,b)=>a.date-b.date);
+    if (workoutsWithEx.length<1) return '';
+    const last = workoutsWithEx[workoutsWithEx.length-1];
+    const lastEntry = last.exercises.find(e=>e.exId===ex.id);
+    const d = new Date(last.date).toLocaleDateString(locale,{day:'numeric',month:'short'});
+    let mainValue='', mainUnit='', progressTag='';
 
-    if (workoutsWithEx.length < 1) return '';
-
-    const getStats = (workout) => {
-      const e = workout.exercises.find(e => e.exId === ex.id);
-      const maxWeight = Math.max(...e.sets.map(s => s.weight));
-      const totalReps = e.sets.reduce((a, s) => a + s.reps, 0);
-      return { maxWeight, totalReps };
-    };
-
-    const last = workoutsWithEx[workoutsWithEx.length - 1];
-    const lastStats = getStats(last);
-    const lastMax = lastStats.maxWeight;
-    let progressTag = '';
-
-    if (workoutsWithEx.length >= 2) {
-      const prev = workoutsWithEx[workoutsWithEx.length - 2];
-      const prevStats = getStats(prev);
-      const weightDiff = lastStats.maxWeight - prevStats.maxWeight;
-      const repsDiff = lastStats.totalReps - prevStats.totalReps;
-
-      if (weightDiff > 0) {
-        progressTag = `<span class="progress-tag up">↑ +${weightDiff}${t('weightUp')}</span>`;
-      } else if (weightDiff < 0) {
-        progressTag = `<span class="progress-tag down">↓ ${weightDiff}${t('weightDown')}</span>`;
-      } else if (repsDiff > 0) {
-        progressTag = `<span class="progress-tag up">↑ +${repsDiff}${t('repsUp')}</span>`;
-      } else if (repsDiff < 0) {
-        progressTag = `<span class="progress-tag down">↓ ${repsDiff}${t('repsDown')}</span>`;
-      } else {
-        progressTag = `<span class="progress-tag same">${t('same')}</span>`;
+    if (type==='cardio') {
+      const maxKm = Math.max(...lastEntry.sets.map(s=>s.km));
+      mainValue=maxKm; mainUnit='km';
+      if (workoutsWithEx.length>=2) {
+        const prev=workoutsWithEx[workoutsWithEx.length-2];
+        const prevEntry=prev.exercises.find(e=>e.exId===ex.id);
+        const prevMax=Math.max(...prevEntry.sets.map(s=>s.km));
+        const diff=+(maxKm-prevMax).toFixed(2);
+        if (diff>0) progressTag=`<span class="progress-tag up">↑ +${diff}${t('distanceUp')}</span>`;
+        else if (diff<0) progressTag=`<span class="progress-tag down">↓ ${diff}${t('distanceDown')}</span>`;
+        else progressTag=`<span class="progress-tag same">${t('same')}</span>`;
+      }
+    } else if (type==='stretch') {
+      const total=lastEntry.sets.reduce((a,s)=>a+s.minutes,0);
+      mainValue=total; mainUnit=t('colMin');
+      if (workoutsWithEx.length>=2) {
+        const prev=workoutsWithEx[workoutsWithEx.length-2];
+        const prevEntry=prev.exercises.find(e=>e.exId===ex.id);
+        const prevTotal=prevEntry.sets.reduce((a,s)=>a+s.minutes,0);
+        const diff=+(total-prevTotal).toFixed(1);
+        if (diff>0) progressTag=`<span class="progress-tag up">↑ +${diff}${t('longerStretch')}</span>`;
+        else if (diff<0) progressTag=`<span class="progress-tag down">↓ ${diff}${t('shorterStretch')}</span>`;
+        else progressTag=`<span class="progress-tag same">${t('same')}</span>`;
+      }
+    } else {
+      const maxW=Math.max(...lastEntry.sets.map(s=>s.weight));
+      mainValue=maxW; mainUnit='kg';
+      if (workoutsWithEx.length>=2) {
+        const prev=workoutsWithEx[workoutsWithEx.length-2];
+        const prevEntry=prev.exercises.find(e=>e.exId===ex.id);
+        const prevMax=Math.max(...prevEntry.sets.map(s=>s.weight));
+        const totalReps=lastEntry.sets.reduce((a,s)=>a+s.reps,0);
+        const prevReps=prevEntry.sets.reduce((a,s)=>a+s.reps,0);
+        const wDiff=maxW-prevMax, rDiff=totalReps-prevReps;
+        if (wDiff>0) progressTag=`<span class="progress-tag up">↑ +${wDiff}${t('weightUp')}</span>`;
+        else if (wDiff<0) progressTag=`<span class="progress-tag down">↓ ${wDiff}${t('weightDown')}</span>`;
+        else if (rDiff>0) progressTag=`<span class="progress-tag up">↑ +${rDiff}${t('repsUp')}</span>`;
+        else if (rDiff<0) progressTag=`<span class="progress-tag down">↓ ${rDiff}${t('repsDown')}</span>`;
+        else progressTag=`<span class="progress-tag same">${t('same')}</span>`;
       }
     }
 
-    const lastSets = last.exercises.find(e => e.exId === ex.id).sets;
-    const prevSets = workoutsWithEx.length >= 2
-      ? workoutsWithEx[workoutsWithEx.length - 2].exercises.find(e => e.exId === ex.id).sets
-      : null;
+    let setsHtml='';
+    if (type==='cardio') setsHtml=lastEntry.sets.map(s=>`<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
+    else if (type==='stretch') setsHtml=lastEntry.sets.map(s=>`<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+    else {
+      const prevSets = workoutsWithEx.length>=2 ? workoutsWithEx[workoutsWithEx.length-2].exercises.find(e=>e.exId===ex.id).sets : null;
+      setsHtml=lastEntry.sets.map((s,i)=>{
+        let diff='';
+        if (prevSets&&prevSets[i]) {
+          const wD=s.weight-prevSets[i].weight, rD=s.reps-prevSets[i].reps;
+          if (wD>0) diff=`<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${wD}kg</span>`;
+          else if (wD<0) diff=`<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${wD}kg</span>`;
+          else if (rD>0) diff=`<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${rD} ${t('reps')}</span>`;
+          else if (rD<0) diff=`<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${rD} ${t('reps')}</span>`;
+        } else if (prevSets&&!prevSets[i]) diff=`<span style="color:var(--accent);font-size:11px;margin-left:4px;">${t('newBadge')}</span>`;
+        return `<div style="display:inline-flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;"><span style="color:var(--muted);font-size:11px;margin-right:4px;">S${i+1}</span>${s.weight}kg × ${s.reps}${diff}</div>`;
+      }).join('');
+    }
 
-    const setsHtml = lastSets.map((s, i) => {
-      let diff = '';
-      if (prevSets && prevSets[i]) {
-        const wDiff = s.weight - prevSets[i].weight;
-        const rDiff = s.reps - prevSets[i].reps;
-        if (wDiff > 0) diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${wDiff}kg</span>`;
-        else if (wDiff < 0) diff = `<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${wDiff}kg</span>`;
-        else if (rDiff > 0) diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${rDiff} ${t('reps')}</span>`;
-        else if (rDiff < 0) diff = `<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${rDiff} ${t('reps')}</span>`;
-      } else if (prevSets && !prevSets[i]) {
-        diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">${t('newBadge')}</span>`;
-      }
-      return `<div style="display:inline-flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
-        <span style="color:var(--muted);font-size:11px;margin-right:4px;">S${i+1}</span>
-        ${s.weight}kg × ${s.reps}${diff}
-      </div>`;
-    }).join('');
-
-    const locale = lang === 'de' ? 'de-DE' : 'en-GB';
-    const d = new Date(last.date).toLocaleDateString(locale, {day:'numeric', month:'short'});
-
+    const catClass = type==='cardio'?'cat-cardio':type==='stretch'?'cat-stretch':'cat-strength';
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div style="font-weight:600;font-size:15px;">${ex.name}</div>
+          <div style="font-weight:600;font-size:15px;">${ex.name} <span class="cat-badge ${catClass}">${t('cats')[ex.category]||ex.category}</span></div>
           <div style="font-size:12px;color:var(--muted);">${d} · ${workoutsWithEx.length}${t('trainedX')}</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">${lastMax}kg</div>
-          <div style="font-size:11px;color:var(--muted);">${t('max')}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">${mainValue}</div>
+          <div style="font-size:11px;color:var(--muted);">${mainUnit}</div>
         </div>
       </div>
       ${progressTag}
@@ -1399,226 +1019,64 @@ function renderStats() {
   }).join('');
 }
 
-// ---- CARDIO ----
-function openLogCardio() {
-  document.getElementById('cardioType').value = 'laufen';
-  document.getElementById('cardioDistance').value = '';
-  document.getElementById('cardioMinutes').value = '';
-  document.getElementById('cardioSeconds').value = '';
-  document.getElementById('cardioNote').value = '';
-  document.getElementById('cardioPacePreview').style.display = 'none';
-  openModal('cardioModal');
-}
-
-function calcPace() {
-  const dist = parseFloat(document.getElementById('cardioDistance').value);
-  const mins = parseInt(document.getElementById('cardioMinutes').value) || 0;
-  const secs = parseInt(document.getElementById('cardioSeconds').value) || 0;
-  const totalMins = mins + secs / 60;
-  const preview = document.getElementById('cardioPacePreview');
-  if (dist > 0 && totalMins > 0) {
-    const pace = totalMins / dist;
-    const paceMin = Math.floor(pace);
-    const paceSec = Math.round((pace - paceMin) * 60).toString().padStart(2, '0');
-    document.getElementById('cardioPaceValue').textContent = `${paceMin}:${paceSec}`;
-    preview.style.display = 'block';
-  } else {
-    preview.style.display = 'none';
-  }
-}
-
-function saveCardio() {
-  const type = document.getElementById('cardioType').value;
-  const dist = parseFloat(document.getElementById('cardioDistance').value);
-  const mins = parseInt(document.getElementById('cardioMinutes').value) || 0;
-  const secs = parseInt(document.getElementById('cardioSeconds').value) || 0;
-  const note = document.getElementById('cardioNote').value.trim();
-
-  if (!dist || dist <= 0) { alert(t('enterDistance')); return; }
-  if (mins === 0 && secs === 0) { alert(t('enterTime')); return; }
-
-  const totalMins = mins + secs / 60;
-  const pace = totalMins / dist;
-  const paceMin = Math.floor(pace);
-  const paceSec = Math.round((pace - paceMin) * 60).toString().padStart(2, '0');
-
-  const entry = {
-    id: uid(),
-    date: Date.now(),
-    type,
-    distance: dist,
-    minutes: mins,
-    seconds: secs,
-    pace: `${paceMin}:${paceSec}`,
-    note
-  };
-
-  if (!db.cardio) db.cardio = [];
-  db.cardio.push(entry);
-  save();
-  closeModal('cardioModal');
-  renderCardio();
-}
-
-const cardioLabels = { laufen: '🏃', radfahren: '🚴', rudern: '🚣' };
-const cardioLabelKeys = { laufen: 'cardioRun', radfahren: 'cardioBike', rudern: 'cardioRow' };
-
-function deleteCardio(id) {
-  if (!confirm(t('confirmDeleteCardio'))) return;
-  db.cardio = db.cardio.filter(e => e.id !== id);
-  save();
-  renderCardio();
-}
-
-function renderCardio() {
-  const list = document.getElementById('cardioList');
-  if (!db.cardio || db.cardio.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-text">${t('noCardioYet')}</div></div>`;
-    return;
-  }
-
-  const entries = [...db.cardio].reverse();
-
-  // Group by type for personal bests
-  const bests = {};
-  db.cardio.forEach(e => {
-    if (!bests[e.type] || e.distance > bests[e.type].distance ||
-       (e.distance === bests[e.type].distance && (e.minutes * 60 + e.seconds) < (bests[e.type].minutes * 60 + bests[e.type].seconds))) {
-      bests[e.type] = e;
-    }
-  });
-
-  list.innerHTML = entries.map((e, idx) => {
-    const locale = lang === 'de' ? 'de-DE' : 'en-GB';
-    const d = new Date(e.date).toLocaleDateString(locale, {weekday:'short', day:'numeric', month:'short'});
-    const timeStr = `${e.minutes}:${e.seconds.toString().padStart(2,'0')}`;
-    const isPB = bests[e.type] && bests[e.type].id === e.id && db.cardio.filter(x => x.type === e.type).length > 1;
-
-    // Compare to previous same-type entry
-    const sameType = [...db.cardio].filter(x => x.type === e.type).sort((a,b) => a.date - b.date);
-    const thisIdx = sameType.findIndex(x => x.id === e.id);
-    let progressTag = '';
-    if (thisIdx > 0) {
-      const prev = sameType[thisIdx - 1];
-      const distDiff = +(e.distance - prev.distance).toFixed(2);
-      const timeCurr = e.minutes * 60 + e.seconds;
-      const timePrev = prev.minutes * 60 + prev.seconds;
-      const paceCurr = timeCurr / e.distance;
-      const pacePrev = timePrev / prev.distance;
-      const paceDiff = paceCurr - pacePrev;
-
-      if (distDiff > 0) progressTag = `<span class="progress-tag up">↑ +${distDiff}${t('distanceUp')}</span>`;
-      else if (distDiff < 0) progressTag = `<span class="progress-tag down">↓ ${distDiff}${t('distanceDown')}</span>`;
-      else if (paceDiff < 0) progressTag = `<span class="progress-tag up">${t('fasterSame')}</span>`;
-      else if (paceDiff > 0) progressTag = `<span class="progress-tag down">${t('slowerSame')}</span>`;
-      else progressTag = `<span class="progress-tag same">${t('same')}</span>`;
-    }
-
-    const cardioTypeLabel = t(cardioLabelKeys[e.type] || 'cardioRun');
-
-    return `<div class="history-entry">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-        <div>
-          <div style="font-weight:600;font-size:15px;">${cardioTypeLabel}</div>
-          <div style="font-size:12px;color:var(--muted);">${d}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          ${isPB ? `<span class="tag">${t('pb')}</span>` : ''}
-          <button class="close-btn" onclick="deleteCardio('${e.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${e.distance}</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">km</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${timeStr}</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${lang === 'de' ? 'Zeit' : 'Time'}</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${e.pace}</div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('minKm')}</div>
-        </div>
-      </div>
-      ${progressTag}
-      ${e.note ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;">📝 ${e.note}</div>` : ''}
-    </div>`;
-  }).join('');
-}
-
 // ---- TEMPLATES ----
-let editingTemplateId = null;
-let tmplExercises = []; // exercise IDs in current template being edited
-
 function renderTemplates() {
   const list = document.getElementById('templatesList');
-  if (!db.templates || db.templates.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">${t('noTemplatesYet')}</div></div>`;
-    return;
+  if (!db.templates||db.templates.length===0) {
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">${t('noTemplatesYet')}</div></div>`; return;
   }
   list.innerHTML = db.templates.map(tmpl => {
-    const exNames = tmpl.exerciseIds.map(id => getExName(id)).join(', ');
-    const count = tmpl.exerciseIds.length;
+    const exNames=tmpl.exerciseIds.map(id=>getExName(id)).join(', ');
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
         <div style="font-weight:700;font-size:17px;">${tmpl.name}</div>
-        <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="font-size:11px;width:auto;padding:4px 10px;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTemplate')}</button>
+        <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTmpl')}</button>
       </div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${count} ${t('templateExercises')} · ${exNames}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${tmpl.exerciseIds.length} ${t('tmplExercises')} · ${exNames}</div>
       <button class="btn btn-primary" style="padding:10px;" onclick="startWorkoutFromTemplate('${tmpl.id}')">${t('startWorkout')}</button>
     </div>`;
   }).join('');
 }
 
 function openCreateTemplate() {
-  editingTemplateId = null;
-  tmplExercises = [];
-  document.getElementById('tmplName').value = '';
-  document.getElementById('templateModalTitle').textContent = t('templateModalTitleNew');
-  document.getElementById('deleteTmplBtn').style.display = 'none';
-  renderTmplExerciseList();
-  openModal('templateModal');
+  editingTemplateId=null; tmplExercises=[];
+  document.getElementById('tmplName').value='';
+  document.getElementById('templateModalTitle').textContent=t('tmplNewTitle');
+  document.getElementById('deleteTmplBtn').style.display='none';
+  renderTmplExerciseList(); openModal('templateModal');
 }
 
 function openEditTemplate(id) {
-  const tmpl = db.templates.find(t => t.id === id);
-  if (!tmpl) return;
-  editingTemplateId = id;
-  tmplExercises = [...tmpl.exerciseIds];
-  document.getElementById('tmplName').value = tmpl.name;
-  document.getElementById('templateModalTitle').textContent = t('templateModalTitleEdit');
-  document.getElementById('deleteTmplBtn').style.display = 'block';
-  renderTmplExerciseList();
-  openModal('templateModal');
+  const tmpl=db.templates.find(t=>t.id===id); if (!tmpl) return;
+  editingTemplateId=id; tmplExercises=[...tmpl.exerciseIds];
+  document.getElementById('tmplName').value=tmpl.name;
+  document.getElementById('templateModalTitle').textContent=t('tmplEditTitle');
+  document.getElementById('deleteTmplBtn').style.display='block';
+  renderTmplExerciseList(); openModal('templateModal');
 }
 
 function renderTmplExerciseList() {
-  const container = document.getElementById('tmplExerciseList');
-  if (tmplExercises.length === 0) {
-    container.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;">${t('noTemplatesYet').split(' ')[0] === 'No' ? 'No exercises added yet' : 'Noch keine Übungen hinzugefügt'}</div>`;
-    return;
+  const container=document.getElementById('tmplExerciseList');
+  if (tmplExercises.length===0) {
+    container.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:8px 0;">${t('noExercisesYet')}</div>`; return;
   }
-  container.innerHTML = tmplExercises.map((exId, i) => `
+  container.innerHTML=tmplExercises.map((exId,i)=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
       <span style="font-size:14px;font-weight:500;">${getExName(exId)}</span>
       <button class="close-btn" onclick="removeTmplExercise(${i})">✕</button>
     </div>`).join('');
 }
 
-function removeTmplExercise(idx) {
-  tmplExercises.splice(idx, 1);
-  renderTmplExerciseList();
-}
+function removeTmplExercise(idx) { tmplExercises.splice(idx,1); renderTmplExerciseList(); }
 
 function openTmplExPicker() {
-  const list = document.getElementById('tmplExPickerList');
-  const categories = [...new Set(db.exercises.map(e => e.category))];
-  list.innerHTML = categories.map(cat => {
-    const catLabel = t('cats')[cat] || cat;
-    const exs = db.exercises.filter(e => e.category === cat);
-    return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>` +
-      exs.map(e => `<div class="exercise-list-item" onclick="addExToTemplate('${e.id}')">
+  const list=document.getElementById('tmplExPickerList');
+  const categories=[...new Set(db.exercises.map(e=>e.category))];
+  list.innerHTML=categories.map(cat=>{
+    const catLabel=t('cats')[cat]||cat;
+    const exs=db.exercises.filter(e=>e.category===cat);
+    return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>`+
+      exs.map(e=>`<div class="exercise-list-item" onclick="addExToTemplate('${e.id}')">
         <div class="exercise-list-name">${e.name}</div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </div>`).join('');
@@ -1628,245 +1086,107 @@ function openTmplExPicker() {
 
 function addExToTemplate(exId) {
   if (tmplExercises.includes(exId)) { alert(t('alreadyAdded')); return; }
-  tmplExercises.push(exId);
-  closeModal('tmplExPickerModal');
-  openModal('templateModal');
-  renderTmplExerciseList();
+  tmplExercises.push(exId); closeModal('tmplExPickerModal'); openModal('templateModal'); renderTmplExerciseList();
 }
 
 function saveTemplate() {
-  const name = document.getElementById('tmplName').value.trim();
+  const name=document.getElementById('tmplName').value.trim();
   if (!name) { alert(t('enterName')); return; }
-  if (tmplExercises.length === 0) { alert(lang === 'de' ? 'Mindestens eine Übung hinzufügen!' : 'Add at least one exercise!'); return; }
-  if (!db.templates) db.templates = [];
-  if (editingTemplateId) {
-    const tmpl = db.templates.find(t => t.id === editingTemplateId);
-    tmpl.name = name;
-    tmpl.exerciseIds = [...tmplExercises];
-  } else {
-    db.templates.push({ id: uid(), name, exerciseIds: [...tmplExercises] });
-  }
-  save();
-  closeModal('templateModal');
-  renderTemplates();
+  if (tmplExercises.length===0) { alert(t('minOneExercise')); return; }
+  if (editingTemplateId) { const tmpl=db.templates.find(t=>t.id===editingTemplateId); tmpl.name=name; tmpl.exerciseIds=[...tmplExercises]; }
+  else db.templates.push({id:uid(),name,exerciseIds:[...tmplExercises]});
+  save(); closeModal('templateModal'); renderTemplates();
 }
 
 function deleteTemplate() {
-  if (!confirm(t('confirmDeleteTemplate'))) return;
-  db.templates = db.templates.filter(t => t.id !== editingTemplateId);
-  save();
-  closeModal('templateModal');
-  renderTemplates();
+  if (!confirm(t('confirmDeleteTmpl'))) return;
+  db.templates=db.templates.filter(t=>t.id!==editingTemplateId);
+  save(); closeModal('templateModal'); renderTemplates();
 }
 
 function startWorkoutFromTemplate(tmplId) {
-  const tmpl = db.templates.find(t => t.id === tmplId);
-  if (!tmpl) return;
-  db.currentWorkout = {
-    id: uid(), date: Date.now(), startTime: Date.now(),
-    templateId: tmplId,
-    exercises: tmpl.exerciseIds.map(exId => ({ exId, sets: [] }))
-  };
+  const tmpl=db.templates.find(t=>t.id===tmplId); if (!tmpl) return;
+  db.currentWorkout={id:uid(),date:Date.now(),startTime:Date.now(),templateId:tmplId,exercises:tmpl.exerciseIds.map(exId=>({exId,sets:[]}))};
   save();
-  // Navigate to log page
-  const logBtn = document.querySelector('.nav-btn[data-page="log"]');
-  showPage('log', logBtn);
-}
-
-// ---- STRETCH ----
-function openLogStretch() {
-  document.getElementById('stretchName').value = '';
-  document.getElementById('stretchDuration').value = '';
-  document.getElementById('stretchNote').value = '';
-  openModal('stretchModal');
-}
-
-function saveStretch() {
-  const name = document.getElementById('stretchName').value.trim();
-  const duration = parseFloat(document.getElementById('stretchDuration').value);
-  const note = document.getElementById('stretchNote').value.trim();
-  if (!name) { alert(t('enterName')); return; }
-  if (!duration || duration <= 0) { alert(lang === 'de' ? 'Bitte Dauer eingeben!' : 'Please enter duration!'); return; }
-  if (!db.stretches) db.stretches = [];
-  db.stretches.push({ id: uid(), date: Date.now(), name, duration, note });
-  save();
-  closeModal('stretchModal');
-  renderStretch();
-}
-
-function deleteStretch(id) {
-  if (!confirm(t('confirmDeleteStretch'))) return;
-  db.stretches = db.stretches.filter(s => s.id !== id);
-  save();
-  renderStretch();
-}
-
-function renderStretch() {
-  const list = document.getElementById('stretchList');
-  if (!db.stretches || db.stretches.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🧘</div><div class="empty-text">${t('noStretchYet')}</div></div>`;
-    return;
-  }
-  const locale = lang === 'de' ? 'de-DE' : 'en-GB';
-  const entries = [...db.stretches].reverse();
-  // Group by date
-  const grouped = {};
-  entries.forEach(s => {
-    const day = new Date(s.date).toLocaleDateString(locale, {weekday:'long', day:'numeric', month:'long'});
-    if (!grouped[day]) grouped[day] = [];
-    grouped[day].push(s);
-  });
-  list.innerHTML = Object.entries(grouped).map(([day, items]) => `
-    <div class="history-entry">
-      <div class="history-entry-header">
-        <div class="history-exercise-name">${day}</div>
-        <span class="tag">${items.reduce((a,s) => a + s.duration, 0)} ${t('minUnit')}</span>
-      </div>
-      ${items.map(s => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-          <div>
-            <div style="font-weight:600;font-size:14px;">${s.name}</div>
-            ${s.note ? `<div style="font-size:12px;color:var(--muted);">📝 ${s.note}</div>` : ''}
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);">${s.duration} <span style="font-size:12px;color:var(--muted);font-family:'DM Sans',sans-serif;">${t('minUnit')}</span></span>
-            <button class="close-btn" onclick="deleteStretch('${s.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
-          </div>
-        </div>`).join('')}
-    </div>`).join('');
+  showPage('log',document.querySelector('.nav-btn[data-page="log"]'));
 }
 
 // ---- EXPORT / IMPORT ----
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
 function openExportModal() {
-  const payload = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
-  document.getElementById('exportText').value = payload;
-  document.getElementById('copyConfirm').style.display = 'none';
+  const payload=btoa(unescape(encodeURIComponent(JSON.stringify(db))));
+  document.getElementById('exportText').value=payload;
+  document.getElementById('copyConfirm').style.display='none';
   openModal('exportModal');
 }
 
 function copyExport() {
-  const text = document.getElementById('exportText');
+  const text=document.getElementById('exportText');
   text.select();
-  try {
-    navigator.clipboard.writeText(text.value).catch(() => document.execCommand('copy'));
-  } catch(e) {
-    document.execCommand('copy');
-  }
-  document.getElementById('copyConfirm').textContent = t('copied');
-  document.getElementById('copyConfirm').style.display = 'block';
+  try { navigator.clipboard.writeText(text.value).catch(()=>document.execCommand('copy')); } catch(e) { document.execCommand('copy'); }
+  document.getElementById('copyConfirm').textContent=t('copied');
+  document.getElementById('copyConfirm').style.display='block';
 }
 
-function openImportModal() {
-  document.getElementById('importText').value = '';
-  openModal('importModal');
-}
+function openImportModal() { document.getElementById('importText').value=''; openModal('importModal'); }
 
 function doImport() {
-  const raw = document.getElementById('importText').value.trim();
+  const raw=document.getElementById('importText').value.trim();
   if (!raw) { alert(t('enterExportCode')); return; }
   try {
-    const imported = JSON.parse(decodeURIComponent(escape(atob(raw))));
-    if (!imported.exercises || !imported.workouts) throw new Error();
-    imported.exercises.forEach(ex => {
-      if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex);
-    });
-    imported.workouts.forEach(w => {
-      if (!db.workouts.find(x => x.id === w.id)) db.workouts.push(w);
-    });
-    save();
-    closeModal('importModal');
-    renderStats();
-    renderHistory();
+    const imported=JSON.parse(decodeURIComponent(escape(atob(raw))));
+    if (!imported.exercises||!imported.workouts) throw new Error();
+    imported.exercises.forEach(ex=>{ if (!db.exercises.find(e=>e.id===ex.id)) db.exercises.push(ex); });
+    imported.workouts.forEach(w=>{ if (!db.workouts.find(x=>x.id===w.id)) db.workouts.push(w); });
+    if (imported.templates) imported.templates.forEach(t=>{ if (!db.templates.find(x=>x.id===t.id)) db.templates.push(t); });
+    save(); closeModal('importModal'); renderStats(); renderHistory();
     alert(t('importSuccess'));
-  } catch(e) {
-    alert(t('importError'));
-  }
+  } catch(e) { alert(t('importError')); }
 }
 
-// ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '2.4';
+// ---- AUTO UPDATE ----
+const CURRENT_VERSION = '3.0';
 const savedVersion = localStorage.getItem('gymtrack_version');
-if (savedVersion && savedVersion !== CURRENT_VERSION) {
-  // New version detected — force reload to clear cache
-  localStorage.setItem('gymtrack_version', CURRENT_VERSION);
-  window.location.reload(true);
-} else if (!savedVersion) {
-  localStorage.setItem('gymtrack_version', CURRENT_VERSION);
-}
+if (savedVersion && savedVersion !== CURRENT_VERSION) { localStorage.setItem('gymtrack_version',CURRENT_VERSION); window.location.reload(true); }
+else if (!savedVersion) { localStorage.setItem('gymtrack_version',CURRENT_VERSION); }
+
+// ---- SWIPE ----
+let swipeStartX=0, swipeStartY=0, swipeStartTime=0;
+document.addEventListener('touchstart', e=>{
+  if (document.querySelector('.modal-overlay.open')) return;
+  swipeStartX=e.touches[0].clientX; swipeStartY=e.touches[0].clientY; swipeStartTime=Date.now();
+},{passive:true});
+document.addEventListener('touchend', e=>{
+  if (document.querySelector('.modal-overlay.open')) return;
+  const dx=e.changedTouches[0].clientX-swipeStartX;
+  const dy=e.changedTouches[0].clientY-swipeStartY;
+  if (Date.now()-swipeStartTime>400||Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.8) return;
+  const active=document.querySelector('.page.active');
+  if (!active) return;
+  const cur=PAGE_ORDER.indexOf(active.id.replace('page-',''));
+  if (cur===-1) return;
+  const next=dx<0?Math.min(cur+1,PAGE_ORDER.length-1):Math.max(cur-1,0);
+  if (next===cur) return;
+  const navBtn=document.querySelector(`.nav-btn[data-page="${PAGE_ORDER[next]}"]`);
+  showPage(PAGE_ORDER[next],navBtn);
+  if (navBtn) navBtn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+},{passive:true});
 
 // ---- INIT ----
 applyTranslations();
-document.getElementById('page-log').classList.add('active');
 renderLog();
 
-// ---- SWIPE NAVIGATION ----
-const PAGE_ORDER = ['log', 'templates', 'cardio', 'stretch', 'exercises', 'history', 'stats'];
-
-let swipeStartX = 0;
-let swipeStartY = 0;
-let swipeStartTime = 0;
-
-document.addEventListener('touchstart', e => {
-  // Don't intercept swipes inside open modals or scrollable containers
-  if (document.querySelector('.modal-overlay.open')) return;
-  swipeStartX = e.touches[0].clientX;
-  swipeStartY = e.touches[0].clientY;
-  swipeStartTime = Date.now();
-}, { passive: true });
-
-document.addEventListener('touchend', e => {
-  if (document.querySelector('.modal-overlay.open')) return;
-  const dx = e.changedTouches[0].clientX - swipeStartX;
-  const dy = e.changedTouches[0].clientY - swipeStartY;
-  const dt = Date.now() - swipeStartTime;
-
-  // Must be fast enough, horizontal enough, and long enough
-  if (dt > 400) return;
-  if (Math.abs(dx) < 60) return;
-  if (Math.abs(dy) > Math.abs(dx) * 0.8) return; // too vertical
-
-  const activePage = document.querySelector('.page.active');
-  if (!activePage) return;
-  const currentId = activePage.id.replace('page-', '');
-  const currentIdx = PAGE_ORDER.indexOf(currentId);
-  if (currentIdx === -1) return;
-
-  let nextIdx;
-  if (dx < 0) {
-    // Swipe left → next page
-    nextIdx = Math.min(currentIdx + 1, PAGE_ORDER.length - 1);
-  } else {
-    // Swipe right → previous page
-    nextIdx = Math.max(currentIdx - 1, 0);
-  }
-
-  if (nextIdx === currentIdx) return;
-
-  const nextPage = PAGE_ORDER[nextIdx];
-  const navBtn = document.querySelector(`.nav-btn[data-page="${nextPage}"]`);
-  showPage(nextPage, navBtn);
-
-  // Scroll nav button into view
-  if (navBtn) navBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-}, { passive: true });
-
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  // templateModal should NOT close on backdrop tap (exercise picker sits on top)
-  if (overlay.id === 'templateModal') return;
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) {
+// Modal backdrop close (templateModal never closes on backdrop)
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+  if (overlay.id==='templateModal') return;
+  overlay.addEventListener('click',e=>{
+    if (e.target===overlay) {
       overlay.classList.remove('open');
-      // If closing the exercise picker, reopen the template modal
-      if (overlay.id === 'tmplExPickerModal') {
-        openModal('templateModal');
-      }
+      if (overlay.id==='tmplExPickerModal') openModal('templateModal');
     }
   });
-});
-
-// Live pace calculation
-['cardioDistance','cardioMinutes','cardioSeconds'].forEach(id => {
-  document.getElementById(id).addEventListener('input', calcPace);
 });
 </script>
 </body>
