@@ -116,6 +116,23 @@
   .cal-detail-workout { border-bottom: 1px solid var(--border); padding: 14px 0; }
   .cal-detail-workout:last-child { border-bottom: none; }
   .cal-time-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+  /* TEMPLATE MULTI-PICKER */
+  .picker-item { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .picker-item:last-child { border-bottom: none; }
+  .picker-item.selected { background: rgba(200,241,53,0.06); border-radius: 8px; padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+  .picker-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .picker-item.selected .picker-check { background: var(--accent); border-color: var(--accent); }
+
+  /* REORDER HANDLES */
+  .tmpl-ex-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .tmpl-ex-row:last-child { border-bottom: none; }
+  .drag-handle { color: var(--muted); cursor: pointer; padding: 4px; display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+  .drag-handle span { display: block; width: 18px; height: 2px; background: var(--muted); border-radius: 1px; }
+  .reorder-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); flex-shrink: 0; font-size: 14px; transition: color 0.15s, border-color 0.15s; }
+  .reorder-btn:active { color: var(--accent); border-color: var(--accent); }
+  .reorder-btn:disabled { opacity: 0.25; cursor: default; }
+  .ex-order-num { font-size: 12px; color: var(--muted); font-weight: 700; width: 18px; text-align: center; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -324,11 +341,15 @@
 <div class="modal-overlay" id="tmplExPickerModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div class="modal-title" id="ttlTmplExPicker">Übung hinzufügen</div>
-      <div class="close-btn" onclick="closeModal('tmplExPickerModal');openModal('templateModal');">✕</div>
+      <div class="close-btn" onclick="closeTmplExPicker()">✕</div>
     </div>
+    <div id="tmplPickerSelectedCount" style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px;min-height:20px;"></div>
     <div id="tmplExPickerList"></div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-primary" id="btnConfirmTmplEx" onclick="confirmTmplExSelection()">Hinzufügen</button>
+    </div>
   </div>
 </div>
 
@@ -396,7 +417,8 @@ const TR = {
     templates:'Vorlagen', createTemplate:'+ Vorlage erstellen', noTemplatesYet:'Noch keine Vorlagen erstellt',
     startWorkout:'▶ Training starten', editTmpl:'Bearbeiten', tmplNewTitle:'Vorlage erstellen', tmplEditTitle:'Vorlage bearbeiten',
     tmplName:'Name', tmplNamePlaceholder:'z.B. Push Day', tmplExercises:'Übungen',
-    addExToTmpl:'+ Übung hinzufügen', deleteTmpl:'Vorlage löschen', confirmDeleteTmpl:'Vorlage wirklich löschen?', tmplExPickerTitle:'Übung hinzufügen',
+    addExToTmpl:'+ Übung hinzufügen', deleteTmpl:'Vorlage löschen', confirmDeleteTmpl:'Vorlage wirklich löschen?', tmplExPickerTitle:'Übungen auswählen',
+    selectedCount:'ausgewählt',
     myExercises:'Meine Übungen', createExercise:'+ Übung erstellen',
     noTrainingYet:'Noch kein Training', lastTime:'Letztes Mal',
     history:'Verlauf', noHistoryYet:'Noch kein Training gespeichert', sets:'Sätze',
@@ -446,7 +468,8 @@ const TR = {
     templates:'Templates', createTemplate:'+ Create Template', noTemplatesYet:'No templates created yet',
     startWorkout:'▶ Start Workout', editTmpl:'Edit', tmplNewTitle:'Create Template', tmplEditTitle:'Edit Template',
     tmplName:'Name', tmplNamePlaceholder:'e.g. Push Day', tmplExercises:'Exercises',
-    addExToTmpl:'+ Add Exercise', deleteTmpl:'Delete Template', confirmDeleteTmpl:'Really delete template?', tmplExPickerTitle:'Add Exercise',
+    addExToTmpl:'+ Add Exercise', deleteTmpl:'Delete Template', confirmDeleteTmpl:'Really delete template?', tmplExPickerTitle:'Select Exercises',
+    selectedCount:'selected',
     myExercises:'My Exercises', createExercise:'+ Create Exercise',
     noTrainingYet:'No training yet', lastTime:'Last time',
     history:'History', noHistoryYet:'No workouts saved yet', sets:'Sets',
@@ -526,7 +549,7 @@ function applyTranslations() {
   s('ttlTemplates','templates'); s('btnCreateTemplate','createTemplate');
   s('templateModalTitle', editingTemplateId ? 'tmplEditTitle' : 'tmplNewTitle');
   s('lblTmplName','tmplName'); sp('tmplName','tmplNamePlaceholder');
-  s('lblTmplEx','tmplExercises'); s('btnAddExToTemplate','addExToTmpl');
+  s('lblTmplEx','tmplExercises'); s('btnAddExToTemplate','addExToTmpl'); s('btnConfirmTmplEx','addExToTmpl');
   s('btnSaveTemplate','save'); s('deleteTmplBtn','deleteTmpl'); s('btnCancelTemplate','cancel');
   s('ttlTmplExPicker','tmplExPickerTitle');
   // Exercises
@@ -1157,28 +1180,109 @@ function renderTmplExerciseList() {
   if (tmplExercises.length===0) {
     container.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:8px 0;">${t('noExercisesYet')}</div>`; return;
   }
-  container.innerHTML=tmplExercises.map((exId,i)=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-      <span style="font-size:14px;font-weight:500;">${getExName(exId)}</span>
-      <button class="close-btn" onclick="removeTmplExercise(${i})">✕</button>
-    </div>`).join('');
+  container.innerHTML=tmplExercises.map((exId,i)=>{
+    const ex=getEx(exId);
+    const type=ex?getCatType(ex.category):'strength';
+    const catClass=type==='cardio'?'cat-cardio':type==='stretch'?'cat-stretch':'cat-strength';
+    const catLabel=ex?(t('cats')[ex.category]||ex.category):'';
+    const isFirst=i===0, isLast=i===tmplExercises.length-1;
+    return `<div class="tmpl-ex-row">
+      <span class="ex-order-num">${i+1}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:500;">${getExName(exId)}</div>
+        <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button class="reorder-btn" onclick="moveTmplEx(${i},-1)" ${isFirst?'disabled':''}>↑</button>
+        <button class="reorder-btn" onclick="moveTmplEx(${i},1)" ${isLast?'disabled':''}>↓</button>
+        <button class="close-btn" style="margin-left:2px;" onclick="removeTmplExercise(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function moveTmplEx(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= tmplExercises.length) return;
+  [tmplExercises[idx], tmplExercises[newIdx]] = [tmplExercises[newIdx], tmplExercises[idx]];
+  renderTmplExerciseList();
 }
 
 function removeTmplExercise(idx) { tmplExercises.splice(idx,1); renderTmplExerciseList(); }
 
+// Pending selection in picker (multi-select)
+let tmplPickerPending = [];
+
 function openTmplExPicker() {
+  tmplPickerPending = [];
   const list=document.getElementById('tmplExPickerList');
   const categories=[...new Set(db.exercises.map(e=>e.category))];
   list.innerHTML=categories.map(cat=>{
     const catLabel=t('cats')[cat]||cat;
+    const type=getCatType(cat);
+    const catClass=type==='cardio'?'cat-cardio':type==='stretch'?'cat-stretch':'cat-strength';
     const exs=db.exercises.filter(e=>e.category===cat);
-    return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>`+
-      exs.map(e=>`<div class="exercise-list-item" onclick="addExToTemplate('${e.id}')">
-        <div class="exercise-list-name">${e.name}</div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </div>`).join('');
+    return `<div style="margin-bottom:8px;"><span class="cat-badge ${catClass}" style="font-size:11px;">${catLabel}</span></div>`+
+      exs.map(e=>{
+        const alreadyIn=tmplExercises.includes(e.id);
+        return `<div class="picker-item${alreadyIn?' selected':''}" id="pickerItem_${e.id}" onclick="toggleTmplPickerItem('${e.id}',${alreadyIn})">
+          <div class="exercise-list-name" style="flex:1;">${e.name}</div>
+          <div class="picker-check" id="pickerCheck_${e.id}">${alreadyIn?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>
+        </div>`;
+      }).join('');
   }).join('<div class="divider"></div>');
+  updateTmplPickerCount();
   openModal('tmplExPickerModal');
+}
+
+function toggleTmplPickerItem(exId, alreadyIn) {
+  if (alreadyIn) return; // can't deselect already-in exercises
+  const idx = tmplPickerPending.indexOf(exId);
+  const item = document.getElementById('pickerItem_'+exId);
+  const check = document.getElementById('pickerCheck_'+exId);
+  if (idx === -1) {
+    tmplPickerPending.push(exId);
+    item.classList.add('selected');
+    check.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+  } else {
+    tmplPickerPending.splice(idx,1);
+    item.classList.remove('selected');
+    check.innerHTML='';
+  }
+  updateTmplPickerCount();
+}
+
+function updateTmplPickerCount() {
+  const el = document.getElementById('tmplPickerSelectedCount');
+  const btn = document.getElementById('btnConfirmTmplEx');
+  const n = tmplPickerPending.length;
+  if (n===0) {
+    el.textContent='';
+    btn.textContent=t('addExToTmpl');
+    btn.style.opacity='0.5';
+    btn.style.pointerEvents='none';
+  } else {
+    el.textContent=`${n} ${t('selectedCount')}`;
+    btn.textContent=`${t('addExToTmpl')} (${n})`;
+    btn.style.opacity='1';
+    btn.style.pointerEvents='auto';
+  }
+}
+
+function confirmTmplExSelection() {
+  tmplPickerPending.forEach(exId => {
+    if (!tmplExercises.includes(exId)) tmplExercises.push(exId);
+  });
+  tmplPickerPending=[];
+  closeModal('tmplExPickerModal');
+  openModal('templateModal');
+  renderTmplExerciseList();
+}
+
+function closeTmplExPicker() {
+  tmplPickerPending=[];
+  closeModal('tmplExPickerModal');
+  openModal('templateModal');
 }
 
 function addExToTemplate(exId) {
