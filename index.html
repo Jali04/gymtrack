@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="2.3">
+<meta name="version" content="2.4">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -591,7 +591,7 @@
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div class="modal-title" id="tmplExPickerTitle">Übung hinzufügen</div>
-      <div class="close-btn" onclick="closeModal('tmplExPickerModal')">✕</div>
+      <div class="close-btn" onclick="closeModal('tmplExPickerModal'); openModal('templateModal');">✕</div>
     </div>
     <div id="tmplExPickerList"></div>
   </div>
@@ -1630,6 +1630,7 @@ function addExToTemplate(exId) {
   if (tmplExercises.includes(exId)) { alert(t('alreadyAdded')); return; }
   tmplExercises.push(exId);
   closeModal('tmplExPickerModal');
+  openModal('templateModal');
   renderTmplExerciseList();
 }
 
@@ -1783,7 +1784,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE CHECK ----
-const CURRENT_VERSION = '2.3';
+const CURRENT_VERSION = '2.4';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
   // New version detected — force reload to clear cache
@@ -1850,8 +1851,16 @@ document.addEventListener('touchend', e => {
 }, { passive: true });
 
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  // templateModal should NOT close on backdrop tap (exercise picker sits on top)
+  if (overlay.id === 'templateModal') return;
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('open');
+    if (e.target === overlay) {
+      overlay.classList.remove('open');
+      // If closing the exercise picker, reopen the template modal
+      if (overlay.id === 'tmplExPickerModal') {
+        openModal('templateModal');
+      }
+    }
   });
 });
 
