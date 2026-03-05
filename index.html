@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="3.1">
+<meta name="version" content="3.2">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -262,6 +262,10 @@
       </select>
     </div>
     <div id="categoryHint" style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;"></div>
+    <div class="form-group">
+      <label class="form-label" id="lblExNotes">Notizen</label>
+      <textarea class="form-input" id="exNotes" placeholder="z.B. Schulterblätter zusammenziehen, nicht hochwölben..." style="resize:none;height:80px;line-height:1.5;"></textarea>
+    </div>
     <button class="btn btn-primary" onclick="saveExercise()" id="btnSaveExercise">Speichern</button>
     <button class="btn btn-danger" id="deleteExBtn" style="display:none;" onclick="deleteExercise()">Übung löschen</button>
     <button class="btn btn-secondary" onclick="closeModal('addExerciseModal')" id="btnCancelExercise">Abbrechen</button>
@@ -286,6 +290,8 @@
     <div class="sets-container" id="setsContainer"></div>
     <button class="btn btn-secondary btn-sm" id="btnAddRow" onclick="addSetRow()">+ Satz</button>
     <div style="margin-top:16px;">
+      <label class="form-label" id="lblSessionNote" style="margin-bottom:6px;">Anmerkung (optional)</label>
+      <textarea class="form-input" id="sessionNote" placeholder="z.B. Schulter hat gezwickt, nur 3 Sätze..." style="resize:none;height:70px;line-height:1.5;margin-bottom:12px;"></textarea>
       <button class="btn btn-primary" id="btnSaveSets" onclick="saveSets()">Sätze speichern</button>
     </div>
   </div>
@@ -422,6 +428,8 @@ const TR = {
     editSets:'Bearbeiten', enterSets:'+ Eintragen', newBadge:'neu',
     noExercisesYet:'Noch keine Übungen', minOneExercise:'Mindestens eine Übung hinzufügen!',
     paceLabel:'Tempo',
+    exNotes:'Notizen', exNotesPlaceholder:'z.B. Schulterblätter zusammenziehen...',
+    sessionNote:'Anmerkung (optional)', sessionNotePlaceholder:'z.B. Schulter hat gezwickt...',
     // Calendar
     navCalendar:'Kalender', calNoWorkout:'Kein Training an diesem Tag',
     calStreak:'Streak', calDays:'Tage', calThisMonth:'Dieser Monat', calWorkouts:'Trainings',
@@ -470,6 +478,8 @@ const TR = {
     editSets:'Edit', enterSets:'+ Log', newBadge:'new',
     noExercisesYet:'No exercises yet', minOneExercise:'Add at least one exercise!',
     paceLabel:'Pace',
+    exNotes:'Notes', exNotesPlaceholder:'e.g. retract shoulder blades, keep back flat...',
+    sessionNote:'Note (optional)', sessionNotePlaceholder:'e.g. shoulder felt tight...',
     // Calendar
     navCalendar:'Calendar', calNoWorkout:'No workout on this day',
     calStreak:'Streak', calDays:'days', calThisMonth:'This Month', calWorkouts:'Workouts',
@@ -481,22 +491,20 @@ const TR = {
 };
 
 let lang = localStorage.getItem('gymLang') || 'de';
-function t(key) { return TR[lang][key] || key; }
+function t(key) {
+  const val = TR[lang][key];
+  return (val !== undefined && val !== null) ? val : key;
+}
 
 function toggleLang() {
   lang = lang === 'de' ? 'en' : 'de';
   localStorage.setItem('gymLang', lang);
-  applyTranslations();
+  try { applyTranslations(); } catch(e) { console.warn('applyTranslations error:', e); }
   const active = document.querySelector('.page.active');
-  if (active) {
-    const id = active.id.replace('page-','');
-    if (id==='log') renderLog();
-    if (id==='exercises') renderExercises();
-    if (id==='history') renderHistory();
-    if (id==='stats') renderStats();
-    if (id==='templates') renderTemplates();
-    if (id==='calendar') renderCalendar();
-  }
+  if (!active) return;
+  const id = active.id.replace('page-','');
+  const renders = {log:renderLog, exercises:renderExercises, history:renderHistory, stats:renderStats, templates:renderTemplates, calendar:renderCalendar};
+  if (renders[id]) renders[id]();
 }
 
 function applyTranslations() {
@@ -524,8 +532,11 @@ function applyTranslations() {
   // Exercises
   s('ttlExercises','myExercises'); s('btnCreateExercise','createExercise');
   s('lblExName','name'); s('lblExCategory','category');
+  s('lblExNotes','exNotes');
   s('btnSaveExercise','save'); s('deleteExBtn','deleteExercise'); s('btnCancelExercise','cancel');
-  sp('exName','namePlaceholder');
+  sp('exName','namePlaceholder'); sp('exNotes','exNotesPlaceholder');
+  // Session note label
+  s('lblSessionNote','sessionNote'); sp('sessionNote','sessionNotePlaceholder');
   document.querySelectorAll('#exCategory option').forEach(o => { o.textContent = t('cats')[o.value] || o.value; });
   updateCategoryHint();
   // History
@@ -547,6 +558,9 @@ function applyTranslations() {
   if (dateEl) dateEl.textContent = now.toLocaleDateString(lang==='de'?'de-DE':'en-GB',{weekday:'short',day:'numeric',month:'short'});
   const langBtn = document.getElementById('langBtn');
   if (langBtn) langBtn.textContent = lang==='de' ? 'EN' : 'DE';
+  // Re-render calendar immediately if it's the active page
+  const calPage = document.getElementById('page-calendar');
+  if (calPage && calPage.classList.contains('active')) renderCalendar();
 }
 
 function updateCategoryHint() {
@@ -675,6 +689,7 @@ function renderActiveWorkout() {
         <button class="close-btn" onclick="removeWorkoutExercise(${i})">✕</button>
       </div>
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
+      ${e.note?`<div style="margin-top:8px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>`:''}
       <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="openLogSets(${i})">
         ${e.sets.length>0?t('editSets'):t('enterSets')}
       </button>
@@ -756,8 +771,6 @@ function openLogSets(idx) {
 
   // Update column headers & layout
   const colLabels = document.getElementById('setColLabels');
-  const col1 = document.getElementById('colLabel1');
-  const col2 = document.getElementById('colLabel2');
   const btnAddRow = document.getElementById('btnAddRow');
   if (type==='cardio') {
     colLabels.className='set-col-labels cardio-labels';
@@ -769,20 +782,31 @@ function openLogSets(idx) {
     btnAddRow.textContent='+ '+t('addSet').replace('+ ','');
   } else {
     colLabels.className='set-col-labels';
-    colLabels.innerHTML=`<div></div><div class="set-col-label" id="colLabel1">${t('kg')}</div><div class="set-col-label" id="colLabel2">${t('reps')}</div><div></div>`;
+    colLabels.innerHTML=`<div></div><div class="set-col-label">${t('kg')}</div><div class="set-col-label">${t('reps')}</div><div></div>`;
     btnAddRow.textContent=t('addSet');
   }
 
-  // Last performance
+  // Last performance + exercise notes
   const lastPerf = getLastPerformance(we.exId, cw.id);
   const lpDiv = document.getElementById('lastPerformance');
+  let lpHtml = '';
+  // Show exercise-level notes (from exercise definition)
+  if (ex && ex.notes) {
+    lpHtml += `<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin-bottom:10px;">📝 ${ex.notes}</div>`;
+  }
   if (lastPerf && lastPerf.sets.length>0) {
     let setsHtml='';
     if (type==='cardio') setsHtml=lastPerf.sets.map(s=>`<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
     else if (type==='stretch') setsHtml=lastPerf.sets.map(s=>`<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
     else setsHtml=lastPerf.sets.map(s=>`<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
-    lpDiv.innerHTML=`<div class="exercise-last"><div class="label">${t('lastPerf')}</div><div class="sets-row">${setsHtml}</div></div>`;
-  } else { lpDiv.innerHTML=''; }
+    // Show last session note if it existed
+    const lastNoteHtml = lastPerf.note ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${lastPerf.note}</div>` : '';
+    lpHtml += `<div class="exercise-last"><div class="label">${t('lastPerf')}</div><div class="sets-row">${setsHtml}</div>${lastNoteHtml}</div>`;
+  }
+  lpDiv.innerHTML = lpHtml;
+
+  // Load current session note if already set
+  document.getElementById('sessionNote').value = we.note || '';
 
   const container = document.getElementById('setsContainer');
   container.innerHTML='';
@@ -875,7 +899,8 @@ function saveSets() {
     }
   });
   if (sets.length===0) { alert(t('minValidSet')); return; }
-  db.currentWorkout.exercises[currentWorkoutExIdx].sets=sets;
+  db.currentWorkout.exercises[currentWorkoutExIdx].sets = sets;
+  db.currentWorkout.exercises[currentWorkoutExIdx].note = document.getElementById('sessionNote').value.trim();
   save(); closeModal('logSetsModal'); renderActiveWorkout();
 }
 
@@ -892,6 +917,7 @@ function renderExercises() {
       exs.map(e=>`<div class="exercise-card" onclick="openEditExercise('${e.id}')">
         <div class="exercise-name">${e.name}</div>
         <div class="exercise-meta" style="margin-top:4px;">${getProgressSummary(e.id)}</div>
+        ${e.notes?`<div style="margin-top:8px;font-size:12px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:8px 10px;">📝 ${e.notes}</div>`:''}
       </div>`).join('')+'<div class="divider"></div>';
   }).join('');
 }
@@ -919,6 +945,7 @@ function openAddExercise() {
   document.getElementById('addExerciseTitle').textContent=t('newExercise');
   document.getElementById('exName').value='';
   document.getElementById('exCategory').value='Brust';
+  document.getElementById('exNotes').value='';
   document.getElementById('deleteExBtn').style.display='none';
   updateCategoryHint();
   openModal('addExerciseModal');
@@ -930,6 +957,7 @@ function openEditExercise(id) {
   document.getElementById('addExerciseTitle').textContent=t('editExercise');
   document.getElementById('exName').value=ex.name;
   document.getElementById('exCategory').value=ex.category;
+  document.getElementById('exNotes').value=ex.notes||'';
   document.getElementById('deleteExBtn').style.display='block';
   updateCategoryHint();
   openModal('addExerciseModal');
@@ -938,9 +966,10 @@ function openEditExercise(id) {
 function saveExercise() {
   const name=document.getElementById('exName').value.trim();
   const category=document.getElementById('exCategory').value;
+  const notes=document.getElementById('exNotes').value.trim();
   if (!name) { alert(t('enterName')); return; }
-  if (editingExId) { const ex=getEx(editingExId); ex.name=name; ex.category=category; }
-  else db.exercises.push({id:uid(),name,category});
+  if (editingExId) { const ex=getEx(editingExId); ex.name=name; ex.category=category; ex.notes=notes; }
+  else db.exercises.push({id:uid(),name,category,notes});
   save(); closeModal('addExerciseModal'); renderExercises();
 }
 
@@ -971,7 +1000,7 @@ function renderHistory() {
       if (type==='cardio') setsHtml=e.sets.map(s=>`<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type==='stretch') setsHtml=e.sets.map(s=>`<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
       else setsHtml=e.sets.map(s=>`<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
-      return `<div style="margin-bottom:10px;"><div style="font-weight:600;font-size:14px;margin-bottom:6px;">${name}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div></div>`;
+      return `<div style="margin-bottom:10px;"><div style="font-weight:600;font-size:14px;margin-bottom:6px;">${name}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>${e.note?`<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>`:''}</div>`;
     }).join('');
     const totalSets=w.exercises.reduce((a,e)=>a+e.sets.length,0);
     return `<div class="history-entry">
@@ -1338,6 +1367,7 @@ function openCalDay(year, month, day) {
       return `<div style="margin-bottom:10px;">
         <div style="font-weight:600;font-size:14px;margin-bottom:6px;">${getExName(e.exId)} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
+        ${e.note?`<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>`:''}
       </div>`;
     }).join('');
 
@@ -1388,7 +1418,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE ----
-const CURRENT_VERSION = '3.1';
+const CURRENT_VERSION = '3.2';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) { localStorage.setItem('gymtrack_version',CURRENT_VERSION); window.location.reload(true); }
 else if (!savedVersion) { localStorage.setItem('gymtrack_version',CURRENT_VERSION); }
