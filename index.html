@@ -67,6 +67,7 @@
   .btn-sm { width: auto; padding: 9px 16px; font-size: 13px; border-radius: 10px; margin-top: 12px; }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; padding: 20px; align-items: flex-end; backdrop-filter: blur(4px); }
   .modal-overlay.open { display: flex; }
+  .modal-overlay.overlay-top { z-index: 300; }
   .modal { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-height: 90dvh; overflow-y: auto; padding: 20px; padding-bottom: 40px; position: fixed; bottom: 0; left: 0; right: 0; animation: slideUp 0.3s ease; }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
@@ -247,7 +248,7 @@
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div class="modal-title" id="ttlChooseExercise">Übung wählen</div>
-      <div class="close-btn" onclick="closeModal('exercisePickerModal')">✕</div>
+      <div class="close-btn" onclick="closeSubModal('exercisePickerModal')">✕</div>
     </div>
     <div id="exercisePickerList"></div>
   </div>
@@ -295,7 +296,7 @@
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
       <div class="modal-title" id="logSetsTitle"></div>
-      <div class="close-btn" onclick="closeModal('logSetsModal')">✕</div>
+      <div class="close-btn" onclick="closeSubModal('logSetsModal')">✕</div>
     </div>
     <div id="lastPerformance" style="margin-bottom:16px;"></div>
     <div class="set-col-labels" id="setColLabels">
@@ -1634,8 +1635,33 @@ function closeEditWorkout() {
   window._pickerMode=null; closeModal('editWorkoutModal');
 }
 
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+const SUB_MODALS = ['logSetsModal','exercisePickerModal','addExerciseModal'];
+function isEditOpen() { return document.getElementById('editWorkoutModal').classList.contains('open'); }
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (SUB_MODALS.includes(id) && isEditOpen()) {
+    el.classList.add('overlay-top');
+  } else {
+    el.classList.remove('overlay-top');
+  }
+  el.classList.add('open');
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  el.classList.remove('overlay-top');
+}
+function closeSubModal(id) {
+  closeModal(id);
+  if (editingWorkoutCopy) {
+    if (id === 'logSetsModal') editWorkoutSetIdx = null;
+    if (id === 'exercisePickerModal') window._pickerMode = null;
+    openModal('editWorkoutModal');
+    renderEditWorkout();
+  }
+}
 
 function openExportModal() {
   const payload=btoa(unescape(encodeURIComponent(JSON.stringify(db))));
@@ -1702,17 +1728,12 @@ renderLog();
 
 // Modal backdrop close
 document.querySelectorAll('.modal-overlay').forEach(overlay=>{
-  // these modals should not close on backdrop tap
   if (overlay.id==='templateModal'||overlay.id==='editWorkoutModal') return;
   overlay.addEventListener('click',e=>{
-    if (e.target===overlay) {
-      overlay.classList.remove('open');
-      if (overlay.id==='tmplExPickerModal') openModal('templateModal');
-      // If closing logSetsModal while in edit mode, re-open edit modal
-      if (overlay.id==='logSetsModal' && editingWorkoutCopy) {
-        editWorkoutSetIdx=null; openModal('editWorkoutModal');
-      }
-    }
+    if (e.target!==overlay) return;
+    if (overlay.id==='tmplExPickerModal') { closeModal('tmplExPickerModal'); openModal('templateModal'); return; }
+    if (SUB_MODALS.includes(overlay.id)) { closeSubModal(overlay.id); return; }
+    closeModal(overlay.id);
   });
 });
 </script>
