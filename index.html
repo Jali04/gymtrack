@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="3.2">
+<meta name="version" content="3.3">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -353,6 +353,20 @@
   </div>
 </div>
 
+<!-- Edit Past Workout Modal -->
+<div class="modal-overlay" id="editWorkoutModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <div class="modal-title" id="editWorkoutTitle"></div>
+      <div class="close-btn" onclick="closeEditWorkout()">✕</div>
+    </div>
+    <div id="editWorkoutExercises"></div>
+    <button class="btn btn-secondary" id="btnEditWorkoutAddEx" style="margin-top:12px;" onclick="openExercisePickerForEdit()">+ Übung hinzufügen</button>
+    <button class="btn btn-primary" id="btnSaveEditWorkout" style="margin-top:10px;" onclick="saveEditWorkout()">✓ Änderungen speichern</button>
+  </div>
+</div>
+
 <!-- Calendar Day Detail Modal -->
 <div class="modal-overlay" id="calDayModal">
   <div class="modal">
@@ -452,6 +466,7 @@ const TR = {
     paceLabel:'Tempo',
     exNotes:'Notizen', exNotesPlaceholder:'z.B. Schulterblätter zusammenziehen...',
     sessionNote:'Anmerkung (optional)', sessionNotePlaceholder:'z.B. Schulter hat gezwickt...',
+    saveChanges:'Änderungen speichern',
     // Calendar
     navCalendar:'Kalender', calNoWorkout:'Kein Training an diesem Tag',
     calStreak:'Streak', calDays:'Tage', calThisMonth:'Dieser Monat', calWorkouts:'Trainings',
@@ -503,6 +518,7 @@ const TR = {
     paceLabel:'Pace',
     exNotes:'Notes', exNotesPlaceholder:'e.g. retract shoulder blades, keep back flat...',
     sessionNote:'Note (optional)', sessionNotePlaceholder:'e.g. shoulder felt tight...',
+    saveChanges:'Save Changes',
     // Calendar
     navCalendar:'Calendar', calNoWorkout:'No workout on this day',
     calStreak:'Streak', calDays:'days', calThisMonth:'This Month', calWorkouts:'Workouts',
@@ -662,7 +678,10 @@ function renderLog() {
     return `<div class="exercise-card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="exercise-name">${d}</div>
-        <span class="tag">${totalSets} ${t('sets')}</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="tag">${totalSets} ${t('sets')}</span>
+          <button style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="openEditWorkout('${w.id}')">✏️</button>
+        </div>
       </div>
       <div class="exercise-meta" style="margin-top:6px;">${exNames}</div>
     </div>`;
@@ -776,6 +795,17 @@ function openExercisePicker() {
 }
 
 function addExerciseToWorkout(exId) {
+  // Edit-past-workout mode
+  if (window._pickerMode === 'edit') {
+    if (editingWorkoutCopy.exercises.find(e=>e.exId===exId)) { alert(t('alreadyAdded')); return; }
+    editingWorkoutCopy.exercises.push({exId,sets:[]});
+    window._pickerMode = null;
+    closeModal('exercisePickerModal');
+    openModal('editWorkoutModal');
+    renderEditWorkout();
+    return;
+  }
+  // Normal mode
   if (!db.currentWorkout) return;
   if (db.currentWorkout.exercises.find(e=>e.exId===exId)) { alert(t('alreadyAdded')); return; }
   db.currentWorkout.exercises.push({exId,sets:[]});
@@ -922,6 +952,17 @@ function saveSets() {
     }
   });
   if (sets.length===0) { alert(t('minValidSet')); return; }
+  // Edit-past-workout mode
+  if (currentWorkoutExIdx === null && editWorkoutSetIdx !== null) {
+    editingWorkoutCopy.exercises[editWorkoutSetIdx].sets = sets;
+    editingWorkoutCopy.exercises[editWorkoutSetIdx].note = document.getElementById('sessionNote').value.trim();
+    editWorkoutSetIdx = null;
+    closeModal('logSetsModal');
+    openModal('editWorkoutModal');
+    renderEditWorkout();
+    return;
+  }
+  // Normal active-workout mode
   db.currentWorkout.exercises[currentWorkoutExIdx].sets = sets;
   db.currentWorkout.exercises[currentWorkoutExIdx].note = document.getElementById('sessionNote').value.trim();
   save(); closeModal('logSetsModal'); renderActiveWorkout();
@@ -1487,6 +1528,112 @@ function openCalDay(year, month, day) {
 }
 
 
+// ---- EDIT PAST WORKOUT ----
+let editingWorkoutId = null;
+let editingWorkoutCopy = null;
+let editWorkoutSetIdx = null;
+
+function openEditWorkout(workoutId) {
+  const w = db.workouts.find(x=>x.id===workoutId);
+  if (!w) return;
+  editingWorkoutId = workoutId;
+  editingWorkoutCopy = JSON.parse(JSON.stringify(w));
+  const locale = lang==='de'?'de-DE':'en-GB';
+  const d = new Date(w.date).toLocaleDateString(locale,{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('editWorkoutTitle').textContent = d;
+  document.getElementById('btnEditWorkoutAddEx').textContent = '+ '+t('addExercise').replace('+ ','');
+  document.getElementById('btnSaveEditWorkout').textContent = '✓ '+t('saveChanges');
+  renderEditWorkout();
+  openModal('editWorkoutModal');
+}
+
+function renderEditWorkout() {
+  const container = document.getElementById('editWorkoutExercises');
+  const ex = editingWorkoutCopy.exercises;
+  if (!ex||ex.length===0) {
+    container.innerHTML=`<div class="empty-state" style="padding:24px 0;"><div class="empty-text">${t('enterExercise')}</div></div>`; return;
+  }
+  container.innerHTML = ex.map((e,i) => {
+    const exDef=getEx(e.exId);
+    const name=exDef?exDef.name:t('noEntries');
+    const type=exDef?getCatType(exDef.category):'strength';
+    const catLabel=exDef?(t('cats')[exDef.category]||exDef.category):'';
+    const catClass=type==='cardio'?'cat-cardio':type==='stretch'?'cat-stretch':'cat-strength';
+    let setsHtml='';
+    if (e.sets.length>0) {
+      if (type==='cardio') setsHtml=e.sets.map(s=>`<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
+      else if (type==='stretch') setsHtml=e.sets.map(s=>`<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+      else setsHtml=e.sets.map(s=>`<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+    } else { setsHtml=`<span style="color:var(--muted);font-size:13px;">${t('noEntries')}</span>`; }
+    return `<div class="exercise-card" style="cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="exercise-name">${name}<span class="cat-badge ${catClass}" style="margin-left:6px;">${catLabel}</span></div>
+        <button class="close-btn" onclick="removeEditWorkoutExercise(${i})">✕</button>
+      </div>
+      ${e.note?`<div style="font-size:12px;color:var(--muted);margin-top:6px;">💬 ${e.note}</div>`:''}
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="openEditWorkoutSets(${i})">
+        ${e.sets.length>0?t('editSets'):t('enterSets')}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function removeEditWorkoutExercise(idx) {
+  editingWorkoutCopy.exercises.splice(idx,1); renderEditWorkout();
+}
+
+function openEditWorkoutSets(idx) {
+  editWorkoutSetIdx = idx;
+  currentWorkoutExIdx = null; // signals edit mode to saveSets
+  const we = editingWorkoutCopy.exercises[idx];
+  const ex = getEx(we.exId);
+  const type = ex ? getCatType(ex.category) : 'strength';
+  currentExCategory = type;
+  document.getElementById('logSetsTitle').textContent = ex?ex.name:'';
+  const colLabels = document.getElementById('setColLabels');
+  const btnAddRow = document.getElementById('btnAddRow');
+  if (type==='cardio') {
+    colLabels.className='set-col-labels cardio-labels';
+    colLabels.innerHTML=`<div></div><div class="set-col-label">${t('colKm')}</div><div class="set-col-label">${t('colTime')}</div><div class="set-col-label">${t('colPace')}</div><div></div>`;
+  } else if (type==='stretch') {
+    colLabels.className='set-col-labels stretch-labels';
+    colLabels.innerHTML=`<div></div><div class="set-col-label">${t('colMin')}</div><div></div>`;
+  } else {
+    colLabels.className='set-col-labels';
+    colLabels.innerHTML=`<div></div><div class="set-col-label">${t('kg')}</div><div class="set-col-label">${t('reps')}</div><div></div>`;
+  }
+  btnAddRow.textContent = t('addSet');
+  const lpDiv = document.getElementById('lastPerformance');
+  lpDiv.innerHTML = ex&&ex.notes?`<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);">📝 ${ex.notes}</div>`:'';
+  document.getElementById('sessionNote').value = we.note||'';
+  const container = document.getElementById('setsContainer');
+  container.innerHTML='';
+  if (we.sets.length===0) addSetRow();
+  else we.sets.forEach(s=>addSetRow(s));
+  openModal('logSetsModal');
+}
+
+function openExercisePickerForEdit() {
+  window._pickerMode='edit';
+  openExercisePicker();
+}
+
+function saveEditWorkout() {
+  const idx=db.workouts.findIndex(x=>x.id===editingWorkoutId);
+  if (idx===-1) return;
+  editingWorkoutCopy.exercises=editingWorkoutCopy.exercises.filter(e=>e.sets.length>0);
+  db.workouts[idx]=editingWorkoutCopy;
+  save(); closeModal('editWorkoutModal');
+  renderLog(); renderHistory(); renderStats();
+  editingWorkoutId=null; editingWorkoutCopy=null;
+}
+
+function closeEditWorkout() {
+  editingWorkoutId=null; editingWorkoutCopy=null; editWorkoutSetIdx=null;
+  window._pickerMode=null; closeModal('editWorkoutModal');
+}
+
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -1522,7 +1669,7 @@ function doImport() {
 }
 
 // ---- AUTO UPDATE ----
-const CURRENT_VERSION = '3.2';
+const CURRENT_VERSION = '3.3';
 const savedVersion = localStorage.getItem('gymtrack_version');
 if (savedVersion && savedVersion !== CURRENT_VERSION) { localStorage.setItem('gymtrack_version',CURRENT_VERSION); window.location.reload(true); }
 else if (!savedVersion) { localStorage.setItem('gymtrack_version',CURRENT_VERSION); }
@@ -1553,13 +1700,18 @@ document.addEventListener('touchend', e=>{
 applyTranslations();
 renderLog();
 
-// Modal backdrop close (templateModal never closes on backdrop)
+// Modal backdrop close
 document.querySelectorAll('.modal-overlay').forEach(overlay=>{
-  if (overlay.id==='templateModal') return;
+  // these modals should not close on backdrop tap
+  if (overlay.id==='templateModal'||overlay.id==='editWorkoutModal') return;
   overlay.addEventListener('click',e=>{
     if (e.target===overlay) {
       overlay.classList.remove('open');
       if (overlay.id==='tmplExPickerModal') openModal('templateModal');
+      // If closing logSetsModal while in edit mode, re-open edit modal
+      if (overlay.id==='logSetsModal' && editingWorkoutCopy) {
+        editWorkoutSetIdx=null; openModal('editWorkoutModal');
+      }
     }
   });
 });
