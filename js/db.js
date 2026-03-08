@@ -11,6 +11,11 @@ function getCatType(category) { return CAT_TYPE[category] || 'strength'; }
 
 let db = JSON.parse(localStorage.getItem('gymdb') || '{"exercises":[],"workouts":[],"currentWorkout":null}');
 if (!db.templates) db.templates = [];
+if (!db.measurements) db.measurements = [];
+if (!db.progressPics) db.progressPics = [];
+if (!db.programs) db.programs = [];
+if (typeof db.activeProgram === 'undefined') db.activeProgram = null;
+if (!db.achievements) db.achievements = [];
 
 const DEFAULT_EXERCISES = [
   { id: 'e1',  name: 'Bankdrücken',     category: 'Brust' },

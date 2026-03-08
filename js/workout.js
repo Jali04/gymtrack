@@ -62,10 +62,27 @@ function renderLog() {
       const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
       const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
       const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+      
+      const typeColors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
+      
       let setsHtml = '';
-      if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
-      else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
-      else                         setsHtml = e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+      if (type === 'cardio') {
+         setsHtml = e.sets.map(s => {
+           const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+           const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+           return `<span class="set-badge">${tBadge}${s.km}km ${s.time} (${s.pace})${rBadge}</span>`;
+         }).join('');
+      }
+      else if (type === 'stretch') {
+         setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+      }
+      else {
+         setsHtml = e.sets.map(s => {
+           const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+           const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+           return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
+         }).join('');
+      }
       const hiitBadges = (e.hiitSets || []).map(_hiitBadge).join('');
       const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
       return `<div style="margin-bottom:10px;">
@@ -137,12 +154,26 @@ function renderActiveWorkout() {
       const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
       const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
 
+      const typeColors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
+
     const hiits    = e.hiitSets || [];
     let setsHtml = '';
-    if (e.sets.length > 0) {
-      if (type === 'cardio')  setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
-      else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
-      else setsHtml = e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+    if (type === 'cardio') {
+       setsHtml = e.sets.map(s => {
+         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+         return `<span class="set-badge">${tBadge}${s.km}km ${s.time} (${s.pace})${rBadge}</span>`;
+       }).join('');
+    }
+    else if (type === 'stretch') {
+       setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+    }
+    else {
+       setsHtml = e.sets.map(s => {
+         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+         return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
+       }).join('');
     }
     const hiitBadges  = hiits.map(_hiitBadge).join('');
     const timerBadge  = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
@@ -190,6 +221,10 @@ function finishWorkout() {
   haptic('success');
   flashWorkoutComplete();
   showToast(t('workoutDone'));
+  
+  if (typeof checkAchievements === 'function') {
+    checkAchievements(cw);
+  }
 }
 
 function cancelWorkout() {
@@ -333,7 +368,13 @@ function _saveSwLog() {
 function openExercisePicker() {
   const list       = document.getElementById('exercisePickerList');
   const categories = [...new Set(db.exercises.map(e => e.category))];
-  list.innerHTML   = categories.map(cat => {
+  
+  const addNewHtml = `<div class="exercise-list-item" onclick="openAddExerciseFromPicker()" style="border-color:rgba(200,241,53,0.25);margin-bottom:12px;">
+    <div class="exercise-list-name" style="color:var(--accent);font-weight:600;">+ ${t('newExercise') || 'Neue Übung'}</div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </div>`;
+  
+  list.innerHTML   = addNewHtml + categories.map(cat => {
     const catLabel = t('cats')[cat] || cat;
     const type     = getCatType(cat);
     const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
@@ -345,6 +386,11 @@ function openExercisePicker() {
       </div>`).join('');
   }).join('<div class="divider"></div>');
   openModal('exercisePickerModal');
+}
+
+function openAddExerciseFromPicker() {
+  window._openedFromPicker = true;
+  openAddExercise();
 }
 
 function addExerciseToWorkout(exId) {
@@ -411,10 +457,25 @@ function openLogSets(idx) {
     lpHtml += `<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin-bottom:10px;">📝 ${ex.notes}</div>`;
   }
   if (lastPerf && lastPerf.sets.length > 0) {
+    const typeColors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
     let setsHtml = '';
-    if (type === 'cardio')       setsHtml = lastPerf.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
-    else if (type === 'stretch') setsHtml = lastPerf.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
-    else                         setsHtml = lastPerf.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+    if (type === 'cardio') {
+       setsHtml = lastPerf.sets.map(s => {
+         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+         return `<span class="set-badge">${tBadge}${s.km}km ${s.time} (${s.pace})${rBadge}</span>`;
+       }).join('');
+    }
+    else if (type === 'stretch') {
+       setsHtml = lastPerf.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+    }
+    else {
+       setsHtml = lastPerf.sets.map(s => {
+         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+         return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
+       }).join('');
+    }
     const lastNoteHtml = lastPerf.note ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${lastPerf.note}</div>` : '';
     lpHtml += `<div class="exercise-last"><div class="label">${t('lastPerf') || 'Letztes Mal'}</div><div class="sets-row">${setsHtml}</div>${lastNoteHtml}</div>`;
   }
@@ -451,15 +512,31 @@ function _setupSetColHeaders(type) {
   const btnAddRow = document.getElementById('btnAddRow');
   if (type === 'cardio') {
     colLabels.className = 'set-col-labels cardio-labels';
-    colLabels.innerHTML = `<div></div><div class="set-col-label">${t('colKm')}</div><div class="set-col-label">${t('colTime')}</div><div class="set-col-label">${t('colPace')}</div><div></div>`;
+    colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${t('colKm')}</div><div class="set-col-label">${t('colTime')}</div><div class="set-col-label">${t('colPace')}</div><div class="set-col-label" id="colLabelRpe">${t('colRpe') || 'RPE'}</div><div></div>`;
   } else if (type === 'stretch') {
     colLabels.className = 'set-col-labels stretch-labels';
     colLabels.innerHTML = `<div></div><div class="set-col-label">${t('colMin')}</div><div></div>`;
   } else {
     colLabels.className = 'set-col-labels';
-    colLabels.innerHTML = `<div></div><div class="set-col-label">${t('kg')}</div><div class="set-col-label">${t('reps')}</div><div></div>`;
+    colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${t('kg')}</div><div class="set-col-label">${t('reps')}</div><div class="set-col-label" id="colLabelRpe">${t('colRpe') || 'RPE'}</div><div></div>`;
   }
   btnAddRow.textContent = t('addSet');
+}
+
+function _cycleSetType(btn) {
+  const types = ['N', 'W', 'D'];
+  const colors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
+  const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Aufwärmsatz', 'D': t('setDropTitle') || 'Dropsatz' };
+  
+  let current = btn.dataset.type || 'N';
+  let nextIdx = (types.indexOf(current) + 1) % types.length;
+  let next = types[nextIdx];
+  
+  btn.dataset.type = next;
+  btn.textContent = t('set' + (next === 'N' ? 'Normal' : next === 'W' ? 'Warmup' : 'Drop')) || next;
+  btn.style.color = colors[next];
+  btn.title = titles[next];
+  haptic('light');
 }
 
 function addSetRow(data) {
@@ -467,6 +544,15 @@ function addSetRow(data) {
   const idx       = container.children.length + 1;
   const row       = document.createElement('div');
   const type      = currentExCategory;
+  
+  const sType = data && data.type ? data.type : 'N';
+  const rpe   = data && data.rpe ? data.rpe : '';
+  const colors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
+  const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Aufwärmsatz', 'D': t('setDropTitle') || 'Dropsatz' };
+  const sTypeDisplay = t('set' + (sType === 'N' ? 'Normal' : sType === 'W' ? 'Warmup' : 'Drop')) || sType;
+
+  const typeBtn = `<button class="set-type-btn" data-type="${sType}" style="color:${colors[sType]};" title="${titles[sType]}" onclick="_cycleSetType(this)">${sTypeDisplay}</button>`;
+  const rpeInput = `<input class="set-input set-rpe" type="number" placeholder="–" value="${rpe}" min="1" max="10" inputmode="numeric"/>`;
 
   const rmBtn = `<button class="remove-set" onclick="this.parentElement.remove();reindexSets();">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -476,9 +562,11 @@ function addSetRow(data) {
     row.className = 'set-row cardio-row';
     const km = data ? data.km : '', time = data ? data.time : '', pace = data ? data.pace : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
+      ${typeBtn}
       <input class="set-input" type="number" placeholder="0.0" value="${km}" inputmode="decimal" oninput="recalcPace(this.parentElement)"/>
       <input class="set-input" type="text" placeholder="0:00" value="${time}" inputmode="numeric" oninput="recalcPace(this.parentElement)"/>
       <input class="set-input pace-display" type="text" placeholder="–" value="${pace}" readonly/>
+      ${rpeInput}
       ${rmBtn}`;
   } else if (type === 'stretch') {
     row.className = 'set-row stretch-row';
@@ -490,8 +578,10 @@ function addSetRow(data) {
     row.className = 'set-row';
     const w = data ? data.weight : '', r = data ? data.reps : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
+      ${typeBtn}
       <input class="set-input" type="number" placeholder="0" value="${w}" inputmode="decimal"/>
       <input class="set-input" type="number" placeholder="0" value="${r}" inputmode="numeric"/>
+      ${rpeInput}
       ${rmBtn}`;
   }
   row.style.animation = 'popIn 0.25s cubic-bezier(0.34,1.56,0.64,1) backwards';
@@ -527,16 +617,23 @@ function saveSets() {
   const type = currentExCategory;
 
   rows.forEach(row => {
-    const inputs = row.querySelectorAll('.set-input');
+    let sType = 'N';
+    let rpe = null;
+    const typeBtn = row.querySelector('.set-type-btn');
+    if (typeBtn) sType = typeBtn.dataset.type || 'N';
+    const rpeInput = row.querySelector('.set-rpe');
+    if (rpeInput && rpeInput.value) rpe = parseFloat(rpeInput.value);
+
+    const inputs = row.querySelectorAll('.set-input:not(.set-rpe)');
     if (type === 'cardio') {
       const km = parseFloat(inputs[0].value), time = inputs[1].value.trim(), pace = inputs[2].value;
-      if (km > 0 && time) sets.push({ km, time, pace });
+      if (km > 0 && time) sets.push({ type: sType, rpe, km, time, pace });
     } else if (type === 'stretch') {
       const minutes = parseFloat(inputs[0].value);
       if (minutes > 0) sets.push({ minutes });
     } else {
       const weight = parseFloat(inputs[0].value), reps = parseInt(inputs[1].value);
-      if (!isNaN(weight) && !isNaN(reps) && reps > 0) sets.push({ weight, reps });
+      if (!isNaN(weight) && !isNaN(reps) && reps > 0) sets.push({ type: sType, rpe, weight, reps });
     }
   });
 

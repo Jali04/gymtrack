@@ -67,16 +67,25 @@ function saveExercise() {
   const category = document.getElementById('exCategory').value;
   const notes    = document.getElementById('exNotes').value.trim();
   if (!name) { alert(t('enterName')); return; }
+  let newId = null;
   if (editingExId) {
     const ex = getEx(editingExId);
     ex.name = name; ex.category = category; ex.notes = notes;
   } else {
-    db.exercises.push({ id: uid(), name, category, notes });
+    newId = uid();
+    db.exercises.push({ id: newId, name, category, notes });
   }
+  const wasOpenedFromPicker = window._openedFromPicker;
+
   save();
   closeModal('addExerciseModal');
   renderExercises();
   showToast(t('save') + ' ✓');
+
+  if (wasOpenedFromPicker && newId) {
+    window._openedFromPicker = false;
+    addExerciseToWorkout(newId);
+  }
 }
 
 function deleteExercise() {

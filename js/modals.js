@@ -29,6 +29,10 @@ function closeModal(id) {
   if (!el) return;
   el.classList.remove('open');
   el.classList.remove('overlay-top');
+  
+  if (id === 'addExerciseModal') {
+    window._openedFromPicker = false;
+  }
 }
 
 function closeSubModal(id) {

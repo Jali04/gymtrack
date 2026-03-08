@@ -12,10 +12,19 @@ if (savedVersion && savedVersion !== CURRENT_VERSION) {
   localStorage.setItem('dscpln_version', CURRENT_VERSION);
 }
 
+function initUI() {
+  renderLog();
+  if (typeof renderProgress === 'function') renderProgress();
+  if (typeof renderPrograms === 'function') {
+    renderPrograms();
+    updateActiveProgramBanner();
+  }
+  if (typeof renderAchievements === 'function') renderAchievements();
+}
+
 // Boot
 initSplash();
 applyTranslations();
-renderLog();
 initUI();
 
 // Modal backdrop — tap outside to close

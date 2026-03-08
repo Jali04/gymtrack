@@ -83,6 +83,19 @@ const TR = {
     targetGymLab: 'Aus GymLab wählen', targetNewEx: 'Neue Übung erstellen',
     hiitAllRounds: 'Alle Runden gleich', hiitPerRound: 'Pro Runde wählen',
     hiitLogRound: 'Runde',
+    // Set Types
+    setNormal: 'N', setWarmup: 'W', setDrop: 'D', 
+    setNormalTitle: 'Normal', setWarmupTitle: 'Aufwärmsatz', setDropTitle: 'Dropsatz',
+    colType: 'Typ', colRpe: 'RPE',
+    // Tools
+    ttlTools: 'Rechner & Tools', lbl1RmDesc: '1RM Rechner (Epley)',
+    plateEnterTarget: 'Geben Sie ein Zielgewicht ein', plateInvalid: 'Ziel muss größer oder gleich Hantel sein', plateEmptyBar: 'Nur Stange erforderlich',
+    // Progress & Pics
+    navProgress: 'Progress', ttlProgress: 'Fortschritt',
+    lblMeasureWeight: 'Körpergewicht (kg)', lblMeasureBf: 'Körperfettanteil (%) - optional',
+    lblMeasureNote: 'Notiz', invalidInput: 'Ungültige Eingabe', confirmDel: 'Eintrag löschen?',
+    // Programs
+    ttlPrograms: 'Programme', programModalTitle: 'Programm'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
@@ -164,6 +177,19 @@ const TR = {
     targetGymLab: 'Choose from GymLab', targetNewEx: 'Create New Exercise',
     hiitAllRounds: 'All rounds same', hiitPerRound: 'Choose per round',
     hiitLogRound: 'Round',
+    // Set Types
+    setNormal: 'N', setWarmup: 'W', setDrop: 'D',
+    setNormalTitle: 'Normal', setWarmupTitle: 'Warmup', setDropTitle: 'Drop Set',
+    colType: 'Type', colRpe: 'RPE',
+    // Tools
+    ttlTools: 'Calculators & Tools', lbl1RmDesc: '1RM Calculator (Epley)',
+    plateEnterTarget: 'Enter a target weight', plateInvalid: 'Target must be ≥ barbell', plateEmptyBar: 'Only the bar is needed',
+    // Progress & Pics
+    navProgress: 'Progress', ttlProgress: 'Progress',
+    lblMeasureWeight: 'Body Weight (kg)', lblMeasureBf: 'Body Fat (%) - optional',
+    lblMeasureNote: 'Notes', invalidInput: 'Invalid Input', confirmDel: 'Delete Entry?',
+    // Programs
+    ttlPrograms: 'Programs', programModalTitle: 'Program'
   }
 };
 
@@ -234,9 +260,25 @@ function applyTranslations() {
 
   // Sets modal
   s('btnAddRow', 'addSet'); s('btnSaveSets', 'saveSets');
+  s('colLabelType', 'colType'); s('colLabelRpe', 'colRpe');
 
   // Export / import
   s('ttlExport', 'exportTitle'); s('txtExportDesc', 'exportDesc');
+  // Tools modal
+  s('ttlTools', 'ttlTools');
+  
+  // Progress
+  s('navProgress', 'navProgress');
+  s('ttlProgress', 'ttlProgress');
+  s('ttlMeasure', 'ttlMeasure');
+  s('lblMeasureWeight', 'lblMeasureWeight');
+  s('lblMeasureBf', 'lblMeasureBf');
+  s('lblMeasureNote', 'lblMeasureNote');
+  
+  // Programs
+  s('ttlPrograms', 'ttlPrograms');
+  s('programModalTitle', 'programModalTitle');
+  
   s('btnCopyExport', 'copyCode'); s('btnCloseExport', 'close');
   s('ttlImport', 'importTitle'); s('txtImportDesc', 'importDesc'); s('txtImportWarn', 'importWarn');
   sp('importText', 'importPlaceholder'); s('btnDoImport', 'doImport'); s('btnCancelImport', 'cancel');

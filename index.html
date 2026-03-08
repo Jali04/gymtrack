@@ -39,6 +39,12 @@
 <div class="page active" id="page-log">
   <div class="section-title" id="ttlStartTraining">Training starten</div>
   <div id="quickStart">
+    <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;" onclick="startNextProgramDay()">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Aktuelles Programm</div>
+      <div style="font-weight:700;font-size:18px;color:var(--accent);margin-bottom:4px;" id="activeProgramName">Push Pull Legs</div>
+      <div style="font-size:13px;color:var(--text);" id="activeProgramNext">Nächstes: Tag 1 (Push)</div>
+    </div>
+    
     <button class="btn btn-primary" id="btnNewWorkout" onclick="openNewWorkout()">+ Neues Training</button>
     <button class="btn btn-secondary" id="btnFromTemplate" style="margin-top:10px;" onclick="showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))">📋 Aus Vorlage starten</button>
     <!-- Rest Timer Config -->
@@ -78,8 +84,17 @@
   </div>
 </div>
 
-<!-- GymLab (Vorlagen + Übungen) -->
+<!-- GymLab (Vorlagen + Übungen + Programme) -->
 <div class="page" id="page-gymlab">
+  <!-- Programs -->
+  <div class="gymlab-section-header">
+    <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
+    <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
+  </div>
+  <div id="programsList"></div>
+  <div class="divider"></div>
+
+  <!-- Templates -->
   <div class="gymlab-section-header">
     <div class="section-title" style="margin:0;" id="ttlTemplates">Vorlagen</div>
     <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+</button>
@@ -110,11 +125,50 @@
 <div class="page" id="page-stats">
   <div class="section-title" id="ttlStats">Statistiken</div>
   <div class="stats-grid" id="statsGrid"></div>
-  <div id="progressList"></div>
+  <div id="statsProgressList"></div>
   <div class="divider"></div>
+  
+  <div class="section-title" style="font-size:18px;" id="ttlAchievements">Erfolge</div>
+  <div id="achievementsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;"></div>
+  <div class="divider"></div>
+
   <div class="section-title" style="font-size:18px;" id="ttlData">Daten</div>
   <button class="btn btn-secondary" id="btnExport" onclick="openExportModal()" style="margin-bottom:10px;">📤 Daten exportieren</button>
   <button class="btn btn-secondary" id="btnImport" onclick="openImportModal()">📥 Daten importieren</button>
+</div>
+
+<!-- Progress -->
+<div class="page" id="page-progress">
+  <div class="section-title" id="ttlProgress">Fortschritt</div>
+  
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-weight:700;">Gewicht & KFA</div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:0;width:auto;" onclick="openAddMeasurementModal()">+ Eintrag</button>
+    </div>
+    
+    <div style="height:140px;margin-bottom:12px;display:flex;align-items:flex-end;gap:4px;" id="progressChart">
+      <!-- Body weight chart will be injected here -->
+    </div>
+    
+    <div id="progressList" style="max-height:200px;overflow-y:auto;">
+      <!-- History list of measurements -->
+    </div>
+  </div>
+  
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-weight:700;">Progress Pics</div>
+      <label class="btn btn-secondary btn-sm" style="margin-top:0;width:auto;cursor:pointer;">
+        + Foto
+        <input type="file" id="progressPicUpload" accept="image/*" style="display:none;" onchange="handlePicUpload(event)">
+      </label>
+    </div>
+    
+    <div id="progressGallery" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <!-- Images will be injected here -->
+    </div>
+  </div>
 </div>
 
 <!-- ===== NAV ===== -->
@@ -134,6 +188,10 @@
   <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Stats
+  </button>
+  <button class="nav-btn" data-page="progress" onclick="showPage('progress',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+    Fortschritt
   </button>
 </nav>
 
@@ -198,8 +256,10 @@
     <div id="lastPerformance" style="margin-bottom:16px;"></div>
     <div class="set-col-labels" id="setColLabels">
       <div></div>
+      <div class="set-col-label" id="colLabelType">Typ</div>
       <div class="set-col-label" id="colLabel1">kg</div>
       <div class="set-col-label" id="colLabel2">Wdh</div>
+      <div class="set-col-label" id="colLabelRpe">RPE</div>
       <div></div>
     </div>
     <div class="sets-container" id="setsContainer"></div>
@@ -414,9 +474,137 @@
   <button onclick="skipRestTimer()" id="btnSkipRest" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Überspringen</button>
 </div>
 
+<!-- Add Measurement Modal -->
+<div class="modal-overlay" id="measurementModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="ttlMeasure">Messung hinzufügen</div>
+      <div class="close-btn" onclick="closeModal('measurementModal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="lblMeasureWeight">Körpergewicht (kg)</label>
+      <input type="number" class="form-input" id="measureWeight" placeholder="z.B. 80.5" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="lblMeasureBf">Körperfettanteil (%) - optional</label>
+      <input type="number" class="form-input" id="measureBf" placeholder="z.B. 15" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="lblMeasureNote">Notiz</label>
+      <input type="text" class="form-input" id="measureNote" placeholder="Morgens, nüchtern...">
+    </div>
+    <button class="btn btn-primary" onclick="saveMeasurement()">Speichern</button>
+  </div>
+</div>
+
+<!-- View Picture Modal -->
+<div class="modal-overlay" id="viewPicModal">
+  <div class="modal" style="padding:10px;padding-bottom:20px;">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <button class="btn btn-danger btn-sm" style="margin-top:0;margin-right:8px;width:auto;" onclick="deleteCurrentPic()">Löschen</button>
+      <div class="close-btn" onclick="closeModal('viewPicModal')">✕</div>
+    </div>
+    <img id="viewPicImg" style="width:100%;border-radius:10px;object-fit:contain;max-height:70vh;">
+    <div id="viewPicDate" style="text-align:center;margin-top:10px;font-weight:600;color:var(--accent);"></div>
+  </div>
+</div>
+
+<!-- Program Modal -->
+<div class="modal-overlay" id="programModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="programModalTitle">Programm erstellen</div>
+      <div class="close-btn" onclick="closeModal('programModal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="lblProgName">Programm Name</label>
+      <input class="form-input" id="progName" placeholder="z.B. 4-Wochen Powerlifting">
+    </div>
+    
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <label class="form-label" style="margin:0;" id="lblProgDays">Tage (Workouts)</label>
+      <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="addProgramDay()">+ Tag</button>
+    </div>
+    
+    <div id="progDaysList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      <!-- Day rows inserted here -->
+    </div>
+    
+    <button class="btn btn-primary" onclick="saveProgram()" id="btnSaveProgram">Speichern</button>
+    <button class="btn btn-danger" id="deleteProgBtn" style="display:none;" onclick="deleteProgram()">Programm löschen</button>
+  </div>
+</div>
+
+<!-- Tools Modal -->
+<div class="modal-overlay" id="toolsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="ttlTools">Rechner & Tools</div>
+      <div class="close-btn" onclick="closeModal('toolsModal')">✕</div>
+    </div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;">DSCPLN</div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <button class="nav-btn" onclick="openToolsModal()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </button>
+      <button class="nav-btn" onclick="openExportModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+        <span id="lbl1RmDesc">1RM Rechner (Epley)</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label class="form-label">Gewicht (kg)</label>
+          <input type="number" class="form-input" id="tool1RmWeight" placeholder="z.B. 100" oninput="calculate1Rm()" inputmode="decimal">
+        </div>
+        <div>
+          <label class="form-label">Wiederholungen</label>
+          <input type="number" class="form-input" id="tool1RmReps" placeholder="z.B. 5" oninput="calculate1Rm()" inputmode="numeric">
+        </div>
+      </div>
+      <div style="background:var(--bg);padding:14px;border-radius:10px;text-align:center;">
+        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Geschätztes 1RM</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--accent);" id="tool1RmResult">— kg</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+        <span id="lblPlateDesc">Scheiben-Rechner</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label class="form-label">Zielgewicht (kg)</label>
+          <input type="number" class="form-input" id="toolPlateTarget" placeholder="z.B. 110" oninput="calculatePlates()" inputmode="decimal">
+        </div>
+        <div>
+          <label class="form-label">Stangengewicht (kg)</label>
+          <input type="number" class="form-input" id="toolPlateBar" value="20" oninput="calculatePlates()" inputmode="decimal">
+        </div>
+      </div>
+      <div style="background:var(--bg);padding:14px;border-radius:10px;">
+        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;text-align:center;">Pro Seite erforderlich</div>
+        <div id="toolPlateResult" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:28px;">
+          <span style="color:var(--muted);font-size:13px;">Geben Sie ein Zielgewicht ein</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SCRIPTS (order matters) ===== -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <script src="js/db.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/achievements.js"></script>
 <script src="js/modals.js"></script>
 <script src="js/nav.js"></script>
 <script src="js/workout.js"></script>
@@ -429,6 +617,9 @@
 <script src="js/timer.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/splash.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/programs.js"></script>
+<script src="js/tools.js"></script>
 <script src="js/app.js"></script>
 
 </body>
