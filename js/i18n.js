@@ -61,6 +61,19 @@ const TR = {
     calDayShort: ['Mo','Di','Mi','Do','Fr','Sa','So'],
     calSets: 'Sätze', calRestDay: 'Ruhetag 😴', calTotalMin: 'Min gesamt',
     workoutDone: '💪 Training abgeschlossen!',
+    // HIIT Timer
+    hiitTimer: 'HIIT Timer', hiitTabata: 'Tabata', hiitEmom: 'EMOM', hiitCustom: 'Custom', hiitAmrap: 'AMRAP',
+    hiitWork: 'Arbeit', hiitRest: 'Pause', hiitRounds: 'Runden', hiitRound: 'Runde',
+    hiitReady: 'BEREIT', hiitDone: 'FERTIG!',
+    hiitStart: 'Starten', hiitPause: 'Pause', hiitResume: 'Weiter', hiitReset: 'Zurücksetzen', hiitSkip: 'Überspringen',
+    hiitAmrapHint: 'Läuft einfach hoch – so viele Runden wie möglich!',
+    openTimer: '⏱ Timer',
+    // Rest Timer
+    restTimer: 'Pausenzeit', restDone: 'Los geht\'s!', restSkip: 'Überspringen',
+    // Template share
+    shareTmpl: 'Vorlage teilen', tmplShareTitle: 'Vorlage teilen',
+    tmplShareDesc: 'Diesen kompakten Code teilen – nur Vorlage & Übungen, kein Verlauf.',
+    tmplImportSuccess: '✓ Vorlage importiert!',
   },
   en: {
     navTraining: 'Workout', navTemplates: 'Templates', navExercises: 'Exercises',
@@ -120,6 +133,19 @@ const TR = {
     calDayShort: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
     calSets: 'Sets', calRestDay: 'Rest Day 😴', calTotalMin: 'min total',
     workoutDone: '💪 Workout complete!',
+    // HIIT Timer
+    hiitTimer: 'HIIT Timer', hiitTabata: 'Tabata', hiitEmom: 'EMOM', hiitCustom: 'Custom', hiitAmrap: 'AMRAP',
+    hiitWork: 'Work', hiitRest: 'Rest', hiitRounds: 'Rounds', hiitRound: 'Round',
+    hiitReady: 'READY', hiitDone: 'DONE!',
+    hiitStart: 'Start', hiitPause: 'Pause', hiitResume: 'Resume', hiitReset: 'Reset', hiitSkip: 'Skip',
+    hiitAmrapHint: 'Just counts up – as many rounds as possible!',
+    openTimer: '⏱ Timer',
+    // Rest Timer
+    restTimer: 'Rest', restDone: 'Go!', restSkip: 'Skip',
+    // Template share
+    shareTmpl: 'Share Template', tmplShareTitle: 'Share Template',
+    tmplShareDesc: 'Share this compact code – only template & exercises, no history.',
+    tmplImportSuccess: '✓ Template imported!',
   }
 };
 
@@ -142,6 +168,10 @@ function toggleLang() {
     stats: renderStats, templates: renderTemplates, calendar: renderCalendar
   };
   if (renders[id]) renders[id]();
+  // Re-render HIIT config labels if timer modal is open
+  if (document.getElementById('hiitModal') && document.getElementById('hiitModal').classList.contains('open')) {
+    _hiitRenderConfig();
+  }
 }
 
 function applyTranslations() {
@@ -196,6 +226,18 @@ function applyTranslations() {
   s('ttlImport', 'importTitle'); s('txtImportDesc', 'importDesc'); s('txtImportWarn', 'importWarn');
   sp('importText', 'importPlaceholder'); s('btnDoImport', 'doImport'); s('btnCancelImport', 'cancel');
   s('ttlChooseExercise', 'chooseExercise');
+
+  // HIIT Timer
+  s('ttlHiitTimer', 'hiitTimer');
+  const hiitTabCustom = document.getElementById('hiitTabCustom');
+  if (hiitTabCustom) hiitTabCustom.textContent = t('hiitCustom');
+  // Template share modal
+  s('ttlTmplShare', 'tmplShareTitle');
+  s('tmplShareDesc', 'tmplShareDesc');
+  // Rest timer
+  s('restTimerLabel', 'restTimer'); s('btnSkipRest', 'restSkip');
+  // Timer button
+  s('btnOpenTimer', 'openTimer');
 
   // Date & lang button
   const now = new Date();
