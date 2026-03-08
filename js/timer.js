@@ -284,10 +284,69 @@ function _hiitNextRound() {
     _hiitUpdateBtn('start');
     haptic('success');
     showToast('🏆 ' + t('hiitDone'));
+    if (typeof db !== 'undefined' && db.currentWorkout) {
+      setTimeout(openHiitLogModal, 800);
+    }
     return;
   }
   hiitState.currentRound++;
   _hiitStartPhase('work');
+}
+
+/* ---------- log HIIT to workout ---------- */
+function openHiitLogModal() {
+  const cw = db.currentWorkout;
+  if (!cw) return;
+
+  const modeLabel = { tabata: 'Tabata', emom: 'EMOM', amrap: 'AMRAP', custom: 'Custom' };
+  const totalSec  = hiitState.rounds * (hiitState.workSec + hiitState.restSec);
+  const mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+  const ss = (totalSec % 60).toString().padStart(2, '0');
+  const restInfo = hiitState.restSec > 0 ? ` / ${hiitState.restSec}s Pause` : '';
+
+  document.getElementById('hiitLogSummary').innerHTML = `
+    <div style="background:var(--surface2);border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center;">
+      <div style="font-size:20px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:6px;">${modeLabel[hiitState.mode] || hiitState.mode}</div>
+      <div style="font-size:13px;color:var(--muted);">${hiitState.rounds} Runden · ${hiitState.workSec}s Arbeit${restInfo}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:3px;">Gesamtzeit: ${mm}:${ss}</div>
+    </div>`;
+
+  const list = document.getElementById('hiitLogExList');
+  if (cw.exercises.length === 0) {
+    list.innerHTML = `<div style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0;">Erst eine Übung hinzufügen, um die Session zuzuordnen.</div>`;
+  } else {
+    list.innerHTML = cw.exercises.map((e, i) => {
+      const ex       = getEx(e.exId);
+      const name     = ex ? ex.name : '?';
+      const type     = ex ? getCatType(ex.category) : 'strength';
+      const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
+      const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+      return `<div class="exercise-list-item" onclick="logHiitToExercise(${i})">
+        <div class="exercise-list-name">${name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`;
+    }).join('');
+  }
+
+  openModal('hiitLogModal');
+}
+
+function logHiitToExercise(idx) {
+  const cw = db.currentWorkout;
+  if (!cw) return;
+
+  const totalSec = hiitState.rounds * (hiitState.workSec + hiitState.restSec);
+  const hiitSet  = { mode: hiitState.mode, rounds: hiitState.rounds, workSec: hiitState.workSec, restSec: hiitState.restSec, totalSec };
+
+  if (!cw.exercises[idx].hiitSets) cw.exercises[idx].hiitSets = [];
+  cw.exercises[idx].hiitSets.push(hiitSet);
+
+  save();
+  closeModal('hiitLogModal');
+  closeHiitTimer();
+  renderActiveWorkout();
+  haptic('success');
+  showToast('⚡ HIIT gespeichert');
 }
 
 function _hiitUpdateBtn(state) {
