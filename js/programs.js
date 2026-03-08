@@ -34,12 +34,31 @@ function renderPrograms() {
         <div style="display:flex;gap:8px;margin-top:12px;">
           ${isActive 
              ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();quitProgram()">Programm beenden</button>` 
-             : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();setProgramActive('${p.id}')">Aktivieren</button>`
+             : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openStartProgramModal('${p.id}')">Aktivieren</button>`
           }
         </div>
       </div>
     `;
   });
+}
+
+let pendingStartProgramId = null;
+function openStartProgramModal(id) {
+  pendingStartProgramId = id;
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const dEl = document.getElementById('progStartDate');
+  if (dEl) dEl.value = `${y}-${m}-${day}`;
+  openModal('startProgramModal');
+}
+
+function confirmStartProgram() {
+  const dEl = document.getElementById('progStartDate');
+  if (!dEl || !dEl.value) { alert('Bitte ein valides Datum wählen'); return; }
+  setProgramActive(pendingStartProgramId, dEl.value);
+  closeModal('startProgramModal');
 }
 
 function updateActiveProgramBanner() {
@@ -52,33 +71,47 @@ function updateActiveProgramBanner() {
   }
   
   const prog = db.programs.find(x => x.id === db.activeProgram.id);
-  if (!prog) {
+  if (!prog || !prog.days.length || !db.activeProgram.startDate) {
     db.activeProgram = null;
     save();
     banner.style.display = 'none';
     return;
   }
   
-  const currDayIndex = db.activeProgram.currentDayIndex || 0;
-  let nextDay = prog.days[currDayIndex];
+  // Calculate relative day
+  const startD = new Date(db.activeProgram.startDate);
+  startD.setHours(0,0,0,0);
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const diffTime = now - startD;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   
-  // If finished program, loop back or show finish
-  if (!nextDay) {
-    db.activeProgram.currentDayIndex = 0;
-    save();
-    nextDay = prog.days[0];
+  // If diffDays is negative, program hasn't started yet
+  if (diffDays < 0) {
+    document.getElementById('activeProgramName').textContent = prog.name;
+    document.getElementById('activeProgramNext').textContent = `Beginnt in ${Math.abs(diffDays)} Tag(en)`;
+    banner.style.display = 'block';
+    return;
   }
+  
+  // Wrap around based on program length
+  const currDayIndex = diffDays % prog.days.length;
+  let nextDay = prog.days[currDayIndex];
   
   const tpl = db.templates.find(x => x.id === nextDay.templateId);
   const tplName = tpl ? tpl.name : 'Gelöschte Vorlage';
   
+  let typeObj = tpl ? (tpl.type || 'training') : 'training';
+  let typeLabel = typeObj === 'training' ? 'TRAINING' : typeObj === 'rest' ? 'ACTIVE REST' : 'COUCH POTATO';
+  const typeColors = { 'training': 'var(--accent)', 'rest': '#f5a623', 'couch': '#d0021b' };
+  
   document.getElementById('activeProgramName').textContent = prog.name;
-  document.getElementById('activeProgramNext').textContent = `Nächstes: Tag ${currDayIndex + 1} (${tplName})`;
+  document.getElementById('activeProgramNext').innerHTML = `Heute: Tag ${currDayIndex + 1} &mdash; <span style="color:${typeColors[typeObj]};font-weight:700;">${tplName} (${typeLabel})</span>`;
   banner.style.display = 'block';
 }
 
-function setProgramActive(id) {
-  db.activeProgram = { id: id, currentDayIndex: 0 };
+function setProgramActive(id, startDateIsoStr) {
+  db.activeProgram = { id: id, startDate: startDateIsoStr, currentDayIndex: 0 };
   save();
   renderPrograms();
   updateActiveProgramBanner();
@@ -96,9 +129,21 @@ function quitProgram() {
 function startNextProgramDay() {
   if (!db.activeProgram || db.currentWorkout) return;
   const prog = db.programs.find(x => x.id === db.activeProgram.id);
-  if (!prog) return;
+  if (!prog || !prog.days.length || !db.activeProgram.startDate) return;
   
-  const currDayIndex = db.activeProgram.currentDayIndex || 0;
+  const startD = new Date(db.activeProgram.startDate);
+  startD.setHours(0,0,0,0);
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const diffTime = now - startD;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) {
+    alert('Dieses Programm hat noch nicht begonnen.');
+    return;
+  }
+  
+  const currDayIndex = diffDays % prog.days.length;
   const nextDay = prog.days[currDayIndex];
   if (!nextDay) return;
   
@@ -108,12 +153,19 @@ function startNextProgramDay() {
     return;
   }
   
+  // Even if it's a rest day, we could start the workout with the rest template or not
+  if (tpl.type === 'couch' || tpl.type === 'rest') {
+     if(!confirm(`Heute ist als "${tpl.type === 'rest' ? 'Active Rest' : 'Couch Potato'}" markiert. Dennoch ein Training dafür dokumentieren?`)) {
+       return;
+     }
+  }
+  
   // Create a workout from the template
   const wo = {
     id: uid(),
     startTime: new Date().toISOString(),
     endTime: null,
-    exercises: JSON.parse(JSON.stringify(tpl.exercises)) // deep copy template
+    exercises: JSON.parse(JSON.stringify(tpl.exercises || [])) // deep copy template
   };
   
   // Add reference to track that this came from a program day
@@ -127,9 +179,6 @@ function startNextProgramDay() {
   });
   
   db.currentWorkout = wo;
-  
-  // Advance the day counter
-  db.activeProgram.currentDayIndex = (currDayIndex + 1) % prog.days.length;
   save();
   
   updateActiveProgramBanner();
@@ -195,8 +244,8 @@ function addProgramDay(selectedTemplateId = '') {
   });
   
   const delBtn = document.createElement('button');
-  delBtn.className = 'icon-btn';
-  delBtn.style.color = 'var(--accent2)';
+  delBtn.className = 'close-btn'; // Restyling the X button
+  delBtn.style.padding = '6px';
   delBtn.textContent = '✕';
   delBtn.onclick = () => {
     div.remove();

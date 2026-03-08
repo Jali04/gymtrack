@@ -146,4 +146,110 @@ function renderAchievements() {
       </div>
     `;
   });
+  
+  renderRanking();
+  renderMilestones();
+}
+
+const RANKS = [
+  { pt: 0, title: 'Beginner', sub: 'Der erste Schritt ist getan.' },
+  { pt: 10, title: 'Rookie', sub: 'Du kommst in Schwung!' },
+  { pt: 30, title: 'Eisenfresser', sub: 'Das Gym ist dein zweites Zuhause.' },
+  { pt: 60, title: 'Gym-Rat', sub: 'Eine absolute Maschine.' },
+  { pt: 120, title: 'Beast', sub: 'Kein Gewicht ist dir zu schwer.' },
+  { pt: 250, title: 'Halbgott', sub: 'Legendärer Status erreicht.' }
+];
+
+function renderRanking() {
+  const pts = db.workouts.length * 2 + db.achievements.length * 10;
+  let currentRank = RANKS[0];
+  let nextRank = RANKS[1];
+  for(let i=0; i<RANKS.length; i++) {
+    if (pts >= RANKS[i].pt) {
+      currentRank = RANKS[i];
+      nextRank = RANKS[i+1];
+    }
+  }
+  
+  const titleEl = document.getElementById('userRankTitle');
+  const subEl = document.getElementById('userRankSub');
+  if (!titleEl) return;
+  
+  titleEl.textContent = currentRank.title;
+  if (nextRank) {
+    const ptsNeeded = nextRank.pt - pts;
+    subEl.textContent = `${currentRank.sub} Noch ${ptsNeeded} Pkt bis ${nextRank.title}.`;
+  } else {
+    subEl.textContent = currentRank.sub;
+  }
+}
+
+function renderMilestones() {
+  const container = document.getElementById('milestonesList');
+  if (!container) return;
+  
+  let milestones = [];
+  
+  // Find top exercises (most logged)
+  const exCounts = {};
+  db.workouts.forEach(w => {
+    if(!w.exercises) return;
+    w.exercises.forEach(e => {
+      if(!exCounts[e.exId]) exCounts[e.exId] = { id: e.exId, dates: [], maxW: [] };
+      exCounts[e.exId].dates.push(w.startTime || w.date);
+      let m = 0;
+      e.sets.forEach(s => { if(s.type!=='W' && s.weight > m) m = s.weight; });
+      exCounts[e.exId].maxW.push(m);
+    });
+  });
+  
+  const validExs = Object.values(exCounts).filter(x => x.dates.length >= 3);
+  
+  validExs.forEach(x => {
+    const zipped = x.dates.map((d, i) => ({d, w: x.maxW[i]})).sort((a,b) => a.d - b.d);
+    
+    // Compare first to last (oldest vs newest)
+    const first = zipped[0];
+    const last = zipped[zipped.length-1];
+    if (last.w > first.w && first.w > 0) {
+       const diffW = last.w - first.w;
+       const diffTime = last.d - first.d;
+       const diffWeeks = Math.max(1, Math.round(diffTime / (1000*60*60*24*7)));
+       
+       const ex = getEx(x.id);
+       if (ex && ex.category !== 'Cardio' && ex.category !== 'Dehnen') {
+         milestones.push({
+           time: last.d,
+           html: `<div class="card" style="padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:0;">
+             <div style="font-size:24px;">📈</div>
+             <div>
+               <div style="font-weight:700;font-size:15px;">${ex.name}</div>
+               <div style="font-size:13px;color:var(--text);">Du hast dich in ${diffWeeks} Wochen um <span style="color:var(--accent);font-weight:700;">+${diffW}kg</span> gesteigert!</div>
+             </div>
+           </div>`
+         });
+       }
+    }
+  });
+  
+  // Add total workouts milestone
+  if (db.workouts.length >= 5) {
+     milestones.push({
+        time: Date.now(),
+        html: `<div class="card" style="padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:0;">
+          <div style="font-size:24px;">🔥</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Konsistenz</div>
+            <div style="font-size:13px;color:var(--text);">Schon ${db.workouts.length} Workouts absolviert. Bleib dran!</div>
+          </div>
+        </div>`
+     });
+  }
+  
+  if (milestones.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Sammle mehr Trainingsdaten für Meilensteine.</div>`;
+    return;
+  }
+  
+  container.innerHTML = milestones.sort((a,b) => b.time - a.time).slice(0,5).map(m => m.html).join('');
 }

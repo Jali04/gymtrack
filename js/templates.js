@@ -14,9 +14,14 @@ function renderTemplates() {
   }
   list.innerHTML = db.templates.map(tmpl => {
     const exNames = tmpl.exerciseIds.map(id => getExName(id)).join(', ');
+    const typeColors = { 'training': 'var(--accent)', 'rest': '#f5a623', 'couch': '#d0021b' };
+    const typeObj = tmpl.type || 'training';
+    const typeLabel = typeObj === 'training' ? 'TRAINING' : typeObj === 'rest' ? 'ACTIVE REST' : 'COUCH POTATO';
+    const typeBadge = `<span style="background:${typeColors[typeObj]};color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;">${typeLabel}</span>`;
+    
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-        <div style="font-weight:700;font-size:17px;">${tmpl.name}</div>
+        <div style="font-weight:700;font-size:17px;display:flex;align-items:center;">${tmpl.name}${typeBadge}</div>
         <div style="display:flex;gap:6px;">
           <button class="close-btn" onclick="openTemplateShare('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;" title="${t('shareTmpl')}">🔗</button>
           <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTmpl')}</button>
@@ -32,6 +37,8 @@ function renderTemplates() {
 function openCreateTemplate() {
   editingTemplateId = null; tmplExercises = [];
   document.getElementById('tmplName').value = '';
+  const selType = document.getElementById('tmplType');
+  if(selType) selType.value = 'training';
   document.getElementById('templateModalTitle').textContent = t('tmplNewTitle');
   document.getElementById('deleteTmplBtn').style.display = 'none';
   renderTmplExerciseList();
@@ -42,6 +49,8 @@ function openEditTemplate(id) {
   const tmpl = db.templates.find(t => t.id === id); if (!tmpl) return;
   editingTemplateId = id; tmplExercises = [...tmpl.exerciseIds];
   document.getElementById('tmplName').value = tmpl.name;
+  const selType = document.getElementById('tmplType');
+  if(selType) selType.value = tmpl.type || 'training';
   document.getElementById('templateModalTitle').textContent = t('tmplEditTitle');
   document.getElementById('deleteTmplBtn').style.display = 'block';
   renderTmplExerciseList();
@@ -162,13 +171,19 @@ function closeTmplExPicker() {
 
 function saveTemplate() {
   const name = document.getElementById('tmplName').value.trim();
+  const typeEl = document.getElementById('tmplType');
+  const type = typeEl ? typeEl.value : 'training';
+  
   if (!name) { alert(t('enterName')); return; }
-  if (tmplExercises.length === 0) { alert(t('minOneExercise')); return; }
+  
+  // If it's a rest day, we don't necessarily NEED exercise IDs.
+  if (type === 'training' && tmplExercises.length === 0) { alert(t('minOneExercise')); return; }
+  
   if (editingTemplateId) {
     const tmpl = db.templates.find(x => x.id === editingTemplateId);
-    tmpl.name = name; tmpl.exerciseIds = [...tmplExercises];
+    tmpl.name = name; tmpl.type = type; tmpl.exerciseIds = [...tmplExercises];
   } else {
-    db.templates.push({ id: uid(), name, exerciseIds: [...tmplExercises] });
+    db.templates.push({ id: uid(), name, type, exerciseIds: [...tmplExercises] });
   }
   save();
   closeModal('templateModal');

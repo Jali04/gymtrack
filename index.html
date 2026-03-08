@@ -45,8 +45,7 @@
       <div style="font-size:13px;color:var(--text);" id="activeProgramNext">Nächstes: Tag 1 (Push)</div>
     </div>
     
-    <button class="btn btn-primary" id="btnNewWorkout" onclick="openNewWorkout()">+ Neues Training</button>
-    <button class="btn btn-secondary" id="btnFromTemplate" style="margin-top:10px;" onclick="showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))">📋 Aus Vorlage starten</button>
+    <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
     <!-- Rest Timer Config -->
     <div class="rest-config-card">
       <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -119,55 +118,43 @@
   <div class="cal-grid" id="calDayLabels"></div>
   <div style="height:8px;"></div>
   <div class="cal-grid" id="calGrid"></div>
+  
+  <div class="divider" style="margin-top:20px;"></div>
+  <div class="section-title" id="ttlStats">Statistiken</div>
+  <div class="stats-grid" id="statsGrid" style="margin-bottom:16px;"></div>
+  <div id="statsProgressList"></div>
 </div>
 
-<!-- Stats -->
+<!-- Erfolg (formerly Stats) -->
 <div class="page" id="page-stats">
-  <div class="section-title" id="ttlStats">Statistiken</div>
-  <div class="stats-grid" id="statsGrid"></div>
-  <div id="statsProgressList"></div>
-  <div class="divider"></div>
+  <div class="section-title" style="font-size:20px;" id="ttlAchievements">Erfolge & Rang</div>
   
-  <div class="section-title" style="font-size:18px;" id="ttlAchievements">Erfolge</div>
-  <div id="achievementsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;"></div>
-  <div class="divider"></div>
+  <!-- Ranking Module will go here -->
+  <div id="rankingCard" class="card" style="margin-bottom:16px;text-align:center;padding:24px 16px;">
+    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Dein aktueller Rang</div>
+    <div id="userRankTitle" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent);line-height:1;margin-bottom:8px;">Beginner</div>
+    <div id="userRankSub" style="font-size:13px;color:var(--text);">Absolviere weitere Workouts, um aufzusteigen!</div>
+  </div>
 
-  <div class="section-title" style="font-size:18px;" id="ttlData">Daten</div>
-  <button class="btn btn-secondary" id="btnExport" onclick="openExportModal()" style="margin-bottom:10px;">📤 Daten exportieren</button>
-  <button class="btn btn-secondary" id="btnImport" onclick="openImportModal()">📥 Daten importieren</button>
+  <div class="section-title" style="font-size:16px;margin-top:20px;">Deine Trophäen</div>
+  <div id="achievementsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;"></div>
+  
+  <div class="section-title" style="font-size:16px;margin-top:20px;">Meilensteine</div>
+  <div id="milestonesList" style="display:flex;flex-direction:column;gap:8px;"></div>
 </div>
 
 <!-- Progress -->
 <div class="page" id="page-progress">
-  <div class="section-title" id="ttlProgress">Fortschritt</div>
-  
-  <div class="card" style="margin-bottom:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div style="font-weight:700;">Gewicht & KFA</div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:0;width:auto;" onclick="openAddMeasurementModal()">+ Eintrag</button>
-    </div>
-    
-    <div style="height:140px;margin-bottom:12px;display:flex;align-items:flex-end;gap:4px;" id="progressChart">
-      <!-- Body weight chart will be injected here -->
-    </div>
-    
-    <div id="progressList" style="max-height:200px;overflow-y:auto;">
-      <!-- History list of measurements -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div class="section-title" id="ttlProgress" style="margin:0;">Fortschritt</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openModal('weightProgressModal')" id="btnWeightMod">Gewicht</button>
+      <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openModal('picsProgressModal')" id="btnPicsMod">Fotos</button>
     </div>
   </div>
-  
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div style="font-weight:700;">Progress Pics</div>
-      <label class="btn btn-secondary btn-sm" style="margin-top:0;width:auto;cursor:pointer;">
-        + Foto
-        <input type="file" id="progressPicUpload" accept="image/*" style="display:none;" onchange="handlePicUpload(event)">
-      </label>
-    </div>
-    
-    <div id="progressGallery" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <!-- Images will be injected here -->
-    </div>
+
+  <div id="exerciseProgressTracker" style="display:flex;flex-direction:column;gap:12px;">
+    <!-- Accordions injected here -->
   </div>
 </div>
 
@@ -187,7 +174,7 @@
   </button>
   <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Stats
+    Erfolg
   </button>
   <button class="nav-btn" data-page="progress" onclick="showPage('progress',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
@@ -196,6 +183,22 @@
 </nav>
 
 <!-- ===== MODALS ===== -->
+
+<!-- Start Options -->
+<div class="modal-overlay" id="startOptionsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="ttlStartOptions">Training starten</div>
+      <div class="close-btn" onclick="closeModal('startOptionsModal')">✕</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-primary" onclick="closeModal('startOptionsModal');openNewWorkout()" id="btnStartEmpty">Leeres Training</button>
+      <button class="btn btn-secondary" onclick="closeModal('startOptionsModal');showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))" id="btnStartTemplate">Aus Vorlage</button>
+      <button class="btn btn-secondary" id="btnStartProgOpt" style="display:none;" onclick="closeModal('startOptionsModal');startNextProgramDay()">Gemäß Programm</button>
+    </div>
+  </div>
+</div>
 
 <!-- Exercise Picker -->
 <div class="modal-overlay" id="exercisePickerModal">
@@ -206,6 +209,7 @@
       <div class="close-btn" onclick="closeSubModal('exercisePickerModal')">✕</div>
     </div>
     <div id="exercisePickerList"></div>
+    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('exercisePickerModal'); openAddExercise();" id="btnNestedAddEx">+ Neue Übung erstellen</button>
   </div>
 </div>
 
@@ -285,6 +289,14 @@
       <input class="form-input" id="tmplName" placeholder="z.B. Push Day">
     </div>
     <div class="form-group">
+      <label class="form-label" id="lblTmplType">Typ</label>
+      <select class="form-input" id="tmplType">
+        <option value="training">Training-Day</option>
+        <option value="rest">Active-Rest-Day</option>
+        <option value="couch">Couch-Potato-Day</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label class="form-label" id="lblTmplEx">Übungen</label>
       <div id="tmplExerciseList" style="margin-bottom:8px;"></div>
       <button class="btn btn-secondary btn-sm" id="btnAddExToTemplate" onclick="openTmplExPicker()">+ Übung hinzufügen</button>
@@ -305,6 +317,7 @@
     </div>
     <div id="tmplPickerSelectedCount" style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px;min-height:20px;"></div>
     <div id="tmplExPickerList"></div>
+    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('tmplExPickerModal'); openAddExercise();" id="btnNestedTmplAddEx">+ Neue Übung erstellen</button>
     <div style="margin-top:16px;">
       <button class="btn btn-primary" id="btnConfirmTmplEx" onclick="confirmTmplExSelection()">Hinzufügen</button>
     </div>
@@ -525,7 +538,10 @@
     
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <label class="form-label" style="margin:0;" id="lblProgDays">Tage (Workouts)</label>
-      <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="addProgramDay()">+ Tag</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openCreateTemplate()" id="btnNestedAddTmpl">+ Vorlage</button>
+        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="addProgramDay()" id="btnAddProgDay">+ Tag</button>
+      </div>
     </div>
     
     <div id="progDaysList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
@@ -533,7 +549,22 @@
     </div>
     
     <button class="btn btn-primary" onclick="saveProgram()" id="btnSaveProgram">Speichern</button>
-    <button class="btn btn-danger" id="deleteProgBtn" style="display:none;" onclick="deleteProgram()">Programm löschen</button>
+    <button class="btn btn-danger" id="deleteProgBtn" style="display:none;margin-top:8px;" onclick="deleteProgram()">Programm löschen</button>
+  </div>
+</div>
+
+<!-- Start Program Modal -->
+<div class="modal-overlay" id="startProgramModal">
+  <div class="modal" style="padding:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" style="font-size:18px;">Programm starten</div>
+      <div class="close-btn" onclick="closeModal('startProgramModal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Start-Datum wählen (Tabelle beginnt an diesem Tag mit Tag 1)</label>
+      <input type="date" class="form-input" id="progStartDate">
+    </div>
+    <button class="btn btn-primary" onclick="confirmStartProgram()">Aktivieren</button>
   </div>
 </div>
 

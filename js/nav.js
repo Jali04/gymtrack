@@ -12,8 +12,8 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
   if (id === 'log')      renderLog();
   if (id === 'gymlab')   renderGymLab();
-  if (id === 'stats')    renderStats();
-  if (id === 'calendar') renderCalendar();
+  if (id === 'stats')    { renderStats(); }
+  if (id === 'calendar') { renderCalendar(); renderStats(); }
 }
 
 function renderGymLab() {

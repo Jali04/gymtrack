@@ -119,6 +119,16 @@ function deleteLogWorkout(id) {
   haptic('light');
 }
 
+function openStartOptionsModal() {
+  const btnProg = document.getElementById('btnStartProgOpt');
+  if (db.activeProgram && db.activeProgram.id) {
+    btnProg.style.display = 'block';
+  } else {
+    btnProg.style.display = 'none';
+  }
+  openModal('startOptionsModal');
+}
+
 function openNewWorkout() {
   db.currentWorkout = { id: uid(), date: Date.now(), startTime: Date.now(), exercises: [] };
   save();
