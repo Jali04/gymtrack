@@ -68,6 +68,7 @@
       <button id="swLogBtn" onclick="openLogTimerModal()" style="display:none;background:transparent;border:1px solid var(--accent);border-radius:10px;padding:10px 14px;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;" id="swLogBtnLabel">✓ Buchen</button>
     </div>
     <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
+    <button id="btnWorkoutHiit" class="btn btn-secondary" onclick="openHiitTimer()" style="margin-top:8px;">⚡ HIIT / Cardio Timer</button>
     <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()">Training abbrechen</button>
   </div>
 </div>
@@ -312,6 +313,21 @@
       <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitSkip()" title="Skip">⏭</button>
       <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitReset()" title="Reset">↺</button>
     </div>
+  </div>
+</div>
+
+<!-- HIIT → Workout Log -->
+<div class="modal-overlay" id="hiitLogModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title">⚡ Session speichern</div>
+      <div class="close-btn" onclick="closeModal('hiitLogModal')">✕</div>
+    </div>
+    <div id="hiitLogSummary"></div>
+    <div class="form-label" style="margin-bottom:10px;" id="hiitLogPickLabel">Übung auswählen</div>
+    <div id="hiitLogExList"></div>
+    <button class="btn btn-secondary" style="width:100%;margin-top:10px;" onclick="closeModal('hiitLogModal')">Überspringen</button>
   </div>
 </div>
 
