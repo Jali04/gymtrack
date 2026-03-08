@@ -24,7 +24,7 @@ function renderStats() {
 }
 
 function _renderProgress() {
-  const progList  = document.getElementById('progressList');
+  const progList  = document.getElementById('statsProgressList');
   const activeExs = db.exercises.filter(ex => db.workouts.some(w => w.exercises.some(e => e.exId === ex.id)));
 
   if (activeExs.length === 0) {

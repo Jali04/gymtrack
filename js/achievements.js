@@ -154,12 +154,12 @@ function renderAchievements() {
 }
 
 const RANKS = [
-  { pt: 0, title: 'Beginner', sub: 'Der erste Schritt ist getan.' },
-  { pt: 10, title: 'Rookie', sub: 'Du kommst in Schwung!' },
-  { pt: 30, title: 'Eisenfresser', sub: 'Das Gym ist dein zweites Zuhause.' },
-  { pt: 60, title: 'Gym-Rat', sub: 'Pures Dedication.' },
-  { pt: 120, title: 'Maschine', sub: 'Kein Gewicht ist dir zu schwer.' },
-  { pt: 250, title: 'Titan', sub: 'Legendärer Status erreicht.' }
+  { pt: 0, title: '🥚 Beginner', sub: 'Der erste Schritt ist getan.' },
+  { pt: 10, title: '🥉 Rookie', sub: 'Du kommst in Schwung!' },
+  { pt: 30, title: '🥈 Eisenfresser', sub: 'Das Gym ist dein zweites Zuhause.' },
+  { pt: 60, title: '🥇 Gym-Rat', sub: 'Pures Dedication.' },
+  { pt: 120, title: '🦍 Maschine', sub: 'Kein Gewicht ist dir zu schwer.' },
+  { pt: 250, title: '🔱 Titan', sub: 'Legendärer Status erreicht.' }
 ];
 
 function retroAwardGamification() {
