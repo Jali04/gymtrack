@@ -2,7 +2,7 @@
    GYMTRACK — Navigation + Swipe
    ============================================= */
 
-const PAGE_ORDER = ['log', 'templates', 'exercises', 'history', 'calendar', 'stats'];
+const PAGE_ORDER = ['log', 'gymlab', 'calendar', 'stats'];
 
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -10,12 +10,15 @@ function showPage(id, btn) {
   const pg = document.getElementById('page-' + id);
   if (pg) pg.classList.add('active');
   if (btn) btn.classList.add('active');
-  if (id === 'log')       renderLog();
-  if (id === 'exercises') renderExercises();
-  if (id === 'history')   renderHistory();
-  if (id === 'stats')     renderStats();
-  if (id === 'templates') renderTemplates();
-  if (id === 'calendar')  renderCalendar();
+  if (id === 'log')      renderLog();
+  if (id === 'gymlab')   renderGymLab();
+  if (id === 'stats')    renderStats();
+  if (id === 'calendar') renderCalendar();
+}
+
+function renderGymLab() {
+  renderTemplates();
+  renderExercises();
 }
 
 /* ---- Touch swipe navigation ---- */
