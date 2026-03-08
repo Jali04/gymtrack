@@ -40,10 +40,7 @@
   <div class="section-title" id="ttlStartTraining">Training starten</div>
   <div id="quickStart">
     <button class="btn btn-primary" id="btnNewWorkout" onclick="openNewWorkout()">+ Neues Training</button>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:10px;">
-      <button class="btn btn-secondary" id="btnFromTemplate" onclick="showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))">📋 Aus Vorlage starten</button>
-      <button class="btn btn-secondary" id="btnOpenTimer" onclick="openHiitTimer()" style="width:auto;padding:14px 16px;">⏱</button>
-    </div>
+    <button class="btn btn-secondary" id="btnFromTemplate" style="margin-top:10px;" onclick="showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))">📋 Aus Vorlage starten</button>
     <!-- Rest Timer Config -->
     <div class="rest-config-card">
       <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -75,16 +72,6 @@
       <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="finishWorkout()">Fertig ✓</button>
     </div>
     <div id="workoutExercises"></div>
-    <!-- Workout Stopwatch -->
-    <div id="workoutStopwatch" style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
-      <div style="flex:1;">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;" id="swLabel">Stoppuhr</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--text);line-height:1;" id="swDisplay">00:00</div>
-      </div>
-      <button onclick="swToggle()" id="swToggleBtn" style="background:var(--accent);border:none;border-radius:10px;width:44px;height:44px;color:#000;font-size:18px;cursor:pointer;">▶</button>
-      <button onclick="swReset()" style="background:transparent;border:1px solid var(--border);border-radius:10px;width:44px;height:44px;color:var(--muted);font-size:18px;cursor:pointer;">↺</button>
-      <button id="swLogBtn" onclick="openLogTimerModal()" style="display:none;background:transparent;border:1px solid var(--accent);border-radius:10px;padding:10px 14px;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;" id="swLogBtnLabel">✓ Buchen</button>
-    </div>
     <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
     <button id="btnWorkoutHiit" class="btn btn-secondary" onclick="openHiitTimer()" style="margin-top:8px;">⚡ HIIT / Cardio Timer</button>
     <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()">Training abbrechen</button>
@@ -306,30 +293,45 @@
   </div>
 </div>
 
-<!-- HIIT Timer -->
+<!-- Timer (HIIT + Stoppuhr) -->
 <div class="modal-overlay" id="hiitModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="ttlHiitTimer">HIIT Timer</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="modal-title" id="ttlHiitTimer">Timer</div>
       <div class="close-btn" onclick="closeHiitTimer()">✕</div>
     </div>
-    <!-- Preset Tabs -->
-    <div class="hiit-tabs">
-      <button class="hiit-tab active" data-mode="tabata" onclick="hiitSelectMode('tabata')">Tabata</button>
-      <button class="hiit-tab" data-mode="emom" onclick="hiitSelectMode('emom')">EMOM</button>
-      <button class="hiit-tab" data-mode="amrap" onclick="hiitSelectMode('amrap')">AMRAP</button>
-      <button class="hiit-tab" data-mode="custom" onclick="hiitSelectMode('custom')" id="hiitTabCustom">Custom</button>
+    <!-- Mode tabs -->
+    <div class="hiit-mode-tabs">
+      <button class="hiit-mode-tab active" id="timerModeHiit" onclick="switchTimerMode('hiit')">HIIT</button>
+      <button class="hiit-mode-tab" id="timerModeSw" onclick="switchTimerMode('sw')">Stoppuhr</button>
     </div>
-    <!-- Display Ring -->
-    <div id="hiitDisplay" style="margin:16px 0;"></div>
-    <!-- Config -->
-    <div id="hiitConfig"></div>
-    <!-- Controls -->
-    <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-top:16px;">
-      <button class="btn btn-primary hiit-ctrl-btn" id="hiitToggleBtn" onclick="hiitToggle()">▶ Start</button>
-      <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitSkip()" title="Skip">⏭</button>
-      <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitReset()" title="Reset">↺</button>
+    <!-- HIIT Section -->
+    <div id="hiitSection">
+      <div class="hiit-tabs" style="margin-top:12px;">
+        <button class="hiit-tab active" data-mode="tabata" onclick="hiitSelectMode('tabata')">Tabata</button>
+        <button class="hiit-tab" data-mode="emom" onclick="hiitSelectMode('emom')">EMOM</button>
+        <button class="hiit-tab" data-mode="amrap" onclick="hiitSelectMode('amrap')">AMRAP</button>
+        <button class="hiit-tab" data-mode="custom" onclick="hiitSelectMode('custom')" id="hiitTabCustom">Custom</button>
+      </div>
+      <div id="hiitDisplay" style="margin:16px 0;"></div>
+      <div id="hiitConfig"></div>
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-top:16px;">
+        <button class="btn btn-primary hiit-ctrl-btn" id="hiitToggleBtn" onclick="hiitToggle()">▶ Start</button>
+        <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitSkip()" title="Skip">⏭</button>
+        <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitReset()" title="Reset">↺</button>
+      </div>
+    </div>
+    <!-- Stopwatch Section -->
+    <div id="swSection" style="display:none;">
+      <div style="text-align:center;padding:36px 0 28px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:72px;color:var(--text);line-height:1;" id="swDisplay">00:00</div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="swToggle()" id="swToggleBtn" style="flex:1;background:var(--accent);border:none;border-radius:12px;height:52px;color:#000;font-size:20px;cursor:pointer;">▶</button>
+        <button onclick="swReset()" style="background:transparent;border:1px solid var(--border);border-radius:12px;width:52px;height:52px;color:var(--muted);font-size:22px;cursor:pointer;">↺</button>
+      </div>
+      <button id="swLogBtn" onclick="openLogTimerModal()" class="btn btn-secondary" style="display:none;margin-top:10px;">✓ Buchen</button>
     </div>
   </div>
 </div>
