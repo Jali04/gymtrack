@@ -17,11 +17,14 @@ function renderTemplates() {
     const typeColors = { 'training': 'var(--accent)', 'rest': '#f5a623', 'couch': '#d0021b' };
     const typeObj = tmpl.type || 'training';
     const typeLabel = typeObj === 'training' ? 'TRAINING' : typeObj === 'rest' ? 'ACTIVE REST' : 'COUCH POTATO';
-    const typeBadge = `<span style="background:${typeColors[typeObj]};color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;">${typeLabel}</span>`;
+    const typeBadge = `<span style="background:${typeColors[typeObj]};color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;display:inline-block;">${typeLabel}</span>`;
     
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px;">
-        <div style="font-weight:700;font-size:17px;display:flex;align-items:center;flex-wrap:wrap;word-break:break-word;">${tmpl.name}${typeBadge}</div>
+        <div style="font-weight:700;font-size:17px;display:flex;flex-direction:column;gap:4px;word-break:break-word;">
+          ${tmpl.name}
+          <div>${typeBadge}</div>
+        </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="close-btn" onclick="openTemplateShare('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;" title="${t('shareTmpl')}">🔗</button>
           <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTmpl')}</button>

@@ -146,6 +146,49 @@ function deleteMeasurement(id) {
   }
 }
 
+function requestPicsAccess() {
+  const pin = localStorage.getItem('gymtrack_pics_pin');
+  if (!pin) {
+    // If no PIN set, offer to set one exactly once per session or just let them in.
+    // simpler: just open it, the lock icon in the modal lets them set it.
+    openModal('picsProgressModal');
+    return;
+  }
+  
+  const attempt = prompt('Bitte PIN eingeben, um Fotos zu entsperren:');
+  if (attempt === null) return; // User cancelled
+  
+  if (attempt === pin) {
+    openModal('picsProgressModal');
+  } else {
+    showToast('Falsche PIN');
+  }
+}
+
+function configurePicPin() {
+  const currentPin = localStorage.getItem('gymtrack_pics_pin');
+  
+  if (currentPin) {
+    const attempt = prompt('Aktuelle PIN eingeben, um sie zu ändern oder zu entfernen:');
+    if (attempt === null) return;
+    if (attempt !== currentPin) {
+      showToast('Falsche PIN');
+      return;
+    }
+  }
+  
+  const newPin = prompt('Neue PIN eingeben (leer lassen, um den Schutz zu entfernen):');
+  if (newPin === null) return; // User cancelled
+  
+  if (newPin.trim() === '') {
+    localStorage.removeItem('gymtrack_pics_pin');
+    showToast('PIN-Schutz entfernt');
+  } else {
+    localStorage.setItem('gymtrack_pics_pin', newPin.trim());
+    showToast('PIN-Schutz aktiviert');
+  }
+}
+
 function renderProgressPics() {
   const gal = document.getElementById('progressGallery');
   gal.innerHTML = '';

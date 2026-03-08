@@ -31,28 +31,41 @@ const SPLASH_QUOTES = [
   "The only person you're competing with is who you were yesterday.",
   "Results happen over time, not overnight. Work harder.",
   "Train like there's no trophy. Compete like there's no tomorrow.",
+  "Your comfort zone will kill you.",
+  "Stop waiting for Friday, for summer, for someone to fall in love with you, for life. Happiness is achieved when you stop waiting for it and make the most of the moment you are in now.",
+  "Don't stop when you're tired. Stop when you're done.",
+  "Wake up with determination. Go to bed with satisfaction.",
+  "Do something today that your future self will thank you for.",
+  "Little things make big days.",
+  "It's going to be hard, but hard does not mean impossible.",
+  "Don't wait for opportunity. Create it.",
+  "Sometimes later becomes never. Do it now.",
+  "Great things never come from comfort zones.",
+  "Dream it. Wish it. Do it.",
+  "Success doesn't just find you. You have to go out and get it.",
+  "The harder you work for something, the greater you'll feel when you achieve it.",
+  "Dream bigger. Do bigger.",
+  "Don't stop until you're proud.",
+  "The pain you feel today will be the strength you feel tomorrow.",
+  "When you feel like quitting, remember why you started.",
+  "Make it happen. Shock everyone.",
+  "Grateful for where I'm at, excited about where I'm going.",
+  "Focus on your goal. Don't look in any direction but ahead."
 ];
 
 function initSplash() {
-  const today = new Date().toISOString().slice(0, 10);
-  const shown = localStorage.getItem('dscpln_splash_date');
-  const el    = document.getElementById('splashScreen');
+  const el = document.getElementById('splashScreen');
   if (!el) return;
 
-  // Select quote by day (changes daily, same all day)
-  const dayIndex = Math.floor(Date.now() / 86400000) % SPLASH_QUOTES.length;
-  document.getElementById('splashQuote').textContent = '\u201C' + SPLASH_QUOTES[dayIndex] + '\u201D';
+  // Select quote randomly instead of daily so it changes on every load
+  const randomIndex = Math.floor(Math.random() * SPLASH_QUOTES.length);
+  document.getElementById('splashQuote').textContent = '\u201C' + SPLASH_QUOTES[randomIndex] + '\u201D';
 
-  if (shown === today) {
-    // Already dismissed today — hide instantly
-    el.style.display = 'none';
-  }
-  // Otherwise: splash stays visible until user taps ENTER
+  // Make splash visible on every app load
+  el.style.display = 'flex';
 }
 
 function enterApp() {
-  const today = new Date().toISOString().slice(0, 10);
-  localStorage.setItem('dscpln_splash_date', today);
   const el = document.getElementById('splashScreen');
   el.classList.add('fade-out');
   setTimeout(() => { el.style.display = 'none'; }, 620);
