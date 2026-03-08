@@ -4,9 +4,9 @@
 
 const TR = {
   de: {
-    navTraining: 'Training', navTemplates: 'Vorlagen', navExercises: 'Übungen',
-    navHistory: 'Verlauf', navStats: 'Stats', navCalendar: 'Kalender',
-    startTraining: 'Training starten', newWorkout: '+ Neues Training', lastWorkouts: 'Letzte Trainings',
+    navTraining: 'Training', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Kalender',
+    startTraining: 'Training starten', newWorkout: '+ Neues Training', lastWorkouts: 'Verlauf',
+    gymLab: 'GymLab', myTemplates: 'Vorlagen', myExercisesShort: 'Übungen',
     fromTemplate: '📋 Aus Vorlage starten', noWorkoutYet: 'Noch kein Training aufgezeichnet',
     activeWorkout: 'Aktives Training', done: 'Fertig ✓', addExercise: '+ Übung hinzufügen',
     cancelWorkout: 'Training abbrechen',
@@ -76,9 +76,9 @@ const TR = {
     tmplImportSuccess: '✓ Vorlage importiert!',
   },
   en: {
-    navTraining: 'Workout', navTemplates: 'Templates', navExercises: 'Exercises',
-    navHistory: 'History', navStats: 'Stats', navCalendar: 'Calendar',
-    startTraining: 'Start Workout', newWorkout: '+ New Workout', lastWorkouts: 'Recent Workouts',
+    navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
+    startTraining: 'Start Workout', newWorkout: '+ New Workout', lastWorkouts: 'History',
+    gymLab: 'GymLab', myTemplates: 'Templates', myExercisesShort: 'Exercises',
     fromTemplate: '📋 Start from Template', noWorkoutYet: 'No workouts recorded yet',
     activeWorkout: 'Active Workout', done: 'Done ✓', addExercise: '+ Add Exercise',
     cancelWorkout: 'Cancel Workout',
@@ -164,8 +164,8 @@ function toggleLang() {
   if (!active) return;
   const id = active.id.replace('page-', '');
   const renders = {
-    log: renderLog, exercises: renderExercises, history: renderHistory,
-    stats: renderStats, templates: renderTemplates, calendar: renderCalendar
+    log: renderLog, gymlab: renderGymLab,
+    stats: renderStats, calendar: renderCalendar
   };
   if (renders[id]) renders[id]();
   // Re-render HIIT config labels if timer modal is open
@@ -179,7 +179,7 @@ function applyTranslations() {
   const sp = (id, key) => { const el = document.getElementById(id); if (el) el.placeholder  = t(key); };
 
   // Nav
-  const navMap = { log: 'navTraining', templates: 'navTemplates', exercises: 'navExercises', history: 'navHistory', calendar: 'navCalendar', stats: 'navStats' };
+  const navMap = { log: 'navTraining', gymlab: 'navGymLab', calendar: 'navCalendar', stats: 'navStats' };
   document.querySelectorAll('.nav-btn').forEach(btn => {
     const pg = btn.dataset.page;
     if (!pg || !navMap[pg]) return;
@@ -192,16 +192,16 @@ function applyTranslations() {
   s('ttlLastWorkouts', 'lastWorkouts'); s('activeWorkoutLabel', 'activeWorkout');
   s('btnFinishWorkout', 'done'); s('btnAddExercise', 'addExercise'); s('btnCancelWorkout', 'cancelWorkout');
 
-  // Templates
-  s('ttlTemplates', 'templates'); s('btnCreateTemplate', 'createTemplate');
+  // GymLab
+  s('ttlTemplates', 'myTemplates'); s('ttlExercises', 'myExercisesShort');
   s('templateModalTitle', (typeof editingTemplateId !== 'undefined' && editingTemplateId) ? 'tmplEditTitle' : 'tmplNewTitle');
   s('lblTmplName', 'tmplName'); sp('tmplName', 'tmplNamePlaceholder');
   s('lblTmplEx', 'tmplExercises'); s('btnAddExToTemplate', 'addExToTmpl'); s('btnConfirmTmplEx', 'addExToTmpl');
   s('btnSaveTemplate', 'save'); s('deleteTmplBtn', 'deleteTmpl'); s('btnCancelTemplate', 'cancel');
   s('ttlTmplExPicker', 'tmplExPickerTitle');
 
-  // Exercises
-  s('ttlExercises', 'myExercises'); s('btnCreateExercise', 'createExercise');
+  // Exercises modal
+  s('btnCreateExercise', 'createExercise');
   s('lblExName', 'name'); s('lblExCategory', 'category');
   s('lblExNotes', 'exNotes');
   s('btnSaveExercise', 'save'); s('deleteExBtn', 'deleteExercise'); s('btnCancelExercise', 'cancel');
@@ -210,11 +210,8 @@ function applyTranslations() {
   document.querySelectorAll('#exCategory option').forEach(o => { o.textContent = t('cats')[o.value] || o.value; });
   updateCategoryHint();
 
-  // History
-  s('ttlHistory', 'history');
-
   // Stats
-  s('ttlStats', 'stats'); s('ttlProgress', 'progressPerEx'); s('ttlData', 'data');
+  s('ttlStats', 'stats'); s('ttlData', 'data');
   s('btnExport', 'exportData'); s('btnImport', 'importData');
 
   // Sets modal

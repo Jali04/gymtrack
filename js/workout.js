@@ -18,29 +18,66 @@ function renderLog() {
   document.getElementById('quickStart').style.display    = 'block';
   document.getElementById('activeWorkout').style.display = 'none';
 
-  const locale = lang === 'de' ? 'de-DE' : 'en-GB';
-  const recent = document.getElementById('recentWorkouts');
-  const ws     = [...db.workouts].reverse().slice(0, 5);
+  const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
+  const recent  = document.getElementById('recentWorkouts');
+  const ws      = [...db.workouts].reverse();
 
   if (ws.length === 0) {
     recent.innerHTML = `<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">${t('noWorkoutYet')}</div></div>`;
     return;
   }
+
   recent.innerHTML = ws.map(w => {
-    const d         = new Date(w.date).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
-    const exNames   = w.exercises.map(e => getExName(e.exId)).join(', ');
+    const d         = new Date(w.date).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const totalSets = w.exercises.reduce((a, e) => a + e.sets.length, 0);
-    return `<div class="exercise-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="exercise-name">${d}</div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span class="tag">${totalSets} ${t('sets')}</span>
-          <button style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="openEditWorkout('${w.id}')">✏️</button>
+    let durationHtml = '';
+    if (w.endTime && w.startTime) {
+      const mins = Math.round((w.endTime - w.startTime) / 60000);
+      durationHtml = `<span class="tag" style="background:rgba(255,255,255,0.05);color:var(--muted);border-color:var(--border);">⏱ ${mins} min</span>`;
+    }
+
+    const exHtml = w.exercises.map(e => {
+      const ex   = getEx(e.exId);
+      const type = ex ? getCatType(ex.category) : 'strength';
+      const name = getExName(e.exId);
+      const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+      const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
+      let setsHtml = '';
+      if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
+      else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+      else                         setsHtml = e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+      return `<div style="margin-bottom:10px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${name}<span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
+        ${e.note ? `<div style="margin-top:5px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="history-entry">
+      <div class="history-entry-header">
+        <div>
+          <div class="history-exercise-name">${d}</div>
+          <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">
+            <span class="tag">${totalSets} ${t('sets')}</span>
+            ${durationHtml}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:flex-start;">
+          <button style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="openEditWorkout('${w.id}')">✏️</button>
+          <button class="close-btn" onclick="deleteLogWorkout('${w.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
         </div>
       </div>
-      <div class="exercise-meta" style="margin-top:6px;">${exNames}</div>
+      <div style="margin-top:12px;">${exHtml}</div>
     </div>`;
   }).join('');
+}
+
+function deleteLogWorkout(id) {
+  if (!confirm(t('confirmDeleteWorkout'))) return;
+  db.workouts = db.workouts.filter(w => w.id !== id);
+  save();
+  renderLog();
+  haptic('light');
 }
 
 function openNewWorkout() {
