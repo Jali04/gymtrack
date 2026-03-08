@@ -57,11 +57,11 @@ function renderLog() {
     }
 
     const exHtml = w.exercises.map(e => {
-      const ex   = getEx(e.exId);
-      const type = ex ? getCatType(ex.category) : 'strength';
-      const name = getExName(e.exId);
+      const ex       = getEx(e.exId);
+      const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
+      const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+      const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
       const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-      const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
       let setsHtml = '';
       if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
@@ -131,11 +131,11 @@ function renderActiveWorkout() {
   }
 
   container.innerHTML = cw.exercises.map((e, i) => {
-    const ex       = getEx(e.exId);
-    const name     = ex ? ex.name : t('noEntries');
-    const type     = ex ? getCatType(ex.category) : 'strength';
-    const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+      const ex       = getEx(e.exId);
+      const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
+      const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+      const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
+      const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
 
     const hiits    = e.hiitSets || [];
     let setsHtml = '';
@@ -259,31 +259,74 @@ function _swUpdateDisplay() {
 
 function openLogTimerModal() {
   const cw = db.currentWorkout;
-  if (!cw || cw.exercises.length === 0) { alert(t('swNoEx')); return; }
+  if (!cw) return;
   document.getElementById('logTimerTimeDisplay').textContent = _fmtSwSec(swElapsed);
-  const list = document.getElementById('logTimerExerciseList');
-  list.innerHTML = cw.exercises.map((e, i) => {
-    const ex       = getEx(e.exId);
-    const name     = ex ? ex.name : '?';
-    const type     = ex ? getCatType(ex.category) : 'strength';
-    const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-    const logged   = e.timerSec ? `<span style="font-size:11px;color:var(--accent);margin-left:6px;">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
-    return `<div class="exercise-list-item" onclick="logTimerToExercise(${i})">
-      <div class="exercise-list-name">${name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span>${logged}</div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>`;
-  }).join('');
+  
+  if (typeof window._timerLogState !== 'undefined') {
+    window._timerLogState.type = 'sw';
+    window._timerLogState.swTarget = (cw.exercises.length > 0) ? 'workout_0' : 'custom_Brust';
+    window._timerLogState.swNote = '';
+    _renderSwLogContent();
+  }
+  
   openModal('logTimerModal');
 }
 
-function logTimerToExercise(idx) {
-  db.currentWorkout.exercises[idx].timerSec = swElapsed;
+function _renderSwLogContent() {
+  const state = window._timerLogState;
+  const container = document.getElementById('logTimerContent');
+  if (!container) return;
+  
+  let html = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${t('swBookWhich') || 'Auf welche Übung buchen?'}</div>
+      <select class="form-input" style="margin-bottom:8px;" onchange="window._timerLogState.swTarget=this.value; if(typeof _checkTimerLogTarget === 'function') _checkTimerLogTarget(this.value, 'sw')">
+         ${typeof _buildTargetOptions === 'function' ? _buildTargetOptions(state.swTarget) : ''}
+      </select>
+      <input type="text" class="form-input" style="height:36px;font-size:13px;" placeholder="${t('sessionNotePlaceholder') || 'Anmerkung...'}" value="${state.swNote}" oninput="window._timerLogState.swNote=this.value">
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="_saveSwLog()">✓ ${t('save') || 'Speichern'}</button>
+  `;
+  container.innerHTML = html;
+}
+
+function _saveSwLog() {
+  const cw = db.currentWorkout;
+  if (!cw) return;
+  const state = window._timerLogState;
+  const tVal = state.swTarget;
+  const tNote = state.swNote.trim();
+  
+  if (tVal === 'gymlab' || tVal === 'newex') {
+    alert("Bitte ein gültiges Ziel wählen.");
+    return;
+  }
+  
+  let exEntry = null;
+  if (tVal.startsWith('workout_')) {
+    const idx = parseInt(tVal.split('_')[1]);
+    exEntry = cw.exercises[idx];
+  } else if (tVal.startsWith('custom_')) {
+    const cat = tVal.split('_')[1];
+    const customName = 'Stoppuhr';
+    exEntry = cw.exercises.find(e => e.isCustom && e.customCategory === cat && e.customName === customName);
+    if (!exEntry) {
+      exEntry = { isCustom: true, customCategory: cat, customName: customName, sets: [] };
+      cw.exercises.push(exEntry);
+    }
+  }
+  
+  if (exEntry) {
+    if (!exEntry.timerSec) exEntry.timerSec = 0;
+    exEntry.timerSec += swElapsed;
+    if (tNote) exEntry.note = exEntry.note ? exEntry.note + '\\n' + tNote : tNote;
+  }
+  
   save();
   closeModal('logTimerModal');
   renderActiveWorkout();
   haptic('success');
-  showToast('⏱ ' + _fmtSwSec(swElapsed) + ' ' + t('swSaved'));
+  showToast('⏱ ' + _fmtSwSec(swElapsed) + ' ' + (t('swSaved') || 'gespeichert'));
 }
 
 /* ---- Exercise Picker ---- */
@@ -352,18 +395,19 @@ function openLogSets(idx) {
   const cw   = db.currentWorkout;
   const we   = cw.exercises[idx];
   const ex   = getEx(we.exId);
-  const type = ex ? getCatType(ex.category) : 'strength';
+  const type = we.isCustom ? getCatType(we.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+  const name = we.isCustom ? we.customName : (ex ? ex.name : '');
   currentExCategory = type;
-  document.getElementById('logSetsTitle').textContent = ex ? ex.name : '';
+  document.getElementById('logSetsTitle').textContent = name;
 
   _setupSetColHeaders(type);
 
   // Last performance + exercise notes
-  const lastPerf = getLastPerformance(we.exId, cw.id);
+  const lastPerf = we.isCustom ? getLastCustomPerformance(we.customName, we.customCategory, cw.id) : getLastPerformance(we.exId, cw.id);
   const lpDiv    = document.getElementById('lastPerformance');
   let lpHtml = '';
 
-  if (ex && ex.notes) {
+  if (ex && ex.notes && !we.isCustom) {
     lpHtml += `<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin-bottom:10px;">📝 ${ex.notes}</div>`;
   }
   if (lastPerf && lastPerf.sets.length > 0) {
@@ -372,7 +416,7 @@ function openLogSets(idx) {
     else if (type === 'stretch') setsHtml = lastPerf.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
     else                         setsHtml = lastPerf.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
     const lastNoteHtml = lastPerf.note ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${lastPerf.note}</div>` : '';
-    lpHtml += `<div class="exercise-last"><div class="label">${t('lastPerf')}</div><div class="sets-row">${setsHtml}</div>${lastNoteHtml}</div>`;
+    lpHtml += `<div class="exercise-last"><div class="label">${t('lastPerf') || 'Letztes Mal'}</div><div class="sets-row">${setsHtml}</div>${lastNoteHtml}</div>`;
   }
   lpDiv.innerHTML = lpHtml;
 
@@ -388,10 +432,18 @@ function openLogSets(idx) {
 
 function getLastPerformance(exId, currentWorkoutId) {
   const relevant = db.workouts
-    .filter(w => w.id !== currentWorkoutId && w.exercises.some(e => e.exId === exId))
+    .filter(w => w.id !== currentWorkoutId && w.exercises.some(e => !e.isCustom && e.exId === exId))
     .sort((a, b) => b.date - a.date);
   if (relevant.length === 0) return null;
-  return relevant[0].exercises.find(e => e.exId === exId);
+  return relevant[0].exercises.find(e => !e.isCustom && e.exId === exId);
+}
+
+function getLastCustomPerformance(name, category, currentWorkoutId) {
+  const relevant = db.workouts
+    .filter(w => w.id !== currentWorkoutId && w.exercises.some(e => e.isCustom && e.customName === name && e.customCategory === category))
+    .sort((a, b) => b.date - a.date);
+  if (relevant.length === 0) return null;
+  return relevant[0].exercises.find(e => e.isCustom && e.customName === name && e.customCategory === category);
 }
 
 function _setupSetColHeaders(type) {

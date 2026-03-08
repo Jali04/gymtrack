@@ -78,6 +78,11 @@ const TR = {
     swLabel: 'Stoppuhr', swBook: 'Buchen', swBookTitle: 'Zeit buchen',
     swBookTime: 'Gemessene Zeit:', swBookWhich: 'Auf welche Übung buchen?',
     swNoEx: 'Zuerst eine Übung hinzufügen!', swSaved: 'gespeichert',
+    // Timer Targets
+    targetCurrentEx: 'Aktuelle Übungen', targetMuscleGroup: 'Muskelgruppe (Freies Training)',
+    targetGymLab: 'Aus GymLab wählen', targetNewEx: 'Neue Übung erstellen',
+    hiitAllRounds: 'Alle Runden gleich', hiitPerRound: 'Pro Runde wählen',
+    hiitLogRound: 'Runde',
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
@@ -154,6 +159,11 @@ const TR = {
     swLabel: 'Stopwatch', swBook: 'Log', swBookTitle: 'Log Time',
     swBookTime: 'Measured time:', swBookWhich: 'Log to which exercise?',
     swNoEx: 'Add an exercise first!', swSaved: 'saved',
+    // Timer Targets
+    targetCurrentEx: 'Current Exercises', targetMuscleGroup: 'Muscle Group (Free Training)',
+    targetGymLab: 'Choose from GymLab', targetNewEx: 'Create New Exercise',
+    hiitAllRounds: 'All rounds same', hiitPerRound: 'Choose per round',
+    hiitLogRound: 'Round',
   }
 };
 

@@ -8,10 +8,15 @@ function isEditOpen() {
   return document.getElementById('editWorkoutModal').classList.contains('open');
 }
 
+function isTimerLogOpen() {
+  return document.getElementById('hiitLogModal').classList.contains('open') || 
+         document.getElementById('logTimerModal').classList.contains('open');
+}
+
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (SUB_MODALS.includes(id) && isEditOpen()) {
+  if (SUB_MODALS.includes(id) && (isEditOpen() || isTimerLogOpen())) {
     el.classList.add('overlay-top');
   } else {
     el.classList.remove('overlay-top');
@@ -28,11 +33,18 @@ function closeModal(id) {
 
 function closeSubModal(id) {
   closeModal(id);
-  if (typeof editingWorkoutCopy !== 'undefined' && editingWorkoutCopy) {
+  if (typeof editingWorkoutCopy !== 'undefined' && editingWorkoutCopy && isEditOpen()) {
     if (id === 'logSetsModal') editWorkoutSetIdx = null;
     if (id === 'exercisePickerModal') window._pickerMode = null;
     openModal('editWorkoutModal');
     renderEditWorkout();
+  }
+  if (isTimerLogOpen()) {
+    if (id === 'exercisePickerModal' || id === 'addExerciseModal') {
+      window._pickerMode = null;
+      // Triggers a re-render of the timer modal via a global callback if defined
+      if (typeof window._reRenderTimerLog === 'function') window._reRenderTimerLog();
+    }
   }
 }
 

@@ -306,6 +306,52 @@ function _hiitNextRound() {
 }
 
 /* ---------- log HIIT to workout ---------- */
+window._timerLogState = {
+  type: 'hiit',
+  perRound: false,
+  allTarget: 'workout_0',
+  allNote: '',
+  roundTargets: [],
+  roundNotes: [],
+  swTarget: 'workout_0',
+  swNote: ''
+};
+
+window._reRenderTimerLog = function() {
+  if (window._timerLogState.type === 'hiit') {
+    _renderHiitLogContent();
+  } else {
+    _renderSwLogContent();
+  }
+};
+
+function _buildTargetOptions(selectedVal) {
+  const cw = db.currentWorkout;
+  let html = '';
+  if (cw && cw.exercises.length > 0) {
+    html += `<optgroup label="${t('targetCurrentEx') || 'Aktuelle Übungen'}">`;
+    cw.exercises.forEach((e, i) => {
+      const ex = getEx(e.exId);
+      const name = e.isCustom ? e.customName : (ex ? ex.name : '?');
+      const sel = (selectedVal === `workout_${i}`) ? 'selected' : '';
+      html += `<option value="workout_${i}" ${sel}>${name}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+  html += `<optgroup label="${t('targetMuscleGroup') || 'Muskelgruppe (Freies Training)'}">`;
+  const catsObj = t('cats') || {};
+  Object.keys(catsObj).forEach(cat => {
+    const sel = (selectedVal === `custom_${cat}`) ? 'selected' : '';
+    html += `<option value="custom_${cat}" ${sel}>${catsObj[cat]}</option>`;
+  });
+  html += `</optgroup>`;
+  html += `<optgroup label="Optionen">`;
+  html += `<option value="gymlab" ${selectedVal === 'gymlab' ? 'selected' : ''}>${t('targetGymLab') || 'Aus GymLab'}</option>`;
+  html += `<option value="newex" ${selectedVal === 'newex' ? 'selected' : ''}>+ ${t('targetNewEx') || 'Neue Übung'}</option>`;
+  html += `</optgroup>`;
+  return html;
+}
+
 function openHiitLogModal() {
   const cw = db.currentWorkout;
   if (!cw) return;
@@ -323,45 +369,159 @@ function openHiitLogModal() {
       <div style="font-size:13px;color:var(--muted);margin-top:3px;">Gesamtzeit: ${mm}:${ss}</div>
     </div>`;
 
-  const list = document.getElementById('hiitLogExList');
-  const existingHtml = cw.exercises.map((e, i) => {
-    const ex       = getEx(e.exId);
-    const name     = ex ? ex.name : '?';
-    const type     = ex ? getCatType(ex.category) : 'strength';
-    const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-    return `<div class="exercise-list-item" onclick="logHiitToExercise(${i})">
-      <div class="exercise-list-name">${name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>`;
-  }).join('');
+  window._timerLogState.type = 'hiit';
+  window._timerLogState.perRound = false;
+  window._timerLogState.allTarget = (cw.exercises.length > 0) ? 'workout_0' : 'custom_Brust';
+  window._timerLogState.allNote = '';
+  window._timerLogState.roundTargets = Array(hiitState.rounds).fill(window._timerLogState.allTarget);
+  window._timerLogState.roundNotes = Array(hiitState.rounds).fill('');
 
-  const addNewHtml = `<div class="exercise-list-item" onclick="hiitPickNewExercise()" style="border-color:rgba(200,241,53,0.25);">
-    <div class="exercise-list-name" style="color:var(--accent);">+ Übung auswählen & zuordnen</div>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </div>`;
-
-  list.innerHTML = existingHtml + addNewHtml;
+  _renderHiitLogContent();
   openModal('hiitLogModal');
 }
 
-function hiitPickNewExercise() {
-  const totalSec = hiitState.rounds * (hiitState.workSec + hiitState.restSec);
-  window._hiitPendingSet = { mode: hiitState.mode, rounds: hiitState.rounds, workSec: hiitState.workSec, restSec: hiitState.restSec, totalSec };
-  window._pickerMode = 'hiit';
-  closeModal('hiitLogModal');
-  openExercisePicker();
+function _renderHiitLogContent() {
+  const state = window._timerLogState;
+  const container = document.getElementById('hiitLogContent');
+  if (!container) return;
+  
+  const isAmrap = (hiitState.mode === 'amrap');
+  const showToggle = !isAmrap && hiitState.rounds > 1;
+
+  let html = '';
+  if (showToggle) {
+    html += `
+      <div style="display:flex;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:16px;">
+        <div style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;${!state.perRound ? 'background:var(--accent);color:#000;' : 'color:var(--muted);'}"
+             onclick="window._timerLogState.perRound=false;_renderHiitLogContent()">${t('hiitAllRounds') || 'Alle Runden gleich'}</div>
+        <div style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;${state.perRound ? 'background:var(--accent);color:#000;' : 'color:var(--muted);'}"
+             onclick="window._timerLogState.perRound=true;_renderHiitLogContent()">${t('hiitPerRound') || 'Pro Runde wählen'}</div>
+      </div>
+    `;
+  }
+
+  if (state.perRound && showToggle) {
+    for (let r = 0; r < hiitState.rounds; r++) {
+      html += `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${t('hiitLogRound') || 'Runde'} ${r+1}</div>
+          <select class="form-input" style="margin-bottom:8px;" onchange="window._timerLogState.roundTargets[${r}]=this.value; _checkTimerLogTarget(this.value, 'hiit', ${r})">
+            ${_buildTargetOptions(state.roundTargets[r])}
+          </select>
+          <input type="text" class="form-input" style="height:36px;font-size:13px;" placeholder="${t('sessionNotePlaceholder') || 'Anmerkung...'}" value="${state.roundNotes[r]}" oninput="window._timerLogState.roundNotes[${r}]=this.value">
+        </div>
+      `;
+    }
+  } else {
+    html += `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Ziel</div>
+        <select class="form-input" style="margin-bottom:8px;" onchange="window._timerLogState.allTarget=this.value; _checkTimerLogTarget(this.value, 'hiit')">
+           ${_buildTargetOptions(state.allTarget)}
+        </select>
+        <textarea class="form-input" style="resize:none;height:60px;line-height:1.5;font-size:13px;" placeholder="${t('sessionNotePlaceholder') || 'Anmerkung...'}" oninput="window._timerLogState.allNote=this.value">${state.allNote}</textarea>
+      </div>
+    `;
+  }
+  
+  html += `<button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="_saveHiitLog()">✓ ${t('save') || 'Speichern'}</button>`;
+  container.innerHTML = html;
 }
 
-function logHiitToExercise(idx) {
+function _checkTimerLogTarget(val, timerType, roundIdx = -1) {
+  if (val === 'gymlab') {
+    window._pickerMode = 'timer_' + timerType;
+    window._timerRoundIdx = roundIdx;
+    openExercisePicker();
+  } else if (val === 'newex') {
+    window._pickerMode = 'timer_' + timerType;
+    window._timerRoundIdx = roundIdx;
+    document.getElementById('exName').value = '';
+    document.getElementById('exNotes').value = '';
+    document.getElementById('deleteExBtn').style.display = 'none';
+    document.getElementById('addExerciseTitle').textContent = t('newExercise');
+    openModal('addExerciseModal');
+  }
+}
+
+// Intercept addExerciseToWorkout and saveExercise to handle timer assignment
+const _orig_addExerciseToWorkout = window.addExerciseToWorkout;
+window.addExerciseToWorkout = function(exId) {
+  if (window._pickerMode && window._pickerMode.startsWith('timer_')) {
+    _assignTimerTarget(exId);
+    return;
+  }
+  if (_orig_addExerciseToWorkout) _orig_addExerciseToWorkout(exId);
+};
+
+function _assignTimerTarget(exId) {
+  const cw = db.currentWorkout;
+  let exIdx = cw.exercises.findIndex(e => e.exId === exId);
+  if (exIdx === -1) {
+    cw.exercises.push({ exId, sets: [] });
+    exIdx = cw.exercises.length - 1;
+    save();
+  }
+  const type = window._pickerMode.split('_')[1];
+  const rIdx = window._timerRoundIdx;
+  const targetStr = `workout_${exIdx}`;
+  
+  if (type === 'hiit') {
+    if (rIdx >= 0) window._timerLogState.roundTargets[rIdx] = targetStr;
+    else window._timerLogState.allTarget = targetStr;
+  } else {
+    window._timerLogState.swTarget = targetStr;
+  }
+  
+  window._pickerMode = null;
+  window._timerRoundIdx = null;
+  closeModal('exercisePickerModal');
+  closeModal('addExerciseModal');
+  window._reRenderTimerLog();
+}
+
+function _saveHiitLog() {
   const cw = db.currentWorkout;
   if (!cw) return;
+  const state = window._timerLogState;
 
   const totalSec = hiitState.rounds * (hiitState.workSec + hiitState.restSec);
-  const hiitSet  = { mode: hiitState.mode, rounds: hiitState.rounds, workSec: hiitState.workSec, restSec: hiitState.restSec, totalSec };
+  const baseSet = { mode: hiitState.mode, workSec: hiitState.workSec, restSec: hiitState.restSec };
 
-  if (!cw.exercises[idx].hiitSets) cw.exercises[idx].hiitSets = [];
-  cw.exercises[idx].hiitSets.push(hiitSet);
+  let targets = state.perRound ? state.roundTargets : [state.allTarget];
+  let notes = state.perRound ? state.roundNotes : [state.allNote];
+  let roundsArr = state.perRound ? Array(hiitState.rounds).fill(1) : [hiitState.rounds];
+
+  for (let i = 0; i < targets.length; i++) {
+    const tVal = targets[i];
+    const tNote = notes[i].trim();
+    if (tVal === 'gymlab' || tVal === 'newex') {
+      alert("Bitte ein gültiges Ziel wählen.");
+      return;
+    }
+    const setObj = { ...baseSet, rounds: roundsArr[i], totalSec: roundsArr[i] * (hiitState.workSec + hiitState.restSec) };
+    
+    let exEntry = null;
+    if (tVal.startsWith('workout_')) {
+      const idx = parseInt(tVal.split('_')[1]);
+      exEntry = cw.exercises[idx];
+    } else if (tVal.startsWith('custom_')) {
+      const cat = tVal.split('_')[1];
+      const customName = `HIIT ${hiitState.mode.toUpperCase()}`;
+      // Look for existing custom entry in this workout
+      exEntry = cw.exercises.find(e => e.isCustom && e.customCategory === cat && e.customName === customName);
+      if (!exEntry) {
+        exEntry = { isCustom: true, customCategory: cat, customName: customName, sets: [] };
+        cw.exercises.push(exEntry);
+      }
+    }
+    
+    if (exEntry) {
+      if (!exEntry.hiitSets) exEntry.hiitSets = [];
+      exEntry.hiitSets.push(setObj);
+      if (tNote) exEntry.note = exEntry.note ? exEntry.note + '\\n' + tNote : tNote;
+    }
+  }
 
   save();
   closeModal('hiitLogModal');
