@@ -21,7 +21,19 @@ function openHiitTimer() {
   _hiitRenderPreset();
   _hiitRenderConfig();
   _hiitRenderDisplay();
+  switchTimerMode('hiit');
   openModal('hiitModal');
+}
+
+function switchTimerMode(mode) {
+  const hiitSec = document.getElementById('hiitSection');
+  const swSec   = document.getElementById('swSection');
+  const btnHiit = document.getElementById('timerModeHiit');
+  const btnSw   = document.getElementById('timerModeSw');
+  if (hiitSec) hiitSec.style.display = mode === 'hiit' ? '' : 'none';
+  if (swSec)   swSec.style.display   = mode === 'sw'   ? '' : 'none';
+  if (btnHiit) btnHiit.classList.toggle('active', mode === 'hiit');
+  if (btnSw)   btnSw.classList.toggle('active',   mode === 'sw');
 }
 
 function closeHiitTimer() {
@@ -312,23 +324,33 @@ function openHiitLogModal() {
     </div>`;
 
   const list = document.getElementById('hiitLogExList');
-  if (cw.exercises.length === 0) {
-    list.innerHTML = `<div style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0;">Erst eine Übung hinzufügen, um die Session zuzuordnen.</div>`;
-  } else {
-    list.innerHTML = cw.exercises.map((e, i) => {
-      const ex       = getEx(e.exId);
-      const name     = ex ? ex.name : '?';
-      const type     = ex ? getCatType(ex.category) : 'strength';
-      const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
-      const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-      return `<div class="exercise-list-item" onclick="logHiitToExercise(${i})">
-        <div class="exercise-list-name">${name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>`;
-    }).join('');
-  }
+  const existingHtml = cw.exercises.map((e, i) => {
+    const ex       = getEx(e.exId);
+    const name     = ex ? ex.name : '?';
+    const type     = ex ? getCatType(ex.category) : 'strength';
+    const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
+    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+    return `<div class="exercise-list-item" onclick="logHiitToExercise(${i})">
+      <div class="exercise-list-name">${name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
 
+  const addNewHtml = `<div class="exercise-list-item" onclick="hiitPickNewExercise()" style="border-color:rgba(200,241,53,0.25);">
+    <div class="exercise-list-name" style="color:var(--accent);">+ Übung auswählen & zuordnen</div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </div>`;
+
+  list.innerHTML = existingHtml + addNewHtml;
   openModal('hiitLogModal');
+}
+
+function hiitPickNewExercise() {
+  const totalSec = hiitState.rounds * (hiitState.workSec + hiitState.restSec);
+  window._hiitPendingSet = { mode: hiitState.mode, rounds: hiitState.rounds, workSec: hiitState.workSec, restSec: hiitState.restSec, totalSec };
+  window._pickerMode = 'hiit';
+  closeModal('hiitLogModal');
+  openExercisePicker();
 }
 
 function logHiitToExercise(idx) {

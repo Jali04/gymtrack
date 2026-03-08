@@ -818,6 +818,29 @@ body {
 }
 
 /* ---- HIIT TIMER ---- */
+.hiit-mode-tabs {
+  display: flex;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+.hiit-mode-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.hiit-mode-tab.active { background: var(--surface); color: var(--text); }
+
 .hiit-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

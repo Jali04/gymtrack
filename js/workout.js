@@ -305,6 +305,27 @@ function openExercisePicker() {
 }
 
 function addExerciseToWorkout(exId) {
+  // HIIT-assign mode
+  if (window._pickerMode === 'hiit') {
+    const hiitSet = window._hiitPendingSet;
+    window._pickerMode     = null;
+    window._hiitPendingSet = null;
+    if (!db.currentWorkout) return;
+    let exEntry = db.currentWorkout.exercises.find(e => e.exId === exId);
+    if (!exEntry) {
+      exEntry = { exId, sets: [], hiitSets: [] };
+      db.currentWorkout.exercises.push(exEntry);
+    }
+    if (!exEntry.hiitSets) exEntry.hiitSets = [];
+    exEntry.hiitSets.push(hiitSet);
+    save();
+    closeModal('exercisePickerModal');
+    closeHiitTimer();
+    renderActiveWorkout();
+    haptic('success');
+    showToast('⚡ HIIT gespeichert');
+    return;
+  }
   // Edit-past-workout mode
   if (window._pickerMode === 'edit') {
     if (editingWorkoutCopy.exercises.find(e => e.exId === exId)) { alert(t('alreadyAdded')); return; }
