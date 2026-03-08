@@ -44,6 +44,24 @@
       <button class="btn btn-secondary" id="btnFromTemplate" onclick="showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))">📋 Aus Vorlage starten</button>
       <button class="btn btn-secondary" id="btnOpenTimer" onclick="openHiitTimer()" style="width:auto;padding:14px 16px;">⏱</button>
     </div>
+    <!-- Rest Timer Config -->
+    <div class="rest-config-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="rest-config-title" id="lblRestConfig">Satztpause</div>
+          <div class="rest-config-sub" id="lblRestSub">Countdown nach jedem Satz</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="restToggle" onchange="restTimerToggle(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="restDurationRow" class="rest-duration-row">
+        <button class="rest-adj-btn" onclick="restTimerAdj(-15)">−</button>
+        <span id="restDurationDisplay" class="rest-duration-display">1:30</span>
+        <button class="rest-adj-btn" onclick="restTimerAdj(+15)">+</button>
+      </div>
+    </div>
     <div class="divider"></div>
     <div class="section-title" style="font-size:18px;" id="ttlLastWorkouts">Verlauf</div>
     <div id="recentWorkouts"></div>
