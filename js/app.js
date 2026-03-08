@@ -2,17 +2,18 @@
    GYMTRACK — App Initialisation
    ============================================= */
 
-const CURRENT_VERSION = '3.6';
-const savedVersion    = localStorage.getItem('gymtrack_version');
+const CURRENT_VERSION = '3.8';
+const savedVersion    = localStorage.getItem('dscpln_version');
 
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
-  localStorage.setItem('gymtrack_version', CURRENT_VERSION);
+  localStorage.setItem('dscpln_version', CURRENT_VERSION);
   window.location.reload(true);
 } else if (!savedVersion) {
-  localStorage.setItem('gymtrack_version', CURRENT_VERSION);
+  localStorage.setItem('dscpln_version', CURRENT_VERSION);
 }
 
 // Boot
+initSplash();
 applyTranslations();
 renderLog();
 initUI();
