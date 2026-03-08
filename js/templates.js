@@ -17,7 +17,10 @@ function renderTemplates() {
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
         <div style="font-weight:700;font-size:17px;">${tmpl.name}</div>
-        <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTmpl')}</button>
+        <div style="display:flex;gap:6px;">
+          <button class="close-btn" onclick="openTemplateShare('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;" title="${t('shareTmpl')}">🔗</button>
+          <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTmpl')}</button>
+        </div>
       </div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${tmpl.exerciseIds.length} ${t('tmplExercises')} · ${exNames}</div>
       <button class="btn btn-primary" style="padding:10px;position:relative;overflow:hidden;" onclick="startWorkoutFromTemplate('${tmpl.id}')">${t('startWorkout')}</button>

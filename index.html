@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GymTrack">
-<meta name="version" content="3.4">
+<meta name="version" content="3.5">
 <title>GymTrack</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
@@ -30,7 +30,10 @@
   <div class="section-title" id="ttlStartTraining">Training starten</div>
   <div id="quickStart">
     <button class="btn btn-primary" id="btnNewWorkout" onclick="openNewWorkout()">+ Neues Training</button>
-    <button class="btn btn-secondary" id="btnFromTemplate" onclick="showPage('templates', document.querySelector('.nav-btn[data-page=templates]'))">📋 Aus Vorlage starten</button>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:10px;">
+      <button class="btn btn-secondary" id="btnFromTemplate" onclick="showPage('templates', document.querySelector('.nav-btn[data-page=templates]'))">📋 Aus Vorlage starten</button>
+      <button class="btn btn-secondary" id="btnOpenTimer" onclick="openHiitTimer()" style="width:auto;padding:14px 16px;">⏱</button>
+    </div>
     <div class="divider"></div>
     <div class="section-title" style="font-size:18px;" id="ttlLastWorkouts">Letzte Trainings</div>
     <div id="recentWorkouts"></div>
@@ -280,6 +283,51 @@
   </div>
 </div>
 
+<!-- HIIT Timer -->
+<div class="modal-overlay" id="hiitModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="ttlHiitTimer">HIIT Timer</div>
+      <div class="close-btn" onclick="closeHiitTimer()">✕</div>
+    </div>
+    <!-- Preset Tabs -->
+    <div class="hiit-tabs">
+      <button class="hiit-tab active" data-mode="tabata" onclick="hiitSelectMode('tabata')">Tabata</button>
+      <button class="hiit-tab" data-mode="emom" onclick="hiitSelectMode('emom')">EMOM</button>
+      <button class="hiit-tab" data-mode="amrap" onclick="hiitSelectMode('amrap')">AMRAP</button>
+      <button class="hiit-tab" data-mode="custom" onclick="hiitSelectMode('custom')" id="hiitTabCustom">Custom</button>
+    </div>
+    <!-- Display Ring -->
+    <div id="hiitDisplay" style="margin:16px 0;"></div>
+    <!-- Config -->
+    <div id="hiitConfig"></div>
+    <!-- Controls -->
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary hiit-ctrl-btn" id="hiitToggleBtn" onclick="hiitToggle()">▶ Start</button>
+      <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitSkip()" title="Skip">⏭</button>
+      <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitReset()" title="Reset">↺</button>
+    </div>
+  </div>
+</div>
+
+<!-- Template Share -->
+<div class="modal-overlay" id="tmplShareModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="modal-title" id="ttlTmplShare">Vorlage teilen</div>
+      <div class="close-btn" onclick="closeModal('tmplShareModal')">✕</div>
+    </div>
+    <div id="tmplShareName" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>
+    <p id="tmplShareDesc" style="font-size:13px;color:var(--muted);margin-bottom:14px;"></p>
+    <textarea id="tmplShareCode" readonly style="width:100%;height:100px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:11px;font-family:monospace;resize:none;outline:none;"></textarea>
+    <button class="btn btn-primary" style="margin-top:12px;" onclick="copyTemplateShare()" id="btnCopyTmplShare">🔗 Code kopieren</button>
+    <div id="tmplShareCopyConfirm" style="display:none;text-align:center;color:var(--accent);font-size:14px;margin-top:10px;font-weight:600;">✓ Kopiert!</div>
+    <button class="btn btn-secondary" onclick="closeModal('tmplShareModal')">Schließen</button>
+  </div>
+</div>
+
 <!-- Import -->
 <div class="modal-overlay" id="importModal">
   <div class="modal">
@@ -296,6 +344,24 @@
   </div>
 </div>
 
+<!-- Rest Timer Overlay -->
+<div id="restTimerOverlay" style="display:none;">
+  <svg width="60" height="60" viewBox="0 0 60 60">
+    <circle cx="30" cy="30" r="26" fill="none" stroke="var(--surface2)" stroke-width="5"/>
+    <circle id="restTimerArc" cx="30" cy="30" r="26" fill="none" stroke="var(--accent)" stroke-width="5"
+      stroke-linecap="round"
+      stroke-dasharray="163.4"
+      stroke-dashoffset="0"
+      transform="rotate(-90 30 30)"
+      style="transition:stroke-dashoffset 0.9s linear;"/>
+  </svg>
+  <div>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;" id="restTimerLabel">Pause</div>
+    <div id="restTimerCount" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">90</div>
+  </div>
+  <button onclick="skipRestTimer()" id="btnSkipRest" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Überspringen</button>
+</div>
+
 <!-- ===== SCRIPTS (order matters) ===== -->
 <script src="js/db.js"></script>
 <script src="js/i18n.js"></script>
@@ -308,6 +374,7 @@
 <script src="js/templates.js"></script>
 <script src="js/calendar.js"></script>
 <script src="js/editWorkout.js"></script>
+<script src="js/timer.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/app.js"></script>
 

@@ -363,4 +363,50 @@ function saveSets() {
   renderActiveWorkout();
   haptic('success');
   showToast('✓');
+  startRestTimer();
+}
+
+/* ---- Rest Timer ---- */
+let restTimerInterval = null;
+let restTimerSec      = 0;
+
+function startRestTimer() {
+  clearInterval(restTimerInterval);
+  restTimerSec = 90;
+  const overlay = document.getElementById('restTimerOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  _updateRestDisplay();
+  restTimerInterval = setInterval(() => {
+    restTimerSec--;
+    if (restTimerSec <= 3 && restTimerSec > 0) haptic('light');
+    if (restTimerSec <= 0) {
+      clearInterval(restTimerInterval);
+      restTimerInterval = null;
+      overlay.style.display = 'none';
+      haptic('success');
+      showToast('✓ ' + t('restDone'));
+      return;
+    }
+    _updateRestDisplay();
+  }, 1000);
+}
+
+function skipRestTimer() {
+  clearInterval(restTimerInterval);
+  restTimerInterval = null;
+  const overlay = document.getElementById('restTimerOverlay');
+  if (overlay) overlay.style.display = 'none';
+  haptic('light');
+}
+
+function _updateRestDisplay() {
+  const el = document.getElementById('restTimerCount');
+  if (el) el.textContent = restTimerSec;
+  const arc = document.getElementById('restTimerArc');
+  if (arc) {
+    const pct = restTimerSec / 90;
+    const c   = 2 * Math.PI * 26;
+    arc.style.strokeDashoffset = c * (1 - pct);
+  }
 }
