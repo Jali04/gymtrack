@@ -36,6 +36,7 @@ function renderLog() {
   }
   document.getElementById('quickStart').style.display    = 'block';
   document.getElementById('activeWorkout').style.display = 'none';
+  _renderRestConfig();
 
   const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
   const recent  = document.getElementById('recentWorkouts');
@@ -493,10 +494,49 @@ function saveSets() {
 /* ---- Rest Timer ---- */
 let restTimerInterval = null;
 let restTimerSec      = 0;
+let restTimerMax      = 90;
+
+/* ---- Rest Timer Config ---- */
+function _getRestCfg() {
+  if (!db.restTimer) db.restTimer = { enabled: true, sec: 90 };
+  return db.restTimer;
+}
+
+function _renderRestConfig() {
+  const cfg     = _getRestCfg();
+  const toggle  = document.getElementById('restToggle');
+  const durRow  = document.getElementById('restDurationRow');
+  const display = document.getElementById('restDurationDisplay');
+  if (toggle)  toggle.checked = cfg.enabled;
+  if (durRow)  durRow.style.display = cfg.enabled ? 'flex' : 'none';
+  if (display) {
+    const m = Math.floor(cfg.sec / 60);
+    const s = (cfg.sec % 60).toString().padStart(2, '0');
+    display.textContent = `${m}:${s}`;
+  }
+}
+
+function restTimerToggle(checked) {
+  _getRestCfg().enabled = checked;
+  save();
+  _renderRestConfig();
+  haptic('light');
+}
+
+function restTimerAdj(delta) {
+  const cfg = _getRestCfg();
+  cfg.sec   = Math.max(15, Math.min(600, cfg.sec + delta));
+  save();
+  _renderRestConfig();
+  haptic('light');
+}
 
 function startRestTimer() {
+  const cfg = _getRestCfg();
+  if (!cfg.enabled) return;
   clearInterval(restTimerInterval);
-  restTimerSec = 90;
+  restTimerSec = cfg.sec;
+  restTimerMax = cfg.sec;
   const overlay = document.getElementById('restTimerOverlay');
   if (!overlay) return;
   overlay.style.display = 'flex';
@@ -526,10 +566,18 @@ function skipRestTimer() {
 
 function _updateRestDisplay() {
   const el = document.getElementById('restTimerCount');
-  if (el) el.textContent = restTimerSec;
+  if (el) {
+    if (restTimerSec >= 60) {
+      const m = Math.floor(restTimerSec / 60);
+      const s = (restTimerSec % 60).toString().padStart(2, '0');
+      el.textContent = `${m}:${s}`;
+    } else {
+      el.textContent = restTimerSec;
+    }
+  }
   const arc = document.getElementById('restTimerArc');
   if (arc) {
-    const pct = restTimerSec / 90;
+    const pct = restTimerSec / (restTimerMax || 90);
     const c   = 2 * Math.PI * 26;
     arc.style.strokeDashoffset = c * (1 - pct);
   }
