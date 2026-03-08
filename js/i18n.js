@@ -74,6 +74,10 @@ const TR = {
     shareTmpl: 'Vorlage teilen', tmplShareTitle: 'Vorlage teilen',
     tmplShareDesc: 'Diesen kompakten Code teilen – nur Vorlage & Übungen, kein Verlauf.',
     tmplImportSuccess: '✓ Vorlage importiert!',
+    // Workout Stopwatch
+    swLabel: 'Stoppuhr', swBook: 'Buchen', swBookTitle: 'Zeit buchen',
+    swBookTime: 'Gemessene Zeit:', swBookWhich: 'Auf welche Übung buchen?',
+    swNoEx: 'Zuerst eine Übung hinzufügen!', swSaved: 'gespeichert',
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
@@ -146,6 +150,10 @@ const TR = {
     shareTmpl: 'Share Template', tmplShareTitle: 'Share Template',
     tmplShareDesc: 'Share this compact code – only template & exercises, no history.',
     tmplImportSuccess: '✓ Template imported!',
+    // Workout Stopwatch
+    swLabel: 'Stopwatch', swBook: 'Log', swBookTitle: 'Log Time',
+    swBookTime: 'Measured time:', swBookWhich: 'Log to which exercise?',
+    swNoEx: 'Add an exercise first!', swSaved: 'saved',
   }
 };
 
@@ -235,6 +243,9 @@ function applyTranslations() {
   s('restTimerLabel', 'restTimer'); s('btnSkipRest', 'restSkip');
   // Timer button
   s('btnOpenTimer', 'openTimer');
+  // Workout Stopwatch
+  s('swLabel', 'swLabel'); s('swLogBtn', 'swBook');
+  s('ttlLogTimer', 'swBookTitle'); s('logTimerWhich', 'swBookWhich');
 
   // Date & lang button
   const now = new Date();

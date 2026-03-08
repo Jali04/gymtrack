@@ -6,6 +6,18 @@ let currentWorkoutExIdx = null;
 let currentExCategory   = 'strength';
 let timerInterval       = null;
 
+/* ---- Stopwatch state ---- */
+let swInterval = null;
+let swElapsed  = 0;
+let swRunning  = false;
+
+function _fmtSwSec(s) {
+  s = Math.max(0, Math.round(s));
+  const m = Math.floor(s / 60).toString().padStart(2, '0');
+  const r = (s % 60).toString().padStart(2, '0');
+  return `${m}:${r}`;
+}
+
 /* ---- Log page ---- */
 function renderLog() {
   if (db.currentWorkout) {
@@ -46,9 +58,10 @@ function renderLog() {
       if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
       else                         setsHtml = e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
+      const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
       return `<div style="margin-bottom:10px;">
         <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${name}<span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${timerBadge}</div>
         ${e.note ? `<div style="margin-top:5px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
       </div>`;
     }).join('');
@@ -120,16 +133,17 @@ function renderActiveWorkout() {
       if (type === 'cardio')  setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
       else setsHtml = e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
-    } else {
+    } else if (!e.timerSec) {
       setsHtml = `<span style="color:var(--muted);font-size:13px;">${t('noEntries')}</span>`;
     }
+    const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
 
     return `<div class="exercise-card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span></div>
         <button class="close-btn" onclick="removeWorkoutExercise(${i})">✕</button>
       </div>
-      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${timerBadge}</div>
       ${e.note ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
       <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="openLogSets(${i})">
         ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
@@ -150,13 +164,14 @@ function removeWorkoutExercise(idx) {
 function finishWorkout() {
   const cw = db.currentWorkout;
   if (!cw) return;
-  const hasData = cw.exercises.some(e => e.sets.length > 0);
+  const hasData = cw.exercises.some(e => e.sets.length > 0 || e.timerSec > 0);
   if (!hasData) { alert(t('minOneSet')); return; }
-  cw.exercises = cw.exercises.filter(e => e.sets.length > 0);
+  cw.exercises = cw.exercises.filter(e => e.sets.length > 0 || e.timerSec > 0);
   cw.endTime   = Date.now();
   db.workouts.push(cw);
   db.currentWorkout = null;
   stopTimer();
+  swReset();
   save();
   document.getElementById('activeWorkout').style.display = 'none';
   document.getElementById('quickStart').style.display    = 'block';
@@ -171,6 +186,7 @@ function cancelWorkout() {
   if (!confirm(t('confirmCancelWorkout'))) return;
   db.currentWorkout = null;
   stopTimer();
+  swReset();
   save();
   document.getElementById('activeWorkout').style.display = 'none';
   document.getElementById('quickStart').style.display    = 'block';
@@ -196,6 +212,68 @@ function stopTimer() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   const display = document.getElementById('timerDisplay');
   if (display) display.classList.remove('pulsing');
+}
+
+/* ---- Workout Stopwatch ---- */
+function swToggle() {
+  if (swRunning) {
+    clearInterval(swInterval);
+    swInterval = null;
+    swRunning  = false;
+    const btn = document.getElementById('swToggleBtn');
+    if (btn) { btn.textContent = '▶'; btn.style.background = 'var(--accent)'; btn.style.color = '#000'; }
+    if (swElapsed > 0) { const lb = document.getElementById('swLogBtn'); if (lb) lb.style.display = ''; }
+  } else {
+    const startTs = Date.now() - swElapsed * 1000;
+    swInterval = setInterval(() => { swElapsed = Math.floor((Date.now() - startTs) / 1000); _swUpdateDisplay(); }, 1000);
+    swRunning = true;
+    const btn = document.getElementById('swToggleBtn');
+    if (btn) { btn.textContent = '⏸'; btn.style.background = 'var(--accent2)'; btn.style.color = '#fff'; }
+    const lb = document.getElementById('swLogBtn'); if (lb) lb.style.display = 'none';
+  }
+  haptic('light');
+}
+
+function swReset() {
+  clearInterval(swInterval); swInterval = null; swRunning = false; swElapsed = 0;
+  _swUpdateDisplay();
+  const btn = document.getElementById('swToggleBtn');
+  if (btn) { btn.textContent = '▶'; btn.style.background = 'var(--accent)'; btn.style.color = '#000'; }
+  const lb = document.getElementById('swLogBtn'); if (lb) lb.style.display = 'none';
+  haptic('light');
+}
+
+function _swUpdateDisplay() {
+  const el = document.getElementById('swDisplay'); if (el) el.textContent = _fmtSwSec(swElapsed);
+}
+
+function openLogTimerModal() {
+  const cw = db.currentWorkout;
+  if (!cw || cw.exercises.length === 0) { alert(t('swNoEx')); return; }
+  document.getElementById('logTimerTimeDisplay').textContent = _fmtSwSec(swElapsed);
+  const list = document.getElementById('logTimerExerciseList');
+  list.innerHTML = cw.exercises.map((e, i) => {
+    const ex       = getEx(e.exId);
+    const name     = ex ? ex.name : '?';
+    const type     = ex ? getCatType(ex.category) : 'strength';
+    const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
+    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+    const logged   = e.timerSec ? `<span style="font-size:11px;color:var(--accent);margin-left:6px;">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
+    return `<div class="exercise-list-item" onclick="logTimerToExercise(${i})">
+      <div class="exercise-list-name">${name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span>${logged}</div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+  openModal('logTimerModal');
+}
+
+function logTimerToExercise(idx) {
+  db.currentWorkout.exercises[idx].timerSec = swElapsed;
+  save();
+  closeModal('logTimerModal');
+  renderActiveWorkout();
+  haptic('success');
+  showToast('⏱ ' + _fmtSwSec(swElapsed) + ' ' + t('swSaved'));
 }
 
 /* ---- Exercise Picker ---- */

@@ -38,9 +38,10 @@ function renderEditWorkout() {
       if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
       else                         setsHtml = e.sets.map(s => `<span class="set-badge">${s.weight}kg × ${s.reps}</span>`).join('');
-    } else {
+    } else if (!e.timerSec) {
       setsHtml = `<span style="color:var(--muted);font-size:13px;">${t('noEntries')}</span>`;
     }
+    const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
 
     return `<div class="exercise-card" style="cursor:default;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -48,7 +49,7 @@ function renderEditWorkout() {
         <button class="close-btn" onclick="removeEditWorkoutExercise(${i})">✕</button>
       </div>
       ${e.note ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;">💬 ${e.note}</div>` : ''}
-      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${timerBadge}</div>
       <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="openEditWorkoutSets(${i})">
         ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
       </button>
@@ -105,7 +106,7 @@ function openExercisePickerForEdit() {
 
 function saveEditWorkout() {
   const idx = db.workouts.findIndex(x => x.id === editingWorkoutId); if (idx === -1) return;
-  editingWorkoutCopy.exercises = editingWorkoutCopy.exercises.filter(e => e.sets.length > 0);
+  editingWorkoutCopy.exercises = editingWorkoutCopy.exercises.filter(e => e.sets.length > 0 || e.timerSec > 0);
   db.workouts[idx] = editingWorkoutCopy;
   save();
   closeModal('editWorkoutModal');
