@@ -20,9 +20,9 @@ function renderTemplates() {
     const typeBadge = `<span style="background:${typeColors[typeObj]};color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;">${typeLabel}</span>`;
     
     return `<div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-        <div style="font-weight:700;font-size:17px;display:flex;align-items:center;">${tmpl.name}${typeBadge}</div>
-        <div style="display:flex;gap:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px;">
+        <div style="font-weight:700;font-size:17px;display:flex;align-items:center;flex-wrap:wrap;word-break:break-word;">${tmpl.name}${typeBadge}</div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="close-btn" onclick="openTemplateShare('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;" title="${t('shareTmpl')}">🔗</button>
           <button class="close-btn" onclick="openEditTemplate('${tmpl.id}')" style="width:auto;padding:4px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;">${t('editTmpl')}</button>
         </div>

@@ -127,7 +127,10 @@
 
 <!-- Erfolg (formerly Stats) -->
 <div class="page" id="page-stats">
-  <div class="section-title" style="font-size:20px;" id="ttlAchievements">Erfolge & Rang</div>
+  <div class="section-title" style="font-size:20px;display:flex;justify-content:space-between;align-items:center;" id="ttlAchievements">
+    Erfolge & Rang
+    <button class="icon-btn" onclick="openModal('rankInfoModal')" style="font-size:16px;color:var(--accent);">ℹ️</button>
+  </div>
   
   <!-- Ranking Module will go here -->
   <div id="rankingCard" class="card" style="margin-bottom:16px;text-align:center;padding:24px 16px;">

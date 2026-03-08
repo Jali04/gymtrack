@@ -16,11 +16,16 @@ function isTimerLogOpen() {
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (SUB_MODALS.includes(id) && (isEditOpen() || isTimerLogOpen())) {
-    el.classList.add('overlay-top');
-  } else {
-    el.classList.remove('overlay-top');
-  }
+  
+  // Dynamic Z-Index for nested modals
+  const openModals = document.querySelectorAll('.modal-overlay.open');
+  let maxZ = 1000;
+  openModals.forEach(m => {
+    const z = parseInt(window.getComputedStyle(m).zIndex, 10);
+    if (!isNaN(z) && z > maxZ) maxZ = z;
+  });
+  
+  el.style.zIndex = maxZ + 1;
   el.classList.add('open');
 }
 
@@ -28,7 +33,7 @@ function closeModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
-  el.classList.remove('overlay-top');
+  el.style.zIndex = '';
   
   if (id === 'addExerciseModal') {
     window._openedFromPicker = false;

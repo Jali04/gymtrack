@@ -128,6 +128,8 @@ function triggerConfetti() {
 }
 
 function renderAchievements() {
+  retroAwardGamification();
+
   const container = document.getElementById('achievementsGrid');
   if (!container) return;
   
@@ -155,10 +157,47 @@ const RANKS = [
   { pt: 0, title: 'Beginner', sub: 'Der erste Schritt ist getan.' },
   { pt: 10, title: 'Rookie', sub: 'Du kommst in Schwung!' },
   { pt: 30, title: 'Eisenfresser', sub: 'Das Gym ist dein zweites Zuhause.' },
-  { pt: 60, title: 'Gym-Rat', sub: 'Eine absolute Maschine.' },
-  { pt: 120, title: 'Beast', sub: 'Kein Gewicht ist dir zu schwer.' },
-  { pt: 250, title: 'Halbgott', sub: 'Legendärer Status erreicht.' }
+  { pt: 60, title: 'Gym-Rat', sub: 'Pures Dedication.' },
+  { pt: 120, title: 'Maschine', sub: 'Kein Gewicht ist dir zu schwer.' },
+  { pt: 250, title: 'Titan', sub: 'Legendärer Status erreicht.' }
 ];
+
+function retroAwardGamification() {
+  let dirty = false;
+  
+  // 1) Count badges
+  const totalWorkouts = db.workouts.length;
+  for (let def of ACHIEVEMENTS_DEF) {
+    if (def.type === 'count' && totalWorkouts >= def.target && !hasAchievement(def.id)) {
+      unlockAchievement(def);
+      dirty = true;
+    }
+  }
+  
+  // 2) Single workout badges
+  const volBeastDef = ACHIEVEMENTS_DEF.find(a => a.id === 'vol_10k');
+  const ironLungDef = ACHIEVEMENTS_DEF.find(a => a.id === 'rest_master');
+  
+  db.workouts.forEach(w => {
+    let vol = 0; let cardioMin = 0;
+    if(!w.exercises) return;
+    w.exercises.forEach(e => {
+      const isCardio = (e.isCustom ? getCatType(e.customCategory) : (getEx(e.id)?.category === 'Cardio' ? 'cardio' : 'strength')) === 'cardio';
+      e.sets.forEach(s => {
+        if (!isCardio && s.weight && s.reps && s.type !== 'W') vol += (s.weight * s.reps);
+        if (isCardio && s.time) {
+          const parts = s.time.split(':');
+          if (parts.length === 2) cardioMin += parseInt(parts[0]) + (parseInt(parts[1])/60);
+        }
+      });
+    });
+    
+    if (vol >= volBeastDef.target && !hasAchievement('vol_10k')) { unlockAchievement(volBeastDef); dirty = true; }
+    if (cardioMin >= ironLungDef.target && !hasAchievement('rest_master')) { unlockAchievement(ironLungDef); dirty = true; }
+  });
+  
+  if (dirty) save();
+}
 
 function renderRanking() {
   const pts = db.workouts.length * 2 + db.achievements.length * 10;
@@ -181,6 +220,17 @@ function renderRanking() {
     subEl.textContent = `${currentRank.sub} Noch ${ptsNeeded} Pkt bis ${nextRank.title}.`;
   } else {
     subEl.textContent = currentRank.sub;
+  }
+  
+  // Populate Info Modal
+  const infoList = document.getElementById('rankInfoList');
+  if (infoList && infoList.innerHTML === '') {
+    infoList.innerHTML = RANKS.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:10px;border-radius:8px;">
+        <div style="font-weight:700;font-size:15px;color:var(--text);">${r.title}</div>
+        <div style="font-size:12px;color:var(--accent);font-weight:600;">Ab ${r.pt} Pkt</div>
+      </div>
+    `).join('');
   }
 }
 

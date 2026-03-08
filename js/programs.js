@@ -71,11 +71,22 @@ function updateActiveProgramBanner() {
   }
   
   const prog = db.programs.find(x => x.id === db.activeProgram.id);
-  if (!prog || !prog.days.length || !db.activeProgram.startDate) {
+  if (!prog || !prog.days.length) {
     db.activeProgram = null;
     save();
     banner.style.display = 'none';
     return;
+  }
+  
+  // Protect legacy programs
+  if (!db.activeProgram.startDate) {
+     const dummyStart = new Date();
+     dummyStart.setDate(dummyStart.getDate() - (db.activeProgram.currentDayIndex || 0));
+     const y = dummyStart.getFullYear();
+     const m = String(dummyStart.getMonth() + 1).padStart(2, '0');
+     const d = String(dummyStart.getDate()).padStart(2, '0');
+     db.activeProgram.startDate = `${y}-${m}-${d}`;
+     save();
   }
   
   // Calculate relative day
