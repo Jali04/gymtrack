@@ -174,7 +174,7 @@ function startNextProgramDay() {
   // Create a workout from the template
   const wo = {
     id: uid(),
-    startTime: new Date().toISOString(),
+    startTime: Date.now(),
     endTime: null,
     exercises: JSON.parse(JSON.stringify(tpl.exercises || [])) // deep copy template
   };

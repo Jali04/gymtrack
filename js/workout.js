@@ -256,7 +256,8 @@ function startTimer() {
   const display = document.getElementById('timerDisplay');
   display.classList.add('pulsing');
   timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - cw.startTime) / 1000);
+    const startTs = typeof cw.startTime === 'string' ? new Date(cw.startTime).getTime() : cw.startTime;
+    const elapsed = Math.floor((Date.now() - startTs) / 1000);
     const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
     const s = (elapsed % 60).toString().padStart(2, '0');
     display.textContent = m + ':' + s;
