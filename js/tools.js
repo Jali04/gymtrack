@@ -67,24 +67,47 @@ function calculatePlates() {
   }
   
   if (platesUsed.length === 0) {
-    resDiv.innerHTML = `<span style="color:var(--muted);font-size:13px;">${t('plateEmptyBar') || 'Nur Stange erforderlich'}</span>`;
+    resDiv.innerHTML = `<span style="color:var(--muted);font-size:13px;">${Math.round(remainder*2*10)/10 > 0 ? '+ ' + (Math.round(remainder*2*10)/10) + 'kg Rest' : t('plateEmptyBar') || 'Nur Stange erforderlich'}</span>`;
     return;
   }
   
-  let html = '';
   const colors = {
     25: '#e74c3c', 20: '#3498db', 15: '#f1c40f', 10: '#2ecc71', 5: '#ecf0f1', 2.5: '#95a5a6', 1.25: '#34495e'
   };
+  const heights = {
+    25: 60, 20: 50, 15: 40, 10: 30, 5: 24, 2.5: 20, 1.25: 16
+  };
   
+  let platesHtml = '';
   platesUsed.forEach(p => {
     for (let i = 0; i < p.count; i++) {
        const color = colors[p.plate] || 'var(--text)';
-       html += `<div style="background:var(--surface);border:1px solid ${color};border-radius:4px;width:32px;height:40px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${color};flex-shrink:0;">${p.plate}</div>`;
+       const h = heights[p.plate] || 30;
+       platesHtml += `<div style="background:${color};width:12px;height:${h}px;border-radius:2px;position:relative;display:flex;align-items:center;justify-content:center;margin:0 1px;">
+           <span style="position:absolute;top:-18px;font-size:10px;color:var(--text);font-weight:600;">${p.plate}</span>
+       </div>`;
     }
   });
   
+  // Create a barbell visualization
+  let html = `
+  <div style="display:flex;align-items:center;justify-content:center;width:100%;margin-top:16px;">
+    <!-- Left side plates (reversed order) -->
+    <div style="display:flex;align-items:center;flex-direction:row-reverse;">
+      ${platesHtml}
+    </div>
+    <!-- Barbell center -->
+    <div style="width:80px;height:8px;background:#666;border-radius:2px;position:relative;margin:0 2px;">
+       <div style="position:absolute;top:-20px;width:100%;text-align:center;font-size:10px;color:var(--muted);">${bar}kg Stange</div>
+    </div>
+    <!-- Right side plates -->
+    <div style="display:flex;align-items:center;">
+      ${platesHtml}
+    </div>
+  </div>`;
+  
   if (remainder > 0.01) {
-    html += `<div style="width:100%;text-align:center;font-size:12px;color:var(--muted);margin-top:4px;">+ ${Math.round(remainder*2*10)/10}kg Rest</div>`;
+    html += `<div style="width:100%;text-align:center;font-size:12px;color:var(--muted);margin-top:8px;">+ ${Math.round(remainder*2*10)/10}kg Rest</div>`;
   }
   
   resDiv.innerHTML = html;
