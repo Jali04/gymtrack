@@ -725,70 +725,65 @@ function _requestNotifPermission() {
   }
 }
 
-function _notifyRestDone() {
-  // Strong vibration pattern even when in foreground
-  if (navigator.vibrate) navigator.vibrate([100, 60, 100, 60, 200]);
-  // System notification when app is in background
-  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification('DSCPLN — Pause beendet', {
-        body: 'Weiter gehts! Der nächste Satz wartet. 💪',
-        silent: false,
-        requireInteraction: false
-      });
-    } catch(e) { /* ignore */ }
-  }
+function _notifyRestDoneLocal() {
+  // Vibrate in foreground (navigator.vibrate is blocked in background by browsers)
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
 }
 
 function startRestTimer() {
   const cfg = _getRestCfg();
   if (!cfg.enabled) return;
-  _requestNotifPermission(); // ask once on first use
+  _requestNotifPermission();
+
   clearInterval(restTimerInterval);
   restTimerMax   = cfg.sec;
-  restTimerEndAt = Date.now() + cfg.sec * 1000; // store end timestamp
+  restTimerEndAt = Date.now() + cfg.sec * 1000;
   restTimerSec   = cfg.sec;
+
   const overlay = document.getElementById('restTimerOverlay');
   if (!overlay) return;
   overlay.style.display = 'flex';
   _updateRestDisplay();
+
+  // Schedule SW notification — fires even when app is backgrounded
+  if (typeof _postSwMsg === 'function') {
+    _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: cfg.sec * 1000 });
+  }
+
   restTimerInterval = setInterval(() => {
     restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
     if (restTimerSec <= 3 && restTimerSec > 0) haptic('light');
     if (restTimerSec <= 0) {
       clearInterval(restTimerInterval);
       restTimerInterval = null;
-      restTimerEndAt = 0;
+      restTimerEndAt    = 0;
       overlay.style.display = 'none';
-      _notifyRestDone();
+      // Cancel SW notification (timer completed in foreground — no need for it)
+      if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
+      _notifyRestDoneLocal();
       showToast('✓ ' + t('restDone'));
       return;
     }
     _updateRestDisplay();
-  }, 500); // poll at 500ms for accuracy after returning from background
+  }, 500);
 }
 
-// Re-sync rest timer display when returning from background
+// When returning from background: re-sync and handle timer that ended while away
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && restTimerEndAt && restTimerInterval) {
+  if (!document.hidden && restTimerEndAt) {
     restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
-    _updateRestDisplay();
     if (restTimerSec <= 0) {
       clearInterval(restTimerInterval);
       restTimerInterval = null;
-      restTimerEndAt = 0;
+      restTimerEndAt    = 0;
       const overlay = document.getElementById('restTimerOverlay');
       if (overlay) overlay.style.display = 'none';
-      haptic('success');
+      // SW already showed the notification; just vibrate now that we're in foreground
+      _notifyRestDoneLocal();
       showToast('✓ ' + t('restDone'));
+    } else {
+      _updateRestDisplay();
     }
-  }
-});
-
-// Also fire notification if app returns from background and timer has already ended
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && restTimerEndAt && !restTimerInterval && restTimerEndAt < Date.now()) {
-    restTimerEndAt = 0;
   }
 });
 
@@ -809,6 +804,8 @@ function _renderStreakBanner() {
 function skipRestTimer() {
   clearInterval(restTimerInterval);
   restTimerInterval = null;
+  restTimerEndAt    = 0;
+  if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
   const overlay = document.getElementById('restTimerOverlay');
   if (overlay) overlay.style.display = 'none';
   haptic('light');
