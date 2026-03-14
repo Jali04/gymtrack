@@ -165,12 +165,23 @@ function renderAchievements() {
   const unlocked = db.achievements.length;
   const total = ACHIEVEMENTS_DEF.length;
   const pts = db.workouts.length * 2 + unlocked * 10;
+  const streak = calcStreak();
+
   const elUnlocked = document.getElementById('trophyCountUnlocked');
-  const elTotal = document.getElementById('trophyCountTotal');
-  const elPts = document.getElementById('trophyTotalPts');
+  const elTotal    = document.getElementById('trophyCountTotal');
+  const elPts      = document.getElementById('trophyTotalPts');
+  const elStreak   = document.getElementById('streakCount');
+  const elStreakCard = document.getElementById('streakCard');
+
   if (elUnlocked) elUnlocked.textContent = unlocked;
-  if (elTotal) elTotal.textContent = total;
-  if (elPts) elPts.textContent = pts;
+  if (elTotal)    elTotal.textContent    = total;
+  if (elPts)      elPts.textContent      = pts;
+  if (elStreak)   elStreak.textContent   = streak;
+  // Highlight streak card when active
+  if (elStreakCard) {
+    elStreakCard.style.borderColor = streak >= 3 ? 'var(--accent)' : 'var(--border)';
+    elStreakCard.style.boxShadow   = streak >= 3 ? '0 0 12px rgba(200,241,53,0.15)' : 'none';
+  }
 
   renderRanking();
   renderRankRoad();
@@ -185,6 +196,43 @@ const RANKS = [
   { pt: 120, title: '🦍 Maschine', sub: 'Kein Gewicht ist dir zu schwer.' },
   { pt: 250, title: '🔱 Titan', sub: 'Legendärer Status erreicht.' }
 ];
+
+function calcStreak() {
+  if (!db.workouts.length) return 0;
+  // Collect unique calendar days that have at least one workout
+  const days = new Set(
+    db.workouts.map(w => {
+      const d = new Date(w.startTime || w.date);
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    })
+  );
+  let streak = 0;
+  const check = new Date();
+  check.setHours(0, 0, 0, 0);
+  while (true) {
+    const key = `${check.getFullYear()}-${check.getMonth()}-${check.getDate()}`;
+    if (!days.has(key)) break;
+    streak++;
+    check.setDate(check.getDate() - 1);
+  }
+  return streak;
+}
+
+// Remove count-based achievements that are no longer earned (e.g. after workout deleted)
+function revokeCountAchievements() {
+  const totalWorkouts = db.workouts.length;
+  let dirty = false;
+  for (const def of ACHIEVEMENTS_DEF) {
+    if (def.type === 'count' && totalWorkouts < def.target) {
+      const idx = db.achievements.findIndex(a => a.id === def.id);
+      if (idx !== -1) {
+        db.achievements.splice(idx, 1);
+        dirty = true;
+      }
+    }
+  }
+  if (dirty) save();
+}
 
 function retroAwardGamification() {
   let dirty = false;
