@@ -45,6 +45,7 @@
       <div style="font-size:13px;color:var(--text);" id="activeProgramNext">Nächstes: Tag 1 (Push)</div>
     </div>
     
+    <div id="streakBanner" style="display:none;text-align:center;margin-bottom:10px;"></div>
     <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
     <!-- Rest Timer Config -->
     <div class="rest-config-card">
@@ -129,21 +130,31 @@
 <div class="page" id="page-stats">
   <div class="section-title" style="font-size:20px;display:flex;justify-content:space-between;align-items:center;" id="ttlAchievements">
     Erfolge & Rang
-    <button class="icon-btn" onclick="openModal('rankInfoModal')" style="color:var(--muted);">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    <button onclick="openModal('rankInfoModal')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;letter-spacing:0.3px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      Ränge
     </button>
   </div>
 
   <!-- Trophy count banner -->
-  <div id="trophyCountBanner" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:16px;">
-    <div style="font-size:30px;line-height:1;">🏆</div>
-    <div>
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Deine Trophäen</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;"><span id="trophyCountUnlocked">0</span><span style="color:var(--muted);font-size:18px;">/<span id="trophyCountTotal">6</span></span></div>
+  <div id="trophyCountBanner" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+    <!-- Trophies -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:22px;margin-bottom:2px;">🏆</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);line-height:1;"><span id="trophyCountUnlocked">0</span><span style="color:var(--muted);font-size:16px;">/<span id="trophyCountTotal">6</span></span></div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Trophäen</div>
     </div>
-    <div id="trophyPointsInfo" style="margin-left:auto;text-align:right;">
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Punkte</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text);" id="trophyTotalPts">0</div>
+    <!-- Points -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:22px;margin-bottom:2px;">⚡</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--text);line-height:1;" id="trophyTotalPts">0</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Punkte</div>
+    </div>
+    <!-- Streak -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;" id="streakCard">
+      <div style="font-size:22px;margin-bottom:2px;">🔥</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--text);line-height:1;" id="streakCount">0</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Tage Streak</div>
     </div>
   </div>
 
@@ -199,7 +210,7 @@
     Kalender
   </button>
   <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4a2 2 0 000 4h2"/><path d="M18 9h2a2 2 0 010 4h-2"/><path d="M6 9v4a6 6 0 0012 0V9H6z"/><path d="M9 21h6"/><path d="M12 17v4"/></svg>
     Erfolg
   </button>
   <button class="nav-btn" data-page="progress" onclick="showPage('progress',this)">
@@ -511,6 +522,51 @@
     <div id="restTimerCount" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">90</div>
   </div>
   <button onclick="skipRestTimer()" id="btnSkipRest" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Überspringen</button>
+</div>
+
+<!-- Custom PIN Numpad Modal -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal" style="padding:28px 20px 24px;">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;" id="pinModalSubtitle">Fotos entsperren</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text);" id="pinModalTitle">PIN eingeben</div>
+    </div>
+    <!-- Digit dots -->
+    <div style="display:flex;justify-content:center;gap:16px;margin-bottom:32px;" id="pinDots">
+      <div class="pin-dot" id="pinDot0"></div>
+      <div class="pin-dot" id="pinDot1"></div>
+      <div class="pin-dot" id="pinDot2"></div>
+      <div class="pin-dot" id="pinDot3"></div>
+    </div>
+    <!-- Numpad -->
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="pinInput('1')">1</button>
+      <button class="pin-btn" onclick="pinInput('2')">2</button>
+      <button class="pin-btn" onclick="pinInput('3')">3</button>
+      <button class="pin-btn" onclick="pinInput('4')">4</button>
+      <button class="pin-btn" onclick="pinInput('5')">5</button>
+      <button class="pin-btn" onclick="pinInput('6')">6</button>
+      <button class="pin-btn" onclick="pinInput('7')">7</button>
+      <button class="pin-btn" onclick="pinInput('8')">8</button>
+      <button class="pin-btn" onclick="pinInput('9')">9</button>
+      <button class="pin-btn" style="background:transparent;border-color:transparent;color:var(--muted);font-size:16px;font-family:'DM Sans',sans-serif;" onclick="closePinModal()">Abbr.</button>
+      <button class="pin-btn" onclick="pinInput('0')">0</button>
+      <button class="pin-btn" style="font-family:'DM Sans',sans-serif;font-size:20px;color:var(--muted);" onclick="pinDelete()">⌫</button>
+    </div>
+    <div id="pinError" style="text-align:center;color:var(--accent2);font-size:13px;font-weight:600;margin-top:16px;min-height:20px;"></div>
+  </div>
+</div>
+
+<!-- PIN Config Options Modal -->
+<div class="modal-overlay" id="pinConfigModal">
+  <div class="modal" style="padding:20px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="margin-bottom:16px;">🔒 Foto-PIN</div>
+    <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="closeModal('pinConfigModal');openPinModal('change_verify',null);">PIN ändern</button>
+    <button class="btn btn-danger" onclick="closeModal('pinConfigModal');openPinModal('remove_verify',null);">PIN-Schutz entfernen</button>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="closeModal('pinConfigModal')">Abbrechen</button>
+  </div>
 </div>
 
 <!-- Add Measurement Modal -->

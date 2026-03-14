@@ -37,6 +37,7 @@ function renderLog() {
   document.getElementById('quickStart').style.display    = 'block';
   document.getElementById('activeWorkout').style.display = 'none';
   _renderRestConfig();
+  _renderStreakBanner();
 
   const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
   const recent  = document.getElementById('recentWorkouts');
@@ -115,6 +116,8 @@ function deleteLogWorkout(id) {
   if (!confirm(t('confirmDeleteWorkout'))) return;
   db.workouts = db.workouts.filter(w => w.id !== id);
   save();
+  if (typeof revokeCountAchievements === 'function') revokeCountAchievements();
+  if (typeof renderAchievements === 'function') renderAchievements();
   renderLog();
   haptic('light');
 }
@@ -716,9 +719,31 @@ function restTimerAdj(delta) {
   haptic('light');
 }
 
+function _requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function _notifyRestDone() {
+  // Strong vibration pattern even when in foreground
+  if (navigator.vibrate) navigator.vibrate([100, 60, 100, 60, 200]);
+  // System notification when app is in background
+  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification('DSCPLN — Pause beendet', {
+        body: 'Weiter gehts! Der nächste Satz wartet. 💪',
+        silent: false,
+        requireInteraction: false
+      });
+    } catch(e) { /* ignore */ }
+  }
+}
+
 function startRestTimer() {
   const cfg = _getRestCfg();
   if (!cfg.enabled) return;
+  _requestNotifPermission(); // ask once on first use
   clearInterval(restTimerInterval);
   restTimerMax   = cfg.sec;
   restTimerEndAt = Date.now() + cfg.sec * 1000; // store end timestamp
@@ -735,7 +760,7 @@ function startRestTimer() {
       restTimerInterval = null;
       restTimerEndAt = 0;
       overlay.style.display = 'none';
-      haptic('success');
+      _notifyRestDone();
       showToast('✓ ' + t('restDone'));
       return;
     }
@@ -759,6 +784,27 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
+
+// Also fire notification if app returns from background and timer has already ended
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && restTimerEndAt && !restTimerInterval && restTimerEndAt < Date.now()) {
+    restTimerEndAt = 0;
+  }
+});
+
+function _renderStreakBanner() {
+  const banner = document.getElementById('streakBanner');
+  if (!banner) return;
+  const streak = typeof calcStreak === 'function' ? calcStreak() : 0;
+  if (streak >= 2) {
+    const msgs = ['', '', '2 Tage am Stück – weiter so!', '3 Tage Streak – Feuer! 🔥', '4 Tage – du bist nicht aufzuhalten!', '5 Tage Streak – Maschine!'];
+    const msg = msgs[Math.min(streak, msgs.length - 1)] || `${streak} Tage Streak – unglaublich!`;
+    banner.style.display = 'block';
+    banner.innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(200,241,53,0.08);border:1px solid rgba(200,241,53,0.25);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;color:var(--accent);">🔥 ${streak}-Tage-Streak &mdash; ${msg}</div>`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
 
 function skipRestTimer() {
   clearInterval(restTimerInterval);
