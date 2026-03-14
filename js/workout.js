@@ -235,6 +235,9 @@ function finishWorkout() {
   if (typeof checkAchievements === 'function') {
     checkAchievements(cw);
   }
+  if (typeof showWorkoutTrophyToast === 'function') {
+    showWorkoutTrophyToast(2); // 2 pts per workout
+  }
 }
 
 function cancelWorkout() {
@@ -676,6 +679,7 @@ function saveSets() {
 let restTimerInterval = null;
 let restTimerSec      = 0;
 let restTimerMax      = 90;
+let restTimerEndAt    = 0; // timestamp when rest ends (background-safe)
 
 /* ---- Rest Timer Config ---- */
 function _getRestCfg() {
@@ -716,26 +720,45 @@ function startRestTimer() {
   const cfg = _getRestCfg();
   if (!cfg.enabled) return;
   clearInterval(restTimerInterval);
-  restTimerSec = cfg.sec;
-  restTimerMax = cfg.sec;
+  restTimerMax   = cfg.sec;
+  restTimerEndAt = Date.now() + cfg.sec * 1000; // store end timestamp
+  restTimerSec   = cfg.sec;
   const overlay = document.getElementById('restTimerOverlay');
   if (!overlay) return;
   overlay.style.display = 'flex';
   _updateRestDisplay();
   restTimerInterval = setInterval(() => {
-    restTimerSec--;
+    restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
     if (restTimerSec <= 3 && restTimerSec > 0) haptic('light');
     if (restTimerSec <= 0) {
       clearInterval(restTimerInterval);
       restTimerInterval = null;
+      restTimerEndAt = 0;
       overlay.style.display = 'none';
       haptic('success');
       showToast('✓ ' + t('restDone'));
       return;
     }
     _updateRestDisplay();
-  }, 1000);
+  }, 500); // poll at 500ms for accuracy after returning from background
 }
+
+// Re-sync rest timer display when returning from background
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && restTimerEndAt && restTimerInterval) {
+    restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+    _updateRestDisplay();
+    if (restTimerSec <= 0) {
+      clearInterval(restTimerInterval);
+      restTimerInterval = null;
+      restTimerEndAt = 0;
+      const overlay = document.getElementById('restTimerOverlay');
+      if (overlay) overlay.style.display = 'none';
+      haptic('success');
+      showToast('✓ ' + t('restDone'));
+    }
+  }
+});
 
 function skipRestTimer() {
   clearInterval(restTimerInterval);

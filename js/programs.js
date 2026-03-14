@@ -171,23 +171,16 @@ function startNextProgramDay() {
      }
   }
   
-  // Create a workout from the template
+  // Create a workout from the template (templates store exerciseIds, not exercises)
   const wo = {
     id: uid(),
     startTime: Date.now(),
     endTime: null,
-    exercises: JSON.parse(JSON.stringify(tpl.exercises || [])) // deep copy template
+    exercises: (tpl.exerciseIds || []).map(exId => ({ exId, sets: [] }))
   };
   
   // Add reference to track that this came from a program day
   wo.programDayId = `${prog.id}_day${currDayIndex}`;
-  
-  // Clear any existing timerSec or completed sets
-  wo.exercises.forEach(e => {
-    e.sets = [];
-    e.timerSec = 0;
-    e.hiitSets = [];
-  });
   
   db.currentWorkout = wo;
   save();

@@ -116,6 +116,14 @@ function showAchievementPopup(def) {
   }, 4000);
 }
 
+function showWorkoutTrophyToast(pts) {
+  const toast = document.createElement('div');
+  toast.className = 'trophy-toast';
+  toast.innerHTML = `<span style="font-size:22px;">🏆</span><div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Training abgeschlossen</div><div style="font-weight:700;color:var(--accent);font-size:15px;">+${pts} Punkte</div></div>`;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.classList.add('trophy-toast-out'); setTimeout(() => toast.remove(), 500); }, 3500);
+}
+
 function triggerConfetti() {
   if (typeof confetti === 'function') {
     confetti({
@@ -132,24 +140,40 @@ function renderAchievements() {
 
   const container = document.getElementById('achievementsGrid');
   if (!container) return;
-  
+
   container.innerHTML = '';
-  
+
   ACHIEVEMENTS_DEF.forEach(def => {
     const isUnlocked = hasAchievement(def.id);
     const lockedStyle = isUnlocked ? '' : 'opacity:0.3; filter:grayscale(100%);';
-    const borderStyle = isUnlocked ? 'border-color:var(--accent);' : '';
-    
+    const borderStyle = isUnlocked ? 'border-color:var(--accent);box-shadow:0 0 12px rgba(200,241,53,0.15);' : '';
+    const unlockedDate = isUnlocked ? db.achievements.find(a => a.id === def.id)?.date : null;
+    const dateLine = unlockedDate ? `<div style="font-size:10px;color:var(--accent);margin-top:3px;">${new Date(unlockedDate).toLocaleDateString('de-DE',{day:'numeric',month:'short',year:'numeric'})}</div>` : '';
+
     container.innerHTML += `
-      <div style="background:var(--surface2);border:1px solid var(--border);${borderStyle}border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;${lockedStyle}">
+      <div style="background:var(--surface2);border:1px solid var(--border);${borderStyle}border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;${lockedStyle}position:relative;">
+        ${isUnlocked ? '<div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--accent);">✓</div>' : ''}
         <div style="font-size:36px;margin-bottom:8px;">${def.icon}</div>
         <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;">${def.title}</div>
         <div style="font-size:11px;color:var(--muted);">${def.desc}</div>
+        ${dateLine}
       </div>
     `;
   });
-  
+
+  // Update trophy count banner
+  const unlocked = db.achievements.length;
+  const total = ACHIEVEMENTS_DEF.length;
+  const pts = db.workouts.length * 2 + unlocked * 10;
+  const elUnlocked = document.getElementById('trophyCountUnlocked');
+  const elTotal = document.getElementById('trophyCountTotal');
+  const elPts = document.getElementById('trophyTotalPts');
+  if (elUnlocked) elUnlocked.textContent = unlocked;
+  if (elTotal) elTotal.textContent = total;
+  if (elPts) elPts.textContent = pts;
+
   renderRanking();
+  renderRankRoad();
   renderMilestones();
 }
 
@@ -201,27 +225,37 @@ function retroAwardGamification() {
 
 function renderRanking() {
   const pts = db.workouts.length * 2 + db.achievements.length * 10;
-  let currentRank = RANKS[0];
-  let nextRank = RANKS[1];
-  for(let i=0; i<RANKS.length; i++) {
-    if (pts >= RANKS[i].pt) {
-      currentRank = RANKS[i];
-      nextRank = RANKS[i+1];
-    }
+  let currentRankIdx = 0;
+  for (let i = 0; i < RANKS.length; i++) {
+    if (pts >= RANKS[i].pt) currentRankIdx = i;
   }
-  
+  const currentRank = RANKS[currentRankIdx];
+  const nextRank    = RANKS[currentRankIdx + 1] || null;
+
   const titleEl = document.getElementById('userRankTitle');
-  const subEl = document.getElementById('userRankSub');
+  const subEl   = document.getElementById('userRankSub');
   if (!titleEl) return;
-  
+
   titleEl.textContent = currentRank.title;
   if (nextRank) {
     const ptsNeeded = nextRank.pt - pts;
     subEl.textContent = `${currentRank.sub} Noch ${ptsNeeded} Pkt bis ${nextRank.title}.`;
+    // Progress bar within current rank bracket
+    const ptsInBracket  = pts - currentRank.pt;
+    const bracketSize   = nextRank.pt - currentRank.pt;
+    const pct           = Math.min(100, Math.round((ptsInBracket / bracketSize) * 100));
+    const fill  = document.getElementById('rankProgressFill');
+    const label = document.getElementById('rankProgressLabel');
+    if (fill)  fill.style.width  = pct + '%';
+    if (label) label.textContent = `${pts} / ${nextRank.pt} Pkt (${pct}%)`;
   } else {
     subEl.textContent = currentRank.sub;
+    const fill  = document.getElementById('rankProgressFill');
+    const label = document.getElementById('rankProgressLabel');
+    if (fill)  fill.style.width  = '100%';
+    if (label) label.textContent = `MAX RANG erreicht · ${pts} Pkt`;
   }
-  
+
   // Populate Info Modal
   const infoList = document.getElementById('rankInfoList');
   if (infoList && infoList.innerHTML === '') {
@@ -232,6 +266,50 @@ function renderRanking() {
       </div>
     `).join('');
   }
+}
+
+function renderRankRoad() {
+  const road = document.getElementById('rankRoad');
+  if (!road) return;
+
+  const pts = db.workouts.length * 2 + db.achievements.length * 10;
+  let currentRankIdx = 0;
+  for (let i = 0; i < RANKS.length; i++) {
+    if (pts >= RANKS[i].pt) currentRankIdx = i;
+  }
+
+  // Build road: [node][connector][node][connector]...
+  let html = '<div style="display:flex;align-items:center;padding:4px 8px;gap:0;">';
+  RANKS.forEach((r, i) => {
+    const isReached = pts >= r.pt;
+    const isCurrent = i === currentRankIdx;
+    const emoji = r.title.split(' ')[0];
+    const label = r.title.replace(/^\S+\s/, '');
+    const nodeSize = isCurrent ? '52px' : '42px';
+    const fontSize = isCurrent ? '20px' : '16px';
+    const nodeBorder = isCurrent
+      ? 'border:2px solid var(--accent);box-shadow:0 0 14px rgba(200,241,53,0.5);background:rgba(200,241,53,0.12);'
+      : isReached
+        ? 'border:2px solid var(--accent);background:rgba(200,241,53,0.06);'
+        : 'border:2px solid var(--border);background:var(--bg);';
+    const labelColor = isCurrent ? 'var(--accent)' : isReached ? 'var(--text)' : 'var(--muted)';
+    const labelWeight = isCurrent ? '700' : '400';
+
+    html += `
+      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+        <div style="width:${nodeSize};height:${nodeSize};border-radius:50%;${nodeBorder}display:flex;align-items:center;justify-content:center;transition:all 0.3s;" title="${r.title} · ${r.pt} Pkt">
+          <span style="font-size:${fontSize};line-height:1;">${emoji}</span>
+        </div>
+        <div style="font-size:10px;color:${labelColor};font-weight:${labelWeight};margin-top:4px;text-align:center;max-width:52px;line-height:1.2;">${label}</div>
+      </div>
+    `;
+    if (i < RANKS.length - 1) {
+      const connColor = isReached ? 'var(--accent)' : 'var(--border)';
+      html += `<div style="width:20px;height:3px;background:${connColor};border-radius:2px;flex-shrink:0;margin-bottom:18px;transition:background 0.3s;"></div>`;
+    }
+  });
+  html += '</div>';
+  road.innerHTML = html;
 }
 
 function renderMilestones() {
