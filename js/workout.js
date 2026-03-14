@@ -725,11 +725,6 @@ function _requestNotifPermission() {
   }
 }
 
-function _notifyRestDoneLocal() {
-  // Vibrate in foreground (navigator.vibrate is blocked in background by browsers)
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
-}
-
 function startRestTimer() {
   const cfg = _getRestCfg();
   if (!cfg.enabled) return;
@@ -745,7 +740,7 @@ function startRestTimer() {
   overlay.style.display = 'flex';
   _updateRestDisplay();
 
-  // Schedule SW notification — fires even when app is backgrounded
+  // Schedule SW notification for Android / installed PWA users
   if (typeof _postSwMsg === 'function') {
     _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: cfg.sec * 1000 });
   }
@@ -758,9 +753,7 @@ function startRestTimer() {
       restTimerInterval = null;
       restTimerEndAt    = 0;
       overlay.style.display = 'none';
-      // Cancel SW notification (timer completed in foreground — no need for it)
       if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
-      _notifyRestDoneLocal();
       showToast('✓ ' + t('restDone'));
       return;
     }
@@ -768,7 +761,7 @@ function startRestTimer() {
   }, 500);
 }
 
-// When returning from background: re-sync and handle timer that ended while away
+// When returning from background: re-sync + prominent alert if timer already done
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && restTimerEndAt) {
     restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
@@ -778,8 +771,7 @@ document.addEventListener('visibilitychange', () => {
       restTimerEndAt    = 0;
       const overlay = document.getElementById('restTimerOverlay');
       if (overlay) overlay.style.display = 'none';
-      // SW already showed the notification; just vibrate now that we're in foreground
-      _notifyRestDoneLocal();
+      if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
       showToast('✓ ' + t('restDone'));
     } else {
       _updateRestDisplay();
