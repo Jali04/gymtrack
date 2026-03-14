@@ -719,15 +719,58 @@ function restTimerAdj(delta) {
   haptic('light');
 }
 
+/* ---- Rest-done alert: audio + visual ---- */
+
+// Play a 3-tone ascending beep via Web Audio API (works on iOS, no permission needed)
+function _playRestBeep() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    [[0, 660], [0.22, 880], [0.44, 1100]].forEach(([delay, freq]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const t    = ctx.currentTime + delay;
+      osc.type           = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.55, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    });
+    setTimeout(() => { try { ctx.close(); } catch(e) {} }, 1400);
+  } catch(e) {}
+}
+
+// Full-screen flash overlay so user can't miss it when returning from background
+function _showRestDoneAlert() {
+  const existing = document.getElementById('restDoneAlert');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'restDoneAlert';
+  el.innerHTML = `
+    <div style="font-size:64px;line-height:1;margin-bottom:16px;">💪</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--accent);letter-spacing:2px;line-height:1;">PAUSE BEENDET</div>
+    <div style="font-size:15px;color:var(--muted);margin-top:10px;">Nächster Satz wartet!</div>
+  `;
+  el.style.cssText = 'position:fixed;inset:0;z-index:9998;background:rgba(10,10,10,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;animation:restAlertIn 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+  document.body.appendChild(el);
+  el.addEventListener('click', () => el.remove());
+  setTimeout(() => { el.style.animation = 'restAlertOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, 2500);
+}
+
+function _notifyRestDone(fromBackground) {
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+  _playRestBeep();
+  if (fromBackground) _showRestDoneAlert(); // extra prominent when returning from BG
+}
+
 function _requestNotifPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
-}
-
-function _notifyRestDoneLocal() {
-  // Vibrate in foreground (navigator.vibrate is blocked in background by browsers)
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
 }
 
 function startRestTimer() {
@@ -745,7 +788,7 @@ function startRestTimer() {
   overlay.style.display = 'flex';
   _updateRestDisplay();
 
-  // Schedule SW notification — fires even when app is backgrounded
+  // Schedule SW notification for Android / installed PWA users
   if (typeof _postSwMsg === 'function') {
     _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: cfg.sec * 1000 });
   }
@@ -758,9 +801,8 @@ function startRestTimer() {
       restTimerInterval = null;
       restTimerEndAt    = 0;
       overlay.style.display = 'none';
-      // Cancel SW notification (timer completed in foreground — no need for it)
       if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
-      _notifyRestDoneLocal();
+      _notifyRestDone(false); // in foreground
       showToast('✓ ' + t('restDone'));
       return;
     }
@@ -768,7 +810,7 @@ function startRestTimer() {
   }, 500);
 }
 
-// When returning from background: re-sync and handle timer that ended while away
+// When returning from background: re-sync + prominent alert if timer already done
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && restTimerEndAt) {
     restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
@@ -778,9 +820,8 @@ document.addEventListener('visibilitychange', () => {
       restTimerEndAt    = 0;
       const overlay = document.getElementById('restTimerOverlay');
       if (overlay) overlay.style.display = 'none';
-      // SW already showed the notification; just vibrate now that we're in foreground
-      _notifyRestDoneLocal();
-      showToast('✓ ' + t('restDone'));
+      if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
+      _notifyRestDone(true); // from background → show full-screen alert
     } else {
       _updateRestDisplay();
     }
