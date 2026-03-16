@@ -5,6 +5,7 @@
 const HIIT_PRESETS = {
   tabata:  { workSec: 20, restSec: 10, rounds: 8 },
   emom:    { workSec: 60, restSec: 0,  rounds: 10 },
+  rope:    { workSec: 30, restSec: 15, rounds: 10 },
   custom:  { workSec: 40, restSec: 20, rounds: 5  },
 };
 
@@ -356,7 +357,7 @@ function openHiitLogModal() {
   const cw = db.currentWorkout;
   if (!cw) return;
 
-  const modeLabel = { tabata: 'Tabata', emom: 'EMOM', amrap: 'AMRAP', custom: 'Custom' };
+  const modeLabel = { tabata: 'Tabata', emom: 'EMOM', amrap: 'AMRAP', rope: '🪢 Seilspringen', custom: 'Custom' };
   const totalSec  = hiitState.rounds * (hiitState.workSec + hiitState.restSec);
   const mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
   const ss = (totalSec % 60).toString().padStart(2, '0');

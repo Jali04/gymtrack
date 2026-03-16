@@ -28,6 +28,8 @@
   <h1>DSCPLN</h1>
   <div style="display:flex;align-items:center;gap:10px;">
     <span class="header-date" id="headerDate"></span>
+    <button onclick="toggleTheme()" id="themeBtn"
+      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:13px;cursor:pointer;">☀️</button>
     <button onclick="toggleLang()" id="langBtn"
       style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">EN</button>
   </div>
@@ -46,6 +48,7 @@
     </div>
     
     <div id="streakBanner" style="display:none;text-align:center;margin-bottom:10px;"></div>
+    <div id="deloadBanner" style="display:none;margin-bottom:10px;"></div>
     <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
     <!-- Rest Timer Config -->
     <div class="rest-config-card">
@@ -122,6 +125,10 @@
   <div class="cal-grid" id="calGrid"></div>
   
   <div class="divider" style="margin-top:20px;"></div>
+  <div class="section-title" id="ttlMonthRecap" style="font-size:16px;">Monats-Recap</div>
+  <div id="monthlyRecap" style="margin-bottom:16px;"></div>
+
+  <div class="divider"></div>
   <div class="section-title" id="ttlStats">Statistiken</div>
   <div class="stats-grid" id="statsGrid" style="margin-bottom:16px;"></div>
 </div>
@@ -422,6 +429,7 @@
         <button class="hiit-tab active" data-mode="tabata" onclick="hiitSelectMode('tabata')">Tabata</button>
         <button class="hiit-tab" data-mode="emom" onclick="hiitSelectMode('emom')">EMOM</button>
         <button class="hiit-tab" data-mode="amrap" onclick="hiitSelectMode('amrap')">AMRAP</button>
+        <button class="hiit-tab" data-mode="rope" onclick="hiitSelectMode('rope')">🪢 Seil</button>
         <button class="hiit-tab" data-mode="custom" onclick="hiitSelectMode('custom')" id="hiitTabCustom">Custom</button>
       </div>
       <div id="hiitDisplay" style="margin:16px 0;"></div>
@@ -722,7 +730,7 @@
       <div class="close-btn" onclick="closeModal('weightProgressModal')">✕</div>
     </div>
     <button class="btn btn-primary" style="margin-bottom:16px;" onclick="openAddMeasurementModal()">+ Neuer Eintrag</button>
-    <div style="height:140px;margin-bottom:12px;display:flex;align-items:flex-end;gap:4px;" id="progressChart"></div>
+    <div style="margin-bottom:12px;" id="progressChart"></div>
     <div id="progressList" style="max-height:200px;overflow-y:auto;"></div>
   </div>
 </div>
@@ -755,7 +763,7 @@
       <div class="close-btn" onclick="closeModal('exGraphModal')">✕</div>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">Max. Gewicht über Zeit</div>
-    <div style="height:180px;margin-bottom:12px;display:flex;align-items:flex-end;gap:2px;" id="exGraphChart"></div>
+    <div style="margin-bottom:12px;" id="exGraphChart"></div>
   </div>
 </div>
 

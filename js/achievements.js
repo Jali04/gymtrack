@@ -234,6 +234,99 @@ function revokeCountAchievements() {
   if (dirty) save();
 }
 
+/* ---- Deload Detection ---- */
+function getDeloadStatus() {
+  // Get Monday of a given date's week
+  const weekStart = date => {
+    const d = new Date(date); d.setHours(0, 0, 0, 0);
+    const day = d.getDay(); // 0=Sun
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    return d.getTime();
+  };
+
+  // Volume of strength sets in a workout (non-warmup)
+  const workoutVol = w => w.exercises.reduce((t, e) => t + e.sets.reduce((s, st) => {
+    return (st.type !== 'W' && st.weight && st.reps) ? s + st.weight * st.reps : s;
+  }, 0), 0);
+
+  // Group workouts by week
+  const weekMap = {};
+  db.workouts.forEach(w => {
+    const key = weekStart(w.date || w.startTime);
+    if (!weekMap[key]) weekMap[key] = [];
+    weekMap[key].push(w);
+  });
+
+  const weekKeys = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
+  if (weekKeys.length < 2) return null;
+
+  const now = Date.now();
+  const currentWeekKey = weekStart(now);
+  const recentKeys = weekKeys.filter(k => k >= currentWeekKey - 4 * 7 * 86400000);
+  if (recentKeys.length < 2) return null;
+
+  const weekVols = recentKeys.map(k => weekMap[k].reduce((t, w) => t + workoutVol(w), 0));
+  const weekCounts = recentKeys.map(k => weekMap[k].length);
+
+  const currentIdx = recentKeys.indexOf(currentWeekKey);
+  if (currentIdx === -1) {
+    // No workouts this week at all
+    const daysSinceLast = Math.floor((now - weekKeys[weekKeys.length - 1]) / 86400000);
+    if (daysSinceLast >= 5) return { type: 'rest', days: daysSinceLast };
+    return null;
+  }
+
+  const prevVols  = weekVols.slice(0, currentIdx);
+  const prevCounts = weekCounts.slice(0, currentIdx);
+  if (prevVols.length === 0) return null;
+
+  const avgVol   = prevVols.reduce((a, b) => a + b, 0) / prevVols.length;
+  const avgCount = prevCounts.reduce((a, b) => a + b, 0) / prevCounts.length;
+  const currVol  = weekVols[currentIdx];
+  const currCount = weekCounts[currentIdx];
+
+  // Active deload: current week volume is < 60% of previous average
+  if (avgVol > 0 && currVol < avgVol * 0.6) {
+    return { type: 'deload', pct: Math.round((currVol / avgVol) * 100) };
+  }
+
+  // Suggest deload: 4+ consecutive high-volume weeks
+  const highVolWeeks = recentKeys.filter((k, i) => i < currentIdx && weekCounts[i] >= Math.max(2, avgCount * 0.8)).length;
+  if (highVolWeeks >= 4) {
+    return { type: 'suggest' };
+  }
+
+  return null;
+}
+
+function renderDeloadBanner() {
+  const banner = document.getElementById('deloadBanner');
+  if (!banner) return;
+  const status = getDeloadStatus();
+  if (!status) { banner.style.display = 'none'; return; }
+
+  banner.style.display = 'block';
+  if (status.type === 'deload') {
+    banner.innerHTML = `<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.25);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">😴</span>
+      <div><div style="font-weight:700;color:var(--accent);">Deload-Woche erkannt</div>
+      <div style="color:var(--muted);">Dein Volumen liegt ${status.pct}% vom Schnitt — Regeneration läuft. Keep going!</div></div>
+    </div>`;
+  } else if (status.type === 'suggest') {
+    banner.innerHTML = `<div style="background:rgba(255,165,0,0.07);border:1px solid rgba(255,165,0,0.3);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">⚠️</span>
+      <div><div style="font-weight:700;color:#f5a623;">Deload empfehlenswert</div>
+      <div style="color:var(--muted);">4+ Wochen Vollgas — eine leichtere Woche tut dem Körper gut.</div></div>
+    </div>`;
+  } else if (status.type === 'rest') {
+    banner.innerHTML = `<div style="background:rgba(255,77,77,0.07);border:1px solid rgba(255,77,77,0.25);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">🔴</span>
+      <div><div style="font-weight:700;color:var(--accent2);">Seit ${status.days} Tagen keine Session</div>
+      <div style="color:var(--muted);">Konsistenz schlägt Intensität — Zeit, wieder anzufangen!</div></div>
+    </div>`;
+  }
+}
+
 function retroAwardGamification() {
   let dirty = false;
   

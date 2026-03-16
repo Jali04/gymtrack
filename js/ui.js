@@ -71,6 +71,26 @@ function flashWorkoutComplete() {
   flash.addEventListener('animationend', () => flash.remove());
 }
 
+/* ---- Dark / Light Theme Toggle ---- */
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('gymtrack_theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+}
+
+// Apply on load
+(function() {
+  if (localStorage.getItem('gymtrack_theme') === 'light') {
+    document.body.classList.add('light-mode');
+    // update button once DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = '🌙';
+    });
+  }
+})();
+
 /* ---- Init (called from app.js after DOM ready) ---- */
 function initUI() {
   initRipples();
