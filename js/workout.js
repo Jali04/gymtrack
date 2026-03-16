@@ -38,6 +38,7 @@ function renderLog() {
   document.getElementById('activeWorkout').style.display = 'none';
   _renderRestConfig();
   _renderStreakBanner();
+  if (typeof renderDeloadBanner === 'function') renderDeloadBanner();
 
   const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
   const recent  = document.getElementById('recentWorkouts');
@@ -68,7 +69,7 @@ function renderLog() {
       const hiitBadges = (e.hiitSets || []).map(_hiitBadge).join('');
       const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
       return `<div style="margin-bottom:10px;">
-        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${name}<span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${name}<span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span>${e.supersetGroup ? '<span style="background:rgba(200,241,53,0.15);border:1px solid rgba(200,241,53,0.4);border-radius:5px;font-size:10px;padding:1px 5px;color:var(--accent);font-weight:700;margin-left:5px;">SS</span>' : ''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${hiitBadges}${timerBadge}</div>
         ${e.note ? `<div style="margin-top:5px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
       </div>`;
@@ -154,16 +155,29 @@ function renderActiveWorkout() {
     const timerBadge  = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
     if (!setsHtml && !hiitBadges && !e.timerSec) setsHtml = `<span style="color:var(--muted);font-size:13px;">${t('noEntries')}</span>`;
 
-    return `<div class="exercise-card">
+    // Superset indicator
+    const hasSS = !!e.supersetGroup;
+    const ssPartner = hasSS ? cw.exercises.findIndex((x, j) => j !== i && x.supersetGroup === e.supersetGroup) : -1;
+    const ssLabel = hasSS
+      ? `<span style="background:rgba(200,241,53,0.15);border:1px solid rgba(200,241,53,0.4);border-radius:6px;font-size:10px;padding:2px 6px;color:var(--accent);font-weight:700;margin-left:6px;">⟨ SS ⟩</span>`
+      : '';
+    const ssBtn = hasSS
+      ? `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;color:var(--accent2);" onclick="unlinkSuperset(${i})">🔗 Superset lösen</button>`
+      : `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;" onclick="startSupersetLink(${i})">🔗 Superset</button>`;
+
+    return `<div class="exercise-card${hasSS ? ' superset-card' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span></div>
+        <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span>${ssLabel}</div>
         <button class="close-btn" onclick="removeWorkoutExercise(${i})">✕</button>
       </div>
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${hiitBadges}${timerBadge}</div>
       ${e.note ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
-      <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="openLogSets(${i})">
-        ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
-      </button>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+        ${ssBtn}
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="openLogSets(${i})">
+          ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
+        </button>
+      </div>
     </div>`;
   }).join('');
 
@@ -171,10 +185,81 @@ function renderActiveWorkout() {
 }
 
 function removeWorkoutExercise(idx) {
+  // If part of a superset, clean up the link
+  const e = db.currentWorkout.exercises[idx];
+  if (e.supersetGroup) unlinkSuperset(idx, true);
   db.currentWorkout.exercises.splice(idx, 1);
   save();
   renderActiveWorkout();
   haptic('light');
+}
+
+/* ---- Supersets ---- */
+let _supersetLinkSource = null; // index of the exercise waiting to be linked
+
+function startSupersetLink(idx) {
+  const cw = db.currentWorkout;
+  if (!cw || cw.exercises.length < 2) {
+    showToast('Mindestens 2 Übungen für Superset nötig');
+    return;
+  }
+  _supersetLinkSource = idx;
+  showToast('Tippe eine andere Übung an, um sie zu verknüpfen');
+  // Highlight all other cards as clickable targets
+  const cards = document.querySelectorAll('#workoutExercises .exercise-card');
+  cards.forEach((card, i) => {
+    if (i !== idx) {
+      card.style.border = '2px dashed var(--accent)';
+      card.style.cursor = 'pointer';
+      card.setAttribute('data-ss-target', i);
+      card.addEventListener('click', _supersetTargetClick, { once: true });
+    } else {
+      card.style.border = '2px solid var(--accent)';
+    }
+  });
+}
+
+function _supersetTargetClick(e) {
+  const targetIdx = parseInt(this.getAttribute('data-ss-target'));
+  _finalizeSupersetLink(targetIdx);
+}
+
+function _finalizeSupersetLink(targetIdx) {
+  // Reset visual state
+  document.querySelectorAll('#workoutExercises .exercise-card').forEach(card => {
+    card.style.border = '';
+    card.style.cursor = '';
+    card.removeEventListener('click', _supersetTargetClick);
+  });
+
+  if (_supersetLinkSource === null) return;
+  const srcIdx = _supersetLinkSource;
+  _supersetLinkSource = null;
+
+  const cw = db.currentWorkout;
+  const groupId = uid();
+  cw.exercises[srcIdx].supersetGroup    = groupId;
+  cw.exercises[targetIdx].supersetGroup = groupId;
+  save();
+  renderActiveWorkout();
+  haptic('success');
+  showToast('⟨ SS ⟩ Superset verknüpft');
+}
+
+function unlinkSuperset(idx, silent) {
+  const cw = db.currentWorkout;
+  if (!cw) return;
+  const groupId = cw.exercises[idx].supersetGroup;
+  if (!groupId) return;
+  cw.exercises.forEach(e => {
+    if (e.supersetGroup === groupId) delete e.supersetGroup;
+  });
+  save();
+  if (!silent) {
+    renderActiveWorkout();
+    haptic('light');
+    showToast('Superset gelöst');
+  }
 }
 
 function finishWorkout() {

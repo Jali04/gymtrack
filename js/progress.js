@@ -114,28 +114,18 @@ function renderMeasurements() {
   });
   list.innerHTML = html;
   
-  // Render Simple CSS Chart (Last 10 entries max, reversed so oldest is left)
-  const chartData = db.measurements.slice(0, 10).reverse();
+  // Render SVG Line Chart (Last 12 entries, oldest on left)
+  const chartData = db.measurements.slice(0, 12).reverse();
   if (chartData.length < 2) {
-    chart.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:12px;margin-bottom:10px;">Mehr Daten für Diagramm benötigt</div>`;
+    chart.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:12px;padding:20px 0;">Mehr Daten für Diagramm benötigt</div>`;
     return;
   }
-  
-  const minW = Math.min(...chartData.map(d => d.weight)) - 2;
-  const maxW = Math.max(...chartData.map(d => d.weight)) + 2;
-  const range = maxW - minW;
-  
-  let chartHtml = ``;
-  chartData.forEach(d => {
-    const htPct = ((d.weight - minW) / range) * 100;
-    chartHtml += `
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">${d.weight}</div>
-        <div style="width:100%;max-width:24px;background:var(--accent);border-radius:4px 4px 0 0;height:${Math.max(5, htPct)}%;"></div>
-      </div>
-    `;
+  const points = chartData.map(d => {
+    const date = new Date(d.date);
+    return { x: `${date.getDate()}.${date.getMonth()+1}.`, y: d.weight };
   });
-  chart.innerHTML = chartHtml;
+  chart.style.display = 'block';
+  chart.innerHTML = _buildLineChart(points, { width: 320, height: 140, color: 'var(--accent)' });
 }
 
 function deleteMeasurement(id) {
@@ -626,26 +616,12 @@ window.openExGraph = function(exId) {
     return;
   }
   
-  // Keep last 10 points
-  const drawPoints = dataPoints.slice(-10);
-  
-  const minW = Math.max(0, Math.min(...drawPoints.map(d => d.weight)) * 0.8);
-  const maxW = Math.max(...drawPoints.map(d => d.weight)) * 1.1; // 10% headroom
-  const range = maxW - minW;
-  
-  let chartHtml = ``;
-  drawPoints.forEach(d => {
-    const htPct = Math.max(5, ((d.weight - minW) / range) * 100);
-    const dateStr = `${d.date.getDate()}.${d.date.getMonth()+1}.`;
-    chartHtml += `
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;">
-        <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px;">${d.weight}</div>
-        <div style="width:100%;max-width:32px;background:var(--accent);border-radius:4px 4px 0 0;height:${htPct}%;opacity:0.8;"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px;">${dateStr}</div>
-      </div>
-    `;
-  });
-  
-  chartContainer.innerHTML = chartHtml;
+  // Keep last 12 points
+  const drawPoints = dataPoints.slice(-12);
+  const points = drawPoints.map(d => ({
+    x: `${d.date.getDate()}.${d.date.getMonth()+1}.`,
+    y: d.weight
+  }));
+  chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color: 'var(--accent)' });
   openModal('exGraphModal');
 };

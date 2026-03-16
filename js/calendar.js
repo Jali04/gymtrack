@@ -120,6 +120,100 @@ function renderCalendar() {
     </div>`;
   }
   grid.innerHTML = html;
+  renderMonthlyRecap();
+}
+
+function renderMonthlyRecap() {
+  const container = document.getElementById('monthlyRecap');
+  if (!container) return;
+
+  const now = new Date();
+  // Use currently displayed month
+  const y = calYear, m = calMonth;
+  const prevM = m === 0 ? 11 : m - 1;
+  const prevY = m === 0 ? y - 1 : y;
+
+  const inMonth = (w, yr, mo) => { const d = new Date(w.date); return d.getFullYear() === yr && d.getMonth() === mo; };
+  const thisMonthWos  = db.workouts.filter(w => inMonth(w, y, m));
+  const lastMonthWos  = db.workouts.filter(w => inMonth(w, prevY, prevM));
+
+  // Volume = sum of weight × reps for non-warmup strength sets
+  const calcVol = wos => wos.reduce((total, w) => {
+    return total + w.exercises.reduce((wt, e) => {
+      return wt + e.sets.reduce((st, s) => {
+        return (s.type !== 'W' && s.weight && s.reps) ? st + s.weight * s.reps : st;
+      }, 0);
+    }, 0);
+  }, 0);
+
+  const thisVol = Math.round(calcVol(thisMonthWos));
+  const lastVol = Math.round(calcVol(lastMonthWos));
+
+  // Training time
+  const calcTime = wos => wos.reduce((total, w) => {
+    return (w.endTime && w.startTime) ? total + Math.round((w.endTime - w.startTime) / 60000) : total;
+  }, 0);
+  const thisMins = calcTime(thisMonthWos);
+
+  // PRs this month: exercises where max weight is the all-time highest
+  const prThisMonth = [];
+  const exIds = [...new Set(thisMonthWos.flatMap(w => w.exercises.map(e => e.exId).filter(Boolean)))];
+  exIds.forEach(exId => {
+    const ex = getEx(exId);
+    if (!ex || getCatType(ex.category) !== 'strength') return;
+    let allTimeMax = 0, thisMonthMax = 0;
+    db.workouts.forEach(w => {
+      const match = w.exercises.find(e => e.exId === exId);
+      if (!match) return;
+      const mx = Math.max(...match.sets.filter(s => s.type !== 'W' && s.weight).map(s => s.weight), 0);
+      if (mx > allTimeMax) allTimeMax = mx;
+      if (inMonth(w, y, m) && mx > thisMonthMax) thisMonthMax = mx;
+    });
+    if (thisMonthMax > 0 && thisMonthMax >= allTimeMax) prThisMonth.push({ name: ex.name, weight: thisMonthMax });
+  });
+
+  const delta = (curr, prev) => {
+    if (prev === 0) return '';
+    const pct = Math.round(((curr - prev) / prev) * 100);
+    if (pct > 0) return `<span style="color:var(--accent);font-weight:700;font-size:12px;"> ↑ +${pct}%</span>`;
+    if (pct < 0) return `<span style="color:var(--accent2);font-weight:700;font-size:12px;"> ↓ ${pct}%</span>`;
+    return `<span style="color:var(--muted);font-size:12px;"> = gleich</span>`;
+  };
+
+  const h = thisMins >= 60 ? `${Math.floor(thisMins/60)}h ${thisMins%60}min` : `${thisMins} min`;
+
+  const prHtml = prThisMonth.length > 0
+    ? prThisMonth.slice(0, 3).map(p => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
+        <span>${p.name}</span><span style="color:var(--accent);font-weight:700;">🏆 ${p.weight}kg</span>
+      </div>`).join('')
+    : `<div style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0;">Noch keine PRs diesen Monat</div>`;
+
+  const months = t('calMonths') || [];
+  const monthLabel = (months[m] || '') + ' ' + y;
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">${thisMonthWos.length}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;">Workouts</div>
+        ${delta(thisMonthWos.length, lastMonthWos.length)}
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">${thisVol >= 1000 ? (thisVol/1000).toFixed(1)+'t' : thisVol+'kg'}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;">Volumen</div>
+        ${delta(thisVol, lastVol)}
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">${thisMins > 0 ? h : '–'}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;">Zeit</div>
+      </div>
+    </div>
+    ${prThisMonth.length > 0 ? `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">🏆 Neue PRs diesen Monat</div>
+      ${prHtml}
+    </div>` : ''}
+  `;
 }
 
 function openCalDay(year, month, day) {
