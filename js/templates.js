@@ -69,7 +69,7 @@ function renderTmplExerciseList() {
   container.innerHTML = tmplExercises.map((exId, i) => {
     const ex       = getEx(exId);
     const type     = ex ? getCatType(ex.category) : 'strength';
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+    const catClass = getCatClass(type);
     const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
     const isFirst  = i === 0, isLast = i === tmplExercises.length - 1;
     return `<div class="tmpl-ex-row">
@@ -108,7 +108,7 @@ function openTmplExPicker() {
   list.innerHTML   = categories.map(cat => {
     const catLabel = t('cats')[cat] || cat;
     const type     = getCatType(cat);
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+    const catClass = getCatClass(type);
     const exs      = db.exercises.filter(e => e.category === cat);
     return `<div style="margin-bottom:8px;"><span class="cat-badge ${catClass}" style="font-size:11px;">${catLabel}</span></div>` +
       exs.map(e => {

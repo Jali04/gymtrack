@@ -9,6 +9,11 @@ const CAT_TYPE = {
 };
 function getCatType(category) { return CAT_TYPE[category] || 'strength'; }
 
+const TYPE_COLORS = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
+function getCatClass(type) {
+  return type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+}
+
 let db = JSON.parse(localStorage.getItem('gymdb') || '{"exercises":[],"workouts":[],"currentWorkout":null}');
 if (!db.templates) db.templates = [];
 if (!db.measurements) db.measurements = [];
@@ -46,4 +51,25 @@ function getEx(id) {
 function getExName(id) {
   const e = db.exercises.find(x => x.id === id);
   return e ? e.name : (typeof lang !== 'undefined' && lang === 'en' ? 'Unknown' : 'Unbekannt');
+}
+
+// Renders set badges HTML for a given sets array and exercise type.
+// Returns empty string if no sets.
+function _renderSetBadges(sets, type) {
+  if (!sets || sets.length === 0) return '';
+  if (type === 'cardio') {
+    return sets.map(s => {
+      const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${TYPE_COLORS[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+      const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+      return `<span class="set-badge">${tBadge}${s.km}km ${s.time} (${s.pace})${rBadge}</span>`;
+    }).join('');
+  }
+  if (type === 'stretch') {
+    return sets.map(s => `<span class="set-badge">${s.minutes} ${typeof t === 'function' ? t('colMin') : 'min'}</span>`).join('');
+  }
+  return sets.map(s => {
+    const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${TYPE_COLORS[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+    const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+    return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
+  }).join('');
 }

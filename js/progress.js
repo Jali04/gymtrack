@@ -420,7 +420,7 @@ function renderExerciseProgressTracker() {
 
   progList.innerHTML = cats.map(cat => {
     const type     = getCatType(cat);
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+    const catClass = getCatClass(type);
     const catLabel = t('cats')[cat] || cat;
     const exs      = activeExs.filter(e => e.category === cat);
     // Sort exercises alphabetically
