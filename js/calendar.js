@@ -145,7 +145,7 @@ function openCalDay(year, month, day) {
     const exHtml = w.exercises.map(e => {
       const ex       = getEx(e.exId);
       const type     = ex ? getCatType(ex.category) : 'strength';
-      const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+      const catClass = getCatClass(type);
       const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
       let setsHtml   = '';
       if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');

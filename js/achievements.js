@@ -382,7 +382,7 @@ function renderMilestones() {
   const validExs = Object.values(exCounts).filter(x => x.dates.length >= 3);
   
   validExs.forEach(x => {
-    const zipped = x.dates.map((d, i) => ({d, w: x.maxW[i]})).sort((a,b) => a.d - b.d);
+    const zipped = x.dates.map((d, i) => ({d: new Date(d).getTime(), w: x.maxW[i]})).sort((a,b) => a.d - b.d);
     
     // Compare first to last (oldest vs newest)
     const first = zipped[0];
