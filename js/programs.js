@@ -174,6 +174,7 @@ function startNextProgramDay() {
   // Create a workout from the template (templates store exerciseIds, not exercises)
   const wo = {
     id: uid(),
+    date: Date.now(),
     startTime: Date.now(),
     endTime: null,
     exercises: (tpl.exerciseIds || []).map(exId => ({ exId, sets: [] }))

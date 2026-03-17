@@ -50,7 +50,7 @@ function renderLog() {
   }
 
   recent.innerHTML = ws.map(w => {
-    const d         = new Date(w.date).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const d         = new Date(w.date || w.startTime).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const totalSets = w.exercises.reduce((a, e) => a + e.sets.length, 0);
     let durationHtml = '';
     if (w.endTime && w.startTime) {

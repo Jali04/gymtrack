@@ -19,7 +19,7 @@ function calNextMonth() {
 
 function getWorkoutsOnDay(year, month, day) {
   return db.workouts.filter(w => {
-    const d = new Date(w.date);
+    const d = new Date(w.date || w.startTime);
     return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
   });
 }
@@ -43,7 +43,7 @@ function calcStreak() {
   while (true) {
     const y = checking.getFullYear(), mo = checking.getMonth(), d = checking.getDate();
     const hasWorkout = db.workouts.some(w => {
-      const wd = new Date(w.date);
+      const wd = new Date(w.date || w.startTime);
       return wd.getFullYear() === y && wd.getMonth() === mo && wd.getDate() === d;
     });
     if (!hasWorkout) {
@@ -70,7 +70,7 @@ function renderCalendar() {
   // Streak & month stats
   const streak       = calcStreak();
   const monthWorkouts = db.workouts.filter(w => {
-    const d = new Date(w.date);
+    const d = new Date(w.date || w.startTime);
     return d.getFullYear() === calYear && d.getMonth() === calMonth;
   });
   const streakEl = document.getElementById('calStreak');
@@ -133,7 +133,7 @@ function renderMonthlyRecap() {
   const prevM = m === 0 ? 11 : m - 1;
   const prevY = m === 0 ? y - 1 : y;
 
-  const inMonth = (w, yr, mo) => { const d = new Date(w.date); return d.getFullYear() === yr && d.getMonth() === mo; };
+  const inMonth = (w, yr, mo) => { const d = new Date(w.date || w.startTime); return d.getFullYear() === yr && d.getMonth() === mo; };
   const thisMonthWos  = db.workouts.filter(w => inMonth(w, y, m));
   const lastMonthWos  = db.workouts.filter(w => inMonth(w, prevY, prevM));
 

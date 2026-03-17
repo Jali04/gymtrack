@@ -22,6 +22,13 @@ if (!db.programs) db.programs = [];
 if (typeof db.activeProgram === 'undefined') db.activeProgram = null;
 if (!db.achievements) db.achievements = [];
 
+// Migration: ensure all workouts have a date field (fallback to startTime)
+let _migrationNeeded = false;
+db.workouts.forEach(w => {
+  if (!w.date && w.startTime) { w.date = w.startTime; _migrationNeeded = true; }
+});
+if (_migrationNeeded) save();
+
 const DEFAULT_EXERCISES = [
   { id: 'e1',  name: 'Bankdrücken',     category: 'Brust' },
   { id: 'e2',  name: 'Kniebeugen',      category: 'Beine' },
