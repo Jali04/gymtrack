@@ -11,7 +11,7 @@ function openEditWorkout(workoutId) {
   editingWorkoutId   = workoutId;
   editingWorkoutCopy = JSON.parse(JSON.stringify(w));
   const locale = lang === 'de' ? 'de-DE' : 'en-GB';
-  const d      = new Date(w.date).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+  const d      = new Date(w.date || w.startTime).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById('editWorkoutTitle').textContent        = d;
   document.getElementById('btnEditWorkoutAddEx').textContent     = '+ ' + t('addExercise').replace('+ ', '');
   document.getElementById('btnSaveEditWorkout').textContent      = '✓ ' + t('saveChanges');
