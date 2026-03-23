@@ -234,104 +234,71 @@ function revokeCountAchievements() {
   if (dirty) save();
 }
 
-/* ---- Deload Detection ---- */
-function getDeloadStatus() {
-  // Get Monday of a given date's week
-  const weekStart = date => {
-    const d = new Date(date); d.setHours(0, 0, 0, 0);
-    const day = d.getDay(); // 0=Sun
-    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-    return d.getTime();
-  };
+/* ---- Manual Week Mode ---- */
+const WEEK_MODES = {
+  normal:   { emoji: '💪', label: 'Normal',      color: 'var(--accent)',  bg: 'rgba(200,241,53,0.08)',  border: 'rgba(200,241,53,0.3)'  },
+  deload:   { emoji: '😴', label: 'Deload',       color: '#a78bfa',        bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.3)' },
+  sick:     { emoji: '🤒', label: 'Krank',        color: '#f87171',        bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.3)' },
+  vacation: { emoji: '🏖️', label: 'Urlaub',      color: '#38bdf8',        bg: 'rgba(56,189,248,0.08)',  border: 'rgba(56,189,248,0.3)'  },
+  travel:   { emoji: '✈️', label: 'Unterwegs',   color: '#94a3b8',        bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.3)' },
+};
 
-  // Volume of strength sets in a workout (non-warmup)
-  const workoutVol = w => w.exercises.reduce((t, e) => t + e.sets.reduce((s, st) => {
-    return (st.type !== 'W' && st.weight && st.reps) ? s + st.weight * st.reps : s;
-  }, 0), 0);
-
-  // Group workouts by week
-  const weekMap = {};
-  db.workouts.forEach(w => {
-    const key = weekStart(w.date || w.startTime);
-    if (!weekMap[key]) weekMap[key] = [];
-    weekMap[key].push(w);
-  });
-
-  const weekKeys = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
-  if (weekKeys.length < 2) return null;
-
-  const now = Date.now();
-  const currentWeekKey = weekStart(now);
-  const recentKeys = weekKeys.filter(k => k >= currentWeekKey - 4 * 7 * 86400000);
-  if (recentKeys.length < 2) return null;
-
-  const weekVols = recentKeys.map(k => weekMap[k].reduce((t, w) => t + workoutVol(w), 0));
-  const weekCounts = recentKeys.map(k => weekMap[k].length);
-
-  const currentIdx = recentKeys.indexOf(currentWeekKey);
-  if (currentIdx === -1) {
-    // No workouts this week — use actual last workout date, not week start timestamp
-    const lastWorkoutTime = db.workouts.reduce((max, w) => {
-      const t = new Date(w.date || w.startTime).getTime();
-      return t > max ? t : max;
-    }, 0);
-    const daysSinceLast = lastWorkoutTime > 0 ? Math.floor((now - lastWorkoutTime) / 86400000) : Infinity;
-    if (daysSinceLast >= 5) return { type: 'rest', days: daysSinceLast };
-    return null;
-  }
-
-  const prevVols  = weekVols.slice(0, currentIdx);
-  const prevCounts = weekCounts.slice(0, currentIdx);
-  if (prevVols.length === 0) return null;
-
-  const avgVol   = prevVols.reduce((a, b) => a + b, 0) / prevVols.length;
-  const avgCount = prevCounts.reduce((a, b) => a + b, 0) / prevCounts.length;
-  const currVol  = weekVols[currentIdx];
-  const currCount = weekCounts[currentIdx];
-
-  // Active deload: only flag from Thursday onwards (daysIntoWeek >= 3)
-  // so early-week false-positives (Mon/Tue/Wed) are suppressed
-  const todayDay = new Date(now).getDay(); // 0=Sun
-  const daysIntoWeek = todayDay === 0 ? 6 : todayDay - 1; // Mon=0 … Sun=6
-  if (avgVol > 0 && currVol < avgVol * 0.6 && daysIntoWeek >= 3) {
-    return { type: 'deload', pct: Math.round((currVol / avgVol) * 100) };
-  }
-
-  // Suggest deload: 4+ consecutive high-volume weeks
-  const highVolWeeks = recentKeys.filter((k, i) => i < currentIdx && weekCounts[i] >= Math.max(2, avgCount * 0.8)).length;
-  if (highVolWeeks >= 4) {
-    return { type: 'suggest' };
-  }
-
-  return null;
+function _currentWeekKey() {
+  const d = new Date(); d.setHours(0,0,0,0);
+  const day = d.getDay();
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return d.getTime();
 }
 
-function renderDeloadBanner() {
-  const banner = document.getElementById('deloadBanner');
-  if (!banner) return;
-  const status = getDeloadStatus();
-  if (!status) { banner.style.display = 'none'; return; }
+function setWeekMode(mode) {
+  db.weekStatus = { weekKey: _currentWeekKey(), mode };
+  save();
+  renderWeekStatusBanner();
+}
 
-  banner.style.display = 'block';
-  if (status.type === 'deload') {
-    banner.innerHTML = `<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.25);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:20px;">😴</span>
-      <div><div style="font-weight:700;color:var(--accent);">Deload-Woche erkannt</div>
-      <div style="color:var(--muted);">Dein Volumen liegt ${status.pct}% vom Schnitt — Regeneration läuft. Keep going!</div></div>
-    </div>`;
-  } else if (status.type === 'suggest') {
-    banner.innerHTML = `<div style="background:rgba(255,165,0,0.07);border:1px solid rgba(255,165,0,0.3);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:20px;">⚠️</span>
-      <div><div style="font-weight:700;color:#f5a623;">Deload empfehlenswert</div>
-      <div style="color:var(--muted);">4+ Wochen Vollgas — eine leichtere Woche tut dem Körper gut.</div></div>
-    </div>`;
-  } else if (status.type === 'rest') {
-    banner.innerHTML = `<div style="background:rgba(255,77,77,0.07);border:1px solid rgba(255,77,77,0.25);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:20px;">🔴</span>
-      <div><div style="font-weight:700;color:var(--accent2);">Seit ${status.days} Tagen keine Session</div>
-      <div style="color:var(--muted);">Konsistenz schlägt Intensität — Zeit, wieder anzufangen!</div></div>
+function renderWeekStatusBanner() {
+  const widget = document.getElementById('weekStatusWidget');
+  if (!widget) return;
+
+  // Auto-reset if new week has started
+  const wk = _currentWeekKey();
+  if (!db.weekStatus || db.weekStatus.weekKey !== wk) {
+    db.weekStatus = { weekKey: wk, mode: 'normal' };
+    save();
+  }
+  const mode = db.weekStatus.mode || 'normal';
+
+  // Render chips
+  const chips = Object.entries(WEEK_MODES).map(([key, m]) => {
+    const active = key === mode;
+    const bg     = active ? m.color : 'var(--surface2)';
+    const color  = active ? (key === 'normal' ? '#000' : '#fff') : 'var(--muted)';
+    const border = active ? m.color : 'var(--border)';
+    return `<button onclick="setWeekMode('${key}')" style="background:${bg};color:${color};border:1px solid ${border};border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;">${m.emoji} ${m.label}</button>`;
+  }).join('');
+
+  // Banner only for non-normal modes
+  let banner = '';
+  if (mode !== 'normal') {
+    const m = WEEK_MODES[mode];
+    const desc = {
+      deload:   'Leichtere Woche geplant — Volumen runter, Regeneration hoch.',
+      sick:     'Gute Besserung! Körper erholt sich am besten mit Ruhe.',
+      vacation: 'Genieß den Urlaub — der Körper dankt es dir.',
+      travel:   'Unterwegs — mach das Beste draus!',
+    }[mode] || '';
+    banner = `<div style="background:${m.bg};border:1px solid ${m.border};border-radius:12px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;margin-top:8px;">
+      <span style="font-size:18px;">${m.emoji}</span>
+      <div><div style="font-weight:700;color:${m.color};">${m.label}-Woche</div>
+      <div style="color:var(--muted);font-size:12px;">${desc}</div></div>
     </div>`;
   }
+
+  widget.innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;">Diese Woche</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;">${chips}</div>
+    ${banner}
+  `;
 }
 
 function retroAwardGamification() {
