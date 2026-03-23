@@ -57,11 +57,39 @@ function closeSubModal(id) {
   }
 }
 
+/* ---- Compression helpers for share codes ---- */
+async function compressPayload(obj) {
+  const json = JSON.stringify(obj);
+  if (typeof CompressionStream !== 'undefined') {
+    try {
+      const cs     = new CompressionStream('gzip');
+      const stream = new Blob([json], { type: 'application/json' }).stream().pipeThrough(cs);
+      const buf    = await new Response(stream).arrayBuffer();
+      const bytes  = new Uint8Array(buf);
+      let binary   = '';
+      for (let b of bytes) binary += String.fromCharCode(b);
+      return 'gz:' + btoa(binary);
+    } catch(e) {}
+  }
+  return btoa(unescape(encodeURIComponent(json)));
+}
+
+async function decompressPayload(code) {
+  if (code.startsWith('gz:')) {
+    const bin   = atob(code.slice(3));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    if (typeof DecompressionStream !== 'undefined') {
+      const ds     = new DecompressionStream('gzip');
+      const stream = new Blob([bytes]).stream().pipeThrough(ds);
+      return JSON.parse(await new Response(stream).text());
+    }
+  }
+  return JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
+}
+
 /* ---- Export / Import ---- */
 function openExportModal() {
-  const payload = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
-  document.getElementById('exportText').value = payload;
-  document.getElementById('copyConfirm').style.display = 'none';
   openModal('exportModal');
 }
 
@@ -226,11 +254,11 @@ function _mergeImportedDb(imported) {
   showToast(t('importSuccess'));
 }
 
-function doImport() {
+async function doImport() {
   const raw = document.getElementById('importText').value.trim();
   if (!raw) { alert(t('enterExportCode')); return; }
   try {
-    const imported = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    const imported = await decompressPayload(raw);
     _mergeImportedDb(imported);
   } catch(e) { alert(t('importError')); }
 }
@@ -257,16 +285,15 @@ async function importFromFile(event) {
 }
 
 /* ---- Template Share ---- */
-function openTemplateShare(tmplId) {
+async function openTemplateShare(tmplId) {
   const tmpl = db.templates.find(x => x.id === tmplId);
   if (!tmpl) return;
-  // Only include exercises referenced by this template
   const exercises = tmpl.exerciseIds
     .map(id => db.exercises.find(e => e.id === id))
     .filter(Boolean)
     .map(({ id, name, category, notes }) => ({ id, name, category, ...(notes ? { notes } : {}) }));
   const payload = { v: 't', t: { id: tmpl.id, name: tmpl.name, exerciseIds: tmpl.exerciseIds }, e: exercises };
-  const code    = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const code    = await compressPayload(payload);
   document.getElementById('tmplShareCode').value = code;
   document.getElementById('tmplShareName').textContent = tmpl.name;
   document.getElementById('tmplShareCopyConfirm').style.display = 'none';
