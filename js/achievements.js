@@ -289,8 +289,11 @@ function getDeloadStatus() {
   const currVol  = weekVols[currentIdx];
   const currCount = weekCounts[currentIdx];
 
-  // Active deload: current week volume is < 60% of previous average
-  if (avgVol > 0 && currVol < avgVol * 0.6) {
+  // Active deload: only flag from Thursday onwards (daysIntoWeek >= 3)
+  // so early-week false-positives (Mon/Tue/Wed) are suppressed
+  const todayDay = new Date(now).getDay(); // 0=Sun
+  const daysIntoWeek = todayDay === 0 ? 6 : todayDay - 1; // Mon=0 … Sun=6
+  if (avgVol > 0 && currVol < avgVol * 0.6 && daysIntoWeek >= 3) {
     return { type: 'deload', pct: Math.round((currVol / avgVol) * 100) };
   }
 
