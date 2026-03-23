@@ -13,7 +13,7 @@ function showPage(id, btn) {
   if (id === 'log')      renderLog();
   if (id === 'gymlab')   renderGymLab();
   if (id === 'progress') renderProgress();
-  if (id === 'stats')    { renderStats(); }
+  if (id === 'stats')    { renderStats(); renderAchievements(); }
   if (id === 'calendar') { renderCalendar(); renderStats(); }
 }
 
