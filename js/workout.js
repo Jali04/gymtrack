@@ -38,7 +38,7 @@ function renderLog() {
   document.getElementById('activeWorkout').style.display = 'none';
   _renderRestConfig();
   _renderStreakBanner();
-  if (typeof renderDeloadBanner === 'function') renderDeloadBanner();
+  if (typeof renderWeekStatusBanner === 'function') renderWeekStatusBanner();
 
   const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
   const recent  = document.getElementById('recentWorkouts');
