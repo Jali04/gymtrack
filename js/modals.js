@@ -104,16 +104,81 @@ function _triggerDownload(blob, filename) {
 }
 
 async function shareToNotes() {
-  const code = document.getElementById('exportText').value;
+  // Prepare backup code first (fills hidden textarea)
+  const payload = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
+  document.getElementById('exportText').value = payload;
+
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'GymTrack Backup', text: code });
+      await navigator.share({ title: 'GymTrack Backup', text: payload });
     } catch(e) {
       if (e.name !== 'AbortError') copyExport();
     }
   } else {
     copyExport();
   }
+}
+
+async function exportToNotesReadable() {
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const fmt = ts => {
+    const d = new Date(ts);
+    return `${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+  const fmtTime = ts => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  };
+
+  const sorted = [...db.workouts].sort((a, b) =>
+    new Date(b.date || b.startTime) - new Date(a.date || a.startTime)
+  );
+
+  let lines = ['DSCPLN — Trainings-Verlauf', `Exportiert: ${fmt(Date.now())}`, ''];
+
+  sorted.forEach(w => {
+    const dateStr = fmt(w.date || w.startTime);
+    const from = fmtTime(w.startTime);
+    const to   = fmtTime(w.endTime);
+    const dur  = (w.startTime && w.endTime)
+      ? ` (${Math.round((w.endTime - w.startTime) / 60000)} min)`
+      : '';
+    lines.push(`▶ ${dateStr}${from ? '  ' + from + (to ? '–' + to : '') : ''}${dur}`);
+    if (w.note) lines.push(`  Notiz: ${w.note}`);
+
+    (w.exercises || []).forEach(ex => {
+      const exObj = db.exercises.find(e => e.id === ex.exId);
+      const exName = exObj ? exObj.name : ex.exId;
+      lines.push(`  • ${exName}`);
+      (ex.sets || []).forEach((st, si) => {
+        let setLine = `    ${si + 1}.`;
+        if (st.type && st.type !== 'N') setLine += ` [${st.type}]`;
+        if (st.weight != null && st.reps != null) setLine += ` ${st.weight} kg × ${st.reps} Wdh`;
+        else if (st.distance != null) setLine += ` ${st.distance} km`;
+        if (st.time != null) setLine += ` / ${st.time} min`;
+        if (st.rpe != null) setLine += `  RPE ${st.rpe}`;
+        lines.push(setLine);
+      });
+    });
+    lines.push('');
+  });
+
+  const text = lines.join('\n');
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Meine Trainings', text });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  // Fallback: copy to clipboard
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ Verlauf kopiert!');
+  } catch(e) { showToast('Fehler beim Kopieren'); }
 }
 
 function openImportModal() {
@@ -130,6 +195,17 @@ function _mergeImportedDb(imported) {
     if (!db.templates.find(x => x.id === imported.t.id)) db.templates.push(imported.t);
     save(); closeModal('importModal'); renderTemplates(); renderExercises();
     showToast(t('tmplImportSuccess'));
+    return;
+  }
+  // Program-share format: {v:'p', p:{...}, t:[...], e:[...]}
+  if (imported.v === 'p' && imported.p && imported.t && imported.e) {
+    imported.e.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
+    imported.t.forEach(tmpl => { if (!db.templates.find(x => x.id === tmpl.id)) db.templates.push(tmpl); });
+    if (!db.programs) db.programs = [];
+    if (!db.programs.find(x => x.id === imported.p.id)) db.programs.push(imported.p);
+    save(); closeModal('importModal'); renderTemplates(); renderExercises();
+    if (typeof renderPrograms === 'function') renderPrograms();
+    showToast('✓ Programm importiert!');
     return;
   }
   if (!imported.exercises || !imported.workouts) throw new Error('invalid');

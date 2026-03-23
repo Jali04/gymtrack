@@ -6,10 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DSCPLN">
-<meta name="version" content="3.9">
+<meta name="version" content="4.0">
 <title>DSCPLN</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=4.0">
 </head>
 <body>
 
@@ -394,23 +394,28 @@
   </div>
 </div>
 
-<!-- Export -->
+<!-- Export / Import Hub -->
 <div class="modal-overlay" id="exportModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title" id="ttlExport">Daten exportieren</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="ttlExport">Backup & Restore</div>
       <div class="close-btn" onclick="closeModal('exportModal')">✕</div>
     </div>
-    <p id="txtExportDesc" style="font-size:14px;color:var(--muted);margin-bottom:16px;"></p>
-    <textarea id="exportText" readonly style="width:100%;height:100px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:none;outline:none;"></textarea>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
-      <button class="btn btn-primary" id="btnCopyExport" onclick="copyExport()">📋 Code kopieren</button>
-      <button class="btn btn-primary" id="btnExportFile" onclick="exportAsFile()">🗜️ Als Datei</button>
+    <!-- hidden textarea used by copyExport() fallback only -->
+    <textarea id="exportText" readonly style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
+    <!-- Export section -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;" id="lblExportSection">Exportieren</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-primary" id="btnExportFile" onclick="exportAsFile()">🗜️ Als Datei sichern</button>
+      <button class="btn btn-primary" id="btnShareBackup" onclick="shareToNotes()">📤 Teilen / AirDrop</button>
     </div>
-    <button class="btn btn-secondary" id="btnShareNotes" onclick="shareToNotes()" style="margin-top:10px;">📤 Zu Notizen / Teilen</button>
-    <div id="copyConfirm" style="display:none;text-align:center;color:var(--accent);font-size:14px;margin-top:10px;font-weight:600;"></div>
-    <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('exportModal')">Schließen</button>
+    <!-- Notes export -->
+    <button class="btn btn-secondary" id="btnExportNotes" onclick="exportToNotesReadable()" style="margin-bottom:16px;">📝 Verlauf zu Notizen exportieren</button>
+    <!-- Import section -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;" id="lblImportSection">Importieren</div>
+    <button class="btn btn-secondary" id="btnOpenImport" onclick="closeModal('exportModal');openImportModal();">📥 Daten importieren</button>
+    <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('exportModal')" style="margin-top:8px;">Schließen</button>
   </div>
 </div>
 
@@ -472,23 +477,21 @@
   </div>
 </div>
 
-<!-- Template Share -->
+<!-- Template / Program Share -->
 <div class="modal-overlay" id="tmplShareModal">
   <div class="modal">
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title" id="ttlTmplShare">Vorlage teilen</div>
+      <div class="modal-title" id="ttlTmplShare">Teilen</div>
       <div class="close-btn" onclick="closeModal('tmplShareModal')">✕</div>
     </div>
-    <div id="tmplShareName" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>
-    <p id="tmplShareDesc" style="font-size:13px;color:var(--muted);margin-bottom:14px;"></p>
-    <textarea id="tmplShareCode" readonly style="width:100%;height:80px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:11px;font-family:monospace;resize:none;outline:none;"></textarea>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
-      <button class="btn btn-primary" onclick="copyTemplateShare()" id="btnCopyTmplShare">📋 Code kopieren</button>
-      <button class="btn btn-primary" onclick="shareTemplateNative()" id="btnShareTmplNative">📤 Teilen</button>
-    </div>
+    <div id="tmplShareName" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>
+    <p id="tmplShareDesc" style="font-size:13px;color:var(--muted);margin-bottom:20px;"></p>
+    <!-- hidden code textarea used by fallback copy only -->
+    <textarea id="tmplShareCode" readonly style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
+    <button class="btn btn-primary" onclick="shareTemplateNative()" id="btnShareTmplNative" style="font-size:16px;">📤 Teilen / AirDrop</button>
     <div id="tmplShareCopyConfirm" style="display:none;text-align:center;color:var(--accent);font-size:14px;margin-top:10px;font-weight:600;">✓ Kopiert!</div>
-    <button class="btn btn-secondary" onclick="closeModal('tmplShareModal')">Schließen</button>
+    <button class="btn btn-secondary" onclick="closeModal('tmplShareModal')" style="margin-top:8px;">Schließen</button>
   </div>
 </div>
 
@@ -814,25 +817,25 @@ function _postSwMsg(msg) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-<script src="js/db.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/achievements.js"></script>
-<script src="js/modals.js"></script>
-<script src="js/nav.js"></script>
-<script src="js/workout.js"></script>
-<script src="js/exercises.js"></script>
-<script src="js/history.js"></script>
-<script src="js/stats.js"></script>
-<script src="js/templates.js"></script>
-<script src="js/calendar.js"></script>
-<script src="js/editWorkout.js"></script>
-<script src="js/timer.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/splash.js"></script>
-<script src="js/progress.js"></script>
-<script src="js/programs.js"></script>
-<script src="js/tools.js"></script>
-<script src="js/app.js"></script>
+<script src="js/db.js?v=4.0"></script>
+<script src="js/i18n.js?v=4.0"></script>
+<script src="js/achievements.js?v=4.0"></script>
+<script src="js/modals.js?v=4.0"></script>
+<script src="js/nav.js?v=4.0"></script>
+<script src="js/workout.js?v=4.0"></script>
+<script src="js/exercises.js?v=4.0"></script>
+<script src="js/history.js?v=4.0"></script>
+<script src="js/stats.js?v=4.0"></script>
+<script src="js/templates.js?v=4.0"></script>
+<script src="js/calendar.js?v=4.0"></script>
+<script src="js/editWorkout.js?v=4.0"></script>
+<script src="js/timer.js?v=4.0"></script>
+<script src="js/ui.js?v=4.0"></script>
+<script src="js/splash.js?v=4.0"></script>
+<script src="js/progress.js?v=4.0"></script>
+<script src="js/programs.js?v=4.0"></script>
+<script src="js/tools.js?v=4.0"></script>
+<script src="js/app.js?v=4.0"></script>
 
 </body>
 </html>

@@ -18,13 +18,13 @@ function renderPrograms() {
     const isActive = db.activeProgram && db.activeProgram.id === p.id;
     const border = isActive ? 'border:1px solid var(--accent);' : 'border:1px solid transparent;';
     const tag = isActive ? `<span style="background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;">AKTIV</span>` : '';
-    
+
     // Quick summarize days
     let summaries = p.days.map((d, i) => {
       const tpl = db.templates.find(x => x.id === d.templateId);
       return `<div style="font-size:12px;color:var(--muted);">Tag ${i+1}: ${tpl ? tpl.name : 'Unbekannt'}</div>`;
     }).join('');
-    
+
     list.innerHTML += `
       <div class="card" style="margin-bottom:12px;${border};cursor:pointer;" onclick="openEditProgram('${p.id}')">
         <div style="font-weight:700;font-size:16px;display:flex;align-items:center;">
@@ -32,10 +32,11 @@ function renderPrograms() {
         </div>
         <div style="margin-top:8px;">${summaries}</div>
         <div style="display:flex;gap:8px;margin-top:12px;">
-          ${isActive 
-             ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();quitProgram()">Programm beenden</button>` 
+          ${isActive
+             ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();quitProgram()">Programm beenden</button>`
              : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openStartProgramModal('${p.id}')">Aktivieren</button>`
           }
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openProgramShare('${p.id}')">📤 Teilen</button>
         </div>
       </div>
     `;
@@ -317,4 +318,33 @@ function deleteProgram() {
     renderPrograms();
     updateActiveProgramBanner();
   }
+}
+
+function openProgramShare(id) {
+  const prog = db.programs.find(x => x.id === id);
+  if (!prog) return;
+
+  // Collect all templates referenced by this program
+  const tmplIds = [...new Set(prog.days.map(d => d.templateId))];
+  const templates = tmplIds
+    .map(tid => db.templates.find(t => t.id === tid))
+    .filter(Boolean)
+    .map(({ id, name, type, exerciseIds }) => ({ id, name, type: type || 'training', exerciseIds: exerciseIds || [] }));
+
+  // Collect all exercises referenced by those templates
+  const exIds = [...new Set(templates.flatMap(t => t.exerciseIds))];
+  const exercises = exIds
+    .map(eid => db.exercises.find(e => e.id === eid))
+    .filter(Boolean)
+    .map(({ id, name, category, notes }) => ({ id, name, category, ...(notes ? { notes } : {}) }));
+
+  const payload = { v: 'p', p: { id: prog.id, name: prog.name, days: prog.days }, t: templates, e: exercises };
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+
+  // Re-use the template share modal
+  document.getElementById('tmplShareCode').value = code;
+  document.getElementById('tmplShareName').textContent = prog.name;
+  document.getElementById('tmplShareDesc').textContent = `${prog.days.length} Tage · ${templates.length} Vorlagen`;
+  document.getElementById('tmplShareCopyConfirm').style.display = 'none';
+  openModal('tmplShareModal');
 }
