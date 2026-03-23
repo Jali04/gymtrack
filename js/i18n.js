@@ -31,9 +31,10 @@ const TR = {
     catHint: { strength: '📊 Kraft: kg & Wiederholungen', cardio: '🏃 Cardio: Distanz (km) & Zeit → Tempo wird berechnet', stretch: '🧘 Dehnen: Dauer in Minuten' },
     lastPerf: 'Letztes Mal', kg: 'kg', reps: 'Wdh', addSet: '+ Satz', saveSets: 'Speichern',
     colKm: 'km', colTime: 'Zeit', colPace: 'Tempo', colMin: 'Min',
-    exportTitle: 'Daten exportieren', exportDesc: 'Kopiere diesen Code und schicke ihn per WhatsApp oder E-Mail an dein anderes Gerät.',
+    exportTitle: 'Daten exportieren', exportDesc: 'Code kopieren, als Datei herunterladen oder direkt zu Notizen teilen.',
     copyCode: '📋 Code kopieren', copied: '✓ Kopiert!', close: 'Schließen',
-    importTitle: 'Daten importieren', importDesc: 'Export-Code hier einfügen:',
+    exportFileSuccess: '✓ Datei heruntergeladen!', exportFileError: 'Fehler beim Download.',
+    importTitle: 'Daten importieren', importDesc: 'Datei vom anderen Gerät auswählen oder Export-Code einfügen:',
     importWarn: '⚠️ Achtung: Bestehende Daten werden zusammengeführt, nichts geht verloren.',
     importPlaceholder: 'Export-Code hier einfügen...', doImport: '✓ Importieren',
     importSuccess: '✓ Import erfolgreich! Daten wurden zusammengeführt.', importError: 'Ungültiger Code.',
@@ -72,7 +73,7 @@ const TR = {
     restTimer: 'Pausenzeit', restDone: 'Los geht\'s!', restSkip: 'Überspringen',
     // Template share
     shareTmpl: 'Vorlage teilen', tmplShareTitle: 'Vorlage teilen',
-    tmplShareDesc: 'Diesen kompakten Code teilen – nur Vorlage & Übungen, kein Verlauf.',
+    tmplShareDesc: 'Code kopieren oder direkt teilen – nur Vorlage & Übungen, kein Verlauf.',
     tmplImportSuccess: '✓ Vorlage importiert!',
     // Workout Stopwatch
     swLabel: 'Stoppuhr', swBook: 'Buchen', swBookTitle: 'Zeit buchen',
@@ -125,9 +126,10 @@ const TR = {
     catHint: { strength: '📊 Strength: kg & reps', cardio: '🏃 Cardio: distance (km) & time → pace calculated', stretch: '🧘 Stretching: duration in minutes' },
     lastPerf: 'Last Time', kg: 'kg', reps: 'Reps', addSet: '+ Set', saveSets: 'Save',
     colKm: 'km', colTime: 'Time', colPace: 'Pace', colMin: 'Min',
-    exportTitle: 'Export Data', exportDesc: 'Copy this code and send it via WhatsApp or Email to your other device.',
+    exportTitle: 'Export Data', exportDesc: 'Copy code, download as file, or share directly to Notes.',
     copyCode: '📋 Copy Code', copied: '✓ Copied!', close: 'Close',
-    importTitle: 'Import Data', importDesc: 'Paste export code here:',
+    exportFileSuccess: '✓ File downloaded!', exportFileError: 'Download failed.',
+    importTitle: 'Import Data', importDesc: 'Choose file from other device or paste export code:',
     importWarn: '⚠️ Warning: Data will be merged, nothing will be lost.',
     importPlaceholder: 'Paste export code here...', doImport: '✓ Import',
     importSuccess: '✓ Import successful! Data has been merged.', importError: 'Invalid code.',
@@ -166,7 +168,7 @@ const TR = {
     restTimer: 'Rest', restDone: 'Go!', restSkip: 'Skip',
     // Template share
     shareTmpl: 'Share Template', tmplShareTitle: 'Share Template',
-    tmplShareDesc: 'Share this compact code – only template & exercises, no history.',
+    tmplShareDesc: 'Copy or share directly – only template & exercises, no history.',
     tmplImportSuccess: '✓ Template imported!',
     // Workout Stopwatch
     swLabel: 'Stopwatch', swBook: 'Log', swBookTitle: 'Log Time',

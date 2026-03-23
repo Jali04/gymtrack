@@ -75,9 +75,79 @@ function copyExport() {
   showToast(t('copied'));
 }
 
+async function exportAsFile() {
+  const json = JSON.stringify(db);
+  const date = new Date().toISOString().split('T')[0];
+  try {
+    if (typeof CompressionStream !== 'undefined') {
+      const blob = new Blob([json], { type: 'application/json' });
+      const cs = new CompressionStream('gzip');
+      const stream = blob.stream().pipeThrough(cs);
+      const compressed = await new Response(stream).blob();
+      _triggerDownload(compressed, `gymtrack_${date}.gymdata.gz`);
+    } else {
+      const blob = new Blob([json], { type: 'application/json' });
+      _triggerDownload(blob, `gymtrack_${date}.gymdata`);
+    }
+    showToast(t('exportFileSuccess'));
+  } catch(e) { showToast(t('exportFileError')); }
+}
+
+function _triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function shareToNotes() {
+  const code = document.getElementById('exportText').value;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'GymTrack Backup', text: code });
+    } catch(e) {
+      if (e.name !== 'AbortError') copyExport();
+    }
+  } else {
+    copyExport();
+  }
+}
+
 function openImportModal() {
   document.getElementById('importText').value = '';
+  const fi = document.getElementById('importFileInput');
+  if (fi) fi.value = '';
   openModal('importModal');
+}
+
+function _mergeImportedDb(imported) {
+  // Template-share format: {v:'t', t:{...}, e:[...]}
+  if (imported.v === 't' && imported.t && imported.e) {
+    imported.e.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
+    if (!db.templates.find(x => x.id === imported.t.id)) db.templates.push(imported.t);
+    save(); closeModal('importModal'); renderTemplates(); renderExercises();
+    showToast(t('tmplImportSuccess'));
+    return;
+  }
+  if (!imported.exercises || !imported.workouts) throw new Error('invalid');
+  imported.exercises.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
+  imported.workouts.forEach(w  => { if (!db.workouts.find(x  => x.id === w.id))  db.workouts.push(w); });
+  if (imported.templates) {
+    imported.templates.forEach(tmpl => { if (!db.templates.find(x => x.id === tmpl.id)) db.templates.push(tmpl); });
+  }
+  if (imported.programs) {
+    if (!db.programs) db.programs = [];
+    imported.programs.forEach(p => { if (!db.programs.find(x => x.id === p.id)) db.programs.push(p); });
+  }
+  if (imported.measurements) {
+    if (!db.measurements) db.measurements = [];
+    imported.measurements.forEach(m => { if (!db.measurements.find(x => x.id === m.id)) db.measurements.push(m); });
+  }
+  save(); closeModal('importModal'); renderStats(); renderHistory();
+  showToast(t('importSuccess'));
 }
 
 function doImport() {
@@ -85,23 +155,29 @@ function doImport() {
   if (!raw) { alert(t('enterExportCode')); return; }
   try {
     const imported = JSON.parse(decodeURIComponent(escape(atob(raw))));
-    // Template-share format: {v:'t', t:{...}, e:[...]}
-    if (imported.v === 't' && imported.t && imported.e) {
-      imported.e.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
-      if (!db.templates.find(x => x.id === imported.t.id)) db.templates.push(imported.t);
-      save(); closeModal('importModal'); renderTemplates(); renderExercises();
-      showToast(t('tmplImportSuccess'));
-      return;
-    }
-    if (!imported.exercises || !imported.workouts) throw new Error();
-    imported.exercises.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
-    imported.workouts.forEach(w  => { if (!db.workouts.find(x  => x.id === w.id))  db.workouts.push(w); });
-    if (imported.templates) {
-      imported.templates.forEach(tmpl => { if (!db.templates.find(x => x.id === tmpl.id)) db.templates.push(tmpl); });
-    }
-    save(); closeModal('importModal'); renderStats(); renderHistory();
-    showToast(t('importSuccess'));
+    _mergeImportedDb(imported);
   } catch(e) { alert(t('importError')); }
+}
+
+async function importFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    let text;
+    if (file.name.endsWith('.gz') && typeof DecompressionStream !== 'undefined') {
+      const buf = await file.arrayBuffer();
+      const ds = new DecompressionStream('gzip');
+      const stream = new Blob([buf]).stream().pipeThrough(ds);
+      text = await new Response(stream).text();
+    } else {
+      text = await file.text();
+    }
+    let imported;
+    try { imported = JSON.parse(text); }
+    catch { imported = JSON.parse(decodeURIComponent(escape(atob(text.trim())))); }
+    _mergeImportedDb(imported);
+  } catch(e) { alert(t('importError')); }
+  event.target.value = '';
 }
 
 /* ---- Template Share ---- */
@@ -128,4 +204,18 @@ function copyTemplateShare() {
   catch(e) { document.execCommand('copy'); }
   document.getElementById('tmplShareCopyConfirm').style.display = 'block';
   showToast(t('copied'));
+}
+
+async function shareTemplateNative() {
+  const code = document.getElementById('tmplShareCode').value;
+  const name = document.getElementById('tmplShareName').textContent;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `GymTrack: ${name}`, text: code });
+    } catch(e) {
+      if (e.name !== 'AbortError') copyTemplateShare();
+    }
+  } else {
+    copyTemplateShare();
+  }
 }

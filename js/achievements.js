@@ -270,8 +270,12 @@ function getDeloadStatus() {
 
   const currentIdx = recentKeys.indexOf(currentWeekKey);
   if (currentIdx === -1) {
-    // No workouts this week at all
-    const daysSinceLast = Math.floor((now - weekKeys[weekKeys.length - 1]) / 86400000);
+    // No workouts this week — use actual last workout date, not week start timestamp
+    const lastWorkoutTime = db.workouts.reduce((max, w) => {
+      const t = new Date(w.date || w.startTime).getTime();
+      return t > max ? t : max;
+    }, 0);
+    const daysSinceLast = lastWorkoutTime > 0 ? Math.floor((now - lastWorkoutTime) / 86400000) : Infinity;
     if (daysSinceLast >= 5) return { type: 'rest', days: daysSinceLast };
     return null;
   }
