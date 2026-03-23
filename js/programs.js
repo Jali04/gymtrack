@@ -320,7 +320,7 @@ function deleteProgram() {
   }
 }
 
-function openProgramShare(id) {
+async function openProgramShare(id) {
   const prog = db.programs.find(x => x.id === id);
   if (!prog) return;
 
@@ -339,7 +339,7 @@ function openProgramShare(id) {
     .map(({ id, name, category, notes }) => ({ id, name, category, ...(notes ? { notes } : {}) }));
 
   const payload = { v: 'p', p: { id: prog.id, name: prog.name, days: prog.days }, t: templates, e: exercises };
-  const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const code = await compressPayload(payload);
 
   // Re-use the template share modal
   document.getElementById('tmplShareCode').value = code;
