@@ -286,7 +286,7 @@ function finishWorkout() {
     checkAchievements(cw);
   }
   if (typeof showWorkoutTrophyToast === 'function') {
-    showWorkoutTrophyToast(2); // 2 pts per workout
+    showWorkoutTrophyToast();
   }
 }
 
