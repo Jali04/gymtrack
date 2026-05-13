@@ -37,6 +37,7 @@ function renderLog() {
   document.getElementById('quickStart').style.display    = 'block';
   document.getElementById('activeWorkout').style.display = 'none';
   _renderRestConfig();
+  _renderQuickStartTemplates();
 
   const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
   const recent  = document.getElementById('recentWorkouts');
@@ -109,6 +110,30 @@ function renderLog() {
       <div style="margin-top:12px;">${exHtml}</div>
     </div>`;
   }).join('');
+}
+
+function _renderQuickStartTemplates() {
+  const container = document.getElementById('quickStartTemplates');
+  if (!container) return;
+  if (!db.templates || db.templates.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  const trainingTmpls = db.templates.filter(tmpl => (tmpl.type || 'training') === 'training');
+  if (trainingTmpls.length === 0) { container.style.display = 'none'; return; }
+  container.innerHTML = `
+    <div class="qs-label">${t('quickStartTemplates')}</div>
+    <div class="qs-scroll">
+      ${trainingTmpls.map(tmpl => {
+        const exCount = tmpl.exerciseIds ? tmpl.exerciseIds.length : 0;
+        return `<button class="qs-chip" onclick="startWorkoutFromTemplate('${tmpl.id}')">
+          <span class="qs-chip-name">${tmpl.name}</span>
+          <span class="qs-chip-count">${exCount} ${t('exercises')}</span>
+        </button>`;
+      }).join('')}
+    </div>
+  `;
 }
 
 function deleteLogWorkout(id) {
@@ -376,27 +401,121 @@ function _saveSwLog() {
 }
 
 /* ---- Exercise Picker ---- */
-function openExercisePicker() {
-  const list       = document.getElementById('exercisePickerList');
+function _getFrequentExercises(limit = 5) {
+  const freq = {};
+  db.workouts.forEach(w => {
+    if (!w.exercises) return;
+    w.exercises.forEach(e => {
+      if (e.isCustom) return;
+      freq[e.exId] = (freq[e.exId] || 0) + 1;
+    });
+  });
+  return Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id]) => db.exercises.find(x => x.id === id))
+    .filter(Boolean);
+}
+
+function _buildExPickerListHtml(query) {
+  const q = (query || '').toLowerCase().trim();
   const categories = [...new Set(db.exercises.map(e => e.category))];
-  
-  const addNewHtml = `<div class="exercise-list-item" onclick="openAddExerciseFromPicker()" style="border-color:rgba(200,241,53,0.25);margin-bottom:12px;">
-    <div class="exercise-list-name" style="color:var(--accent);font-weight:600;">+ ${t('newExercise') || 'Neue Übung'}</div>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </div>`;
-  
-  list.innerHTML   = addNewHtml + categories.map(cat => {
+  const alreadyIn = db.currentWorkout ? db.currentWorkout.exercises.map(e => e.exId) : [];
+
+  // Frequent exercises section
+  let freqHtml = '';
+  if (!q) {
+    const freqs = _getFrequentExercises(5).filter(e => !alreadyIn.includes(e.id));
+    if (freqs.length > 0) {
+      freqHtml = `<div class="picker-section-label">⭐ ${t('frequentlyUsed')}</div>` +
+        freqs.map(e => {
+          const cat = e.category;
+          const type = getCatType(cat);
+          const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+          const catLabel = t('cats')[cat] || cat;
+          return `<div class="exercise-list-item" onclick="addExerciseToWorkout('${e.id}')">
+            <div class="exercise-list-name">${e.name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>`;
+        }).join('') + '<div class="divider"></div>';
+    }
+  }
+
+  // Category-based list (filtered)
+  let catHtml = categories.map(cat => {
     const catLabel = t('cats')[cat] || cat;
-    const type     = getCatType(cat);
+    const type = getCatType(cat);
     const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-    const exs      = db.exercises.filter(e => e.category === cat);
+    let exs = db.exercises.filter(e => e.category === cat);
+    if (q) exs = exs.filter(e => e.name.toLowerCase().includes(q));
+    if (exs.length === 0) return '';
     return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>` +
-      exs.map(e => `<div class="exercise-list-item" onclick="addExerciseToWorkout('${e.id}')">
-        <div class="exercise-list-name">${e.name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </div>`).join('');
-  }).join('<div class="divider"></div>');
+      exs.map(e => {
+        const inWo = alreadyIn.includes(e.id);
+        return `<div class="exercise-list-item${inWo ? ' ex-picker-disabled' : ''}" ${inWo ? '' : `onclick="addExerciseToWorkout('${e.id}')"`}>
+          <div class="exercise-list-name">${e.name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
+          ${inWo ? '<span style="font-size:11px;color:var(--muted);">✓</span>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}
+        </div>`;
+      }).join('');
+  }).filter(Boolean).join('<div class="divider"></div>');
+
+  if (q && !catHtml) {
+    catHtml = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">${t('noSearchResults')}</div>`;
+  }
+
+  return freqHtml + catHtml;
+}
+
+function filterExercisePicker() {
+  const input = document.getElementById('exPickerSearch');
+  const list = document.getElementById('exercisePickerList');
+  if (!input || !list) return;
+  list.innerHTML = _buildExPickerListHtml(input.value);
+}
+
+function openExercisePicker() {
+  const list = document.getElementById('exercisePickerList');
+
+  // Inject search + quick-add bar above the list
+  const searchBarId = 'exPickerSearchBar';
+  let bar = document.getElementById(searchBarId);
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = searchBarId;
+    list.parentElement.insertBefore(bar, list);
+  }
+  bar.innerHTML = `
+    <input class="form-input picker-search" id="exPickerSearch" type="text" placeholder="${t('searchExercise')}" oninput="filterExercisePicker()" autocomplete="off">
+    <div class="quick-add-row" id="exPickerQuickAdd">
+      <input class="form-input quick-add-input" id="quickAddName" type="text" placeholder="${t('quickAddPlaceholder')}" autocomplete="off">
+      <select class="form-input quick-add-cat" id="quickAddCat">
+        ${Object.keys(t('cats')).map(c => `<option value="${c}">${t('cats')[c]}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary quick-add-btn" onclick="quickAddExercise()">+</button>
+    </div>
+  `;
+
+  list.innerHTML = _buildExPickerListHtml('');
   openModal('exercisePickerModal');
+
+  // Focus search after modal animation
+  setTimeout(() => { const s = document.getElementById('exPickerSearch'); if (s) s.focus(); }, 320);
+}
+
+function quickAddExercise() {
+  const nameInput = document.getElementById('quickAddName');
+  const catSelect = document.getElementById('quickAddCat');
+  if (!nameInput || !catSelect) return;
+  const name = nameInput.value.trim();
+  const category = catSelect.value;
+  if (!name) { nameInput.focus(); return; }
+  const newId = uid();
+  db.exercises.push({ id: newId, name, category });
+  save();
+  nameInput.value = '';
+  addExerciseToWorkout(newId);
+  haptic('success');
+  showToast(t('save') + ' ✓');
 }
 
 function openAddExerciseFromPicker() {
@@ -503,9 +622,21 @@ function openLogSets(idx) {
 }
 
 function getLastPerformance(exId, currentWorkoutId) {
-  const relevant = db.workouts
-    .filter(w => w.id !== currentWorkoutId && w.exercises.some(e => !e.isCustom && e.exId === exId))
-    .sort((a, b) => b.date - a.date);
+  const cw = db.currentWorkout;
+  const programId = cw ? cw.programId : null;
+  let relevant;
+  if (programId) {
+    // Program-specific: only compare with workouts from the same program
+    relevant = db.workouts
+      .filter(w => w.id !== currentWorkoutId && w.programId === programId && w.exercises.some(e => !e.isCustom && e.exId === exId))
+      .sort((a, b) => b.date - a.date);
+  }
+  if (!relevant || relevant.length === 0) {
+    // Fallback: global comparison
+    relevant = db.workouts
+      .filter(w => w.id !== currentWorkoutId && w.exercises.some(e => !e.isCustom && e.exId === exId))
+      .sort((a, b) => b.date - a.date);
+  }
   if (relevant.length === 0) return null;
   return relevant[0].exercises.find(e => !e.isCustom && e.exId === exId);
 }
@@ -670,6 +801,59 @@ function saveSets() {
   haptic('success');
   showToast('✓');
   startRestTimer();
+  // Show next-exercise suggestions if not template-based
+  _showNextExSuggestions();
+}
+
+function _showNextExSuggestions() {
+  const cw = db.currentWorkout;
+  if (!cw) return;
+  // Only show if it's a free (non-template) workout
+  if (cw.templateId) return;
+  const existing = document.getElementById('nextExSuggestions');
+  if (existing) existing.remove();
+  
+  const addedIds = cw.exercises.map(e => e.exId).filter(Boolean);
+  // Find last exercise's category
+  const lastEx = cw.exercises[cw.exercises.length - 1];
+  let lastCat = null;
+  if (lastEx && !lastEx.isCustom) {
+    const exDef = getEx(lastEx.exId);
+    if (exDef) lastCat = exDef.category;
+  }
+  
+  // Build suggestions: same-category exercises not yet added + frequent
+  let suggestions = [];
+  if (lastCat) {
+    suggestions = db.exercises
+      .filter(e => e.category === lastCat && !addedIds.includes(e.id))
+      .slice(0, 3);
+  }
+  if (suggestions.length < 3) {
+    const freqs = _getFrequentExercises(5)
+      .filter(e => !addedIds.includes(e.id) && !suggestions.find(s => s.id === e.id));
+    suggestions = suggestions.concat(freqs).slice(0, 4);
+  }
+  if (suggestions.length === 0) return;
+  
+  const container = document.getElementById('workoutExercises');
+  if (!container) return;
+  const bar = document.createElement('div');
+  bar.id = 'nextExSuggestions';
+  bar.className = 'next-ex-bar';
+  bar.innerHTML = `
+    <div class="next-ex-label">${t('suggestNextEx')}</div>
+    <div class="next-ex-chips">
+      ${suggestions.map(e => {
+        const type = getCatType(e.category);
+        const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+        return `<button class="next-ex-chip ${catClass}" onclick="addExerciseToWorkout('${e.id}');this.parentElement.parentElement.remove();">${e.name}</button>`;
+      }).join('')}
+    </div>
+  `;
+  container.parentElement.insertBefore(bar, document.getElementById('btnAddExercise'));
+  // Auto-dismiss after 8 seconds
+  setTimeout(() => { const el = document.getElementById('nextExSuggestions'); if (el) el.remove(); }, 8000);
 }
 
 /* ---- Rest Timer ---- */

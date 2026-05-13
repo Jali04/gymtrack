@@ -95,7 +95,14 @@ const TR = {
     lblMeasureWeight: 'Körpergewicht (kg)', lblMeasureBf: 'Körperfettanteil (%) - optional',
     lblMeasureNote: 'Notiz', invalidInput: 'Ungültige Eingabe', confirmDel: 'Eintrag löschen?',
     // Programs
-    ttlPrograms: 'Programme', programModalTitle: 'Programm'
+    ttlPrograms: 'Programme', programModalTitle: 'Programm',
+    // UX Improvements
+    searchExercise: 'Übung suchen…', frequentlyUsed: 'Häufig verwendet',
+    quickStartTemplates: 'Schnellstart', noTemplatesQuick: 'Vorlagen erstellen im GymLab',
+    programFilter: 'Programm-Filter', allPrograms: 'Alle Programme', thisProgram: 'Dieses Programm',
+    quickAddPlaceholder: 'Neue Übung…', quickAddBtn: 'Erstellen & hinzufügen',
+    suggestNextEx: 'Nächste Übung?', fromSameCat: 'Gleiche Kategorie',
+    noSearchResults: 'Keine Treffer'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
@@ -189,7 +196,14 @@ const TR = {
     lblMeasureWeight: 'Body Weight (kg)', lblMeasureBf: 'Body Fat (%) - optional',
     lblMeasureNote: 'Notes', invalidInput: 'Invalid Input', confirmDel: 'Delete Entry?',
     // Programs
-    ttlPrograms: 'Programs', programModalTitle: 'Program'
+    ttlPrograms: 'Programs', programModalTitle: 'Program',
+    // UX Improvements
+    searchExercise: 'Search exercise…', frequentlyUsed: 'Frequently used',
+    quickStartTemplates: 'Quick Start', noTemplatesQuick: 'Create templates in GymLab',
+    programFilter: 'Program Filter', allPrograms: 'All Programs', thisProgram: 'This Program',
+    quickAddPlaceholder: 'New exercise…', quickAddBtn: 'Create & add',
+    suggestNextEx: 'Next exercise?', fromSameCat: 'Same category',
+    noSearchResults: 'No results'
   }
 };
 

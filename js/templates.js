@@ -103,13 +103,39 @@ function removeTmplExercise(idx) {
 
 function openTmplExPicker() {
   tmplPickerPending = [];
-  const list       = document.getElementById('tmplExPickerList');
+  _renderTmplExPickerList('');
+  // Inject search bar
+  const list = document.getElementById('tmplExPickerList');
+  const searchBarId = 'tmplExPickerSearchBar';
+  let bar = document.getElementById(searchBarId);
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = searchBarId;
+    list.parentElement.insertBefore(bar, list);
+  }
+  bar.innerHTML = `<input class="form-input picker-search" id="tmplExPickerSearch" type="text" placeholder="${t('searchExercise')}" oninput="_filterTmplExPicker()" autocomplete="off">`;
+  updateTmplPickerCount();
+  openModal('tmplExPickerModal');
+  setTimeout(() => { const s = document.getElementById('tmplExPickerSearch'); if (s) s.focus(); }, 320);
+}
+
+function _filterTmplExPicker() {
+  const input = document.getElementById('tmplExPickerSearch');
+  _renderTmplExPickerList(input ? input.value : '');
+  updateTmplPickerCount();
+}
+
+function _renderTmplExPickerList(query) {
+  const list = document.getElementById('tmplExPickerList');
+  const q = (query || '').toLowerCase().trim();
   const categories = [...new Set(db.exercises.map(e => e.category))];
-  list.innerHTML   = categories.map(cat => {
+  list.innerHTML = categories.map(cat => {
     const catLabel = t('cats')[cat] || cat;
     const type     = getCatType(cat);
     const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-    const exs      = db.exercises.filter(e => e.category === cat);
+    let exs = db.exercises.filter(e => e.category === cat);
+    if (q) exs = exs.filter(e => e.name.toLowerCase().includes(q));
+    if (exs.length === 0) return '';
     return `<div style="margin-bottom:8px;"><span class="cat-badge ${catClass}" style="font-size:11px;">${catLabel}</span></div>` +
       exs.map(e => {
         const alreadyIn = tmplExercises.includes(e.id);
@@ -118,9 +144,10 @@ function openTmplExPicker() {
           <div class="picker-check" id="pickerCheck_${e.id}">${alreadyIn ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
         </div>`;
       }).join('');
-  }).join('<div class="divider"></div>');
-  updateTmplPickerCount();
-  openModal('tmplExPickerModal');
+  }).filter(Boolean).join('<div class="divider"></div>');
+  if (q && !list.innerHTML.trim()) {
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">${t('noSearchResults')}</div>`;
+  }
 }
 
 function toggleTmplPickerItem(exId, alreadyIn) {

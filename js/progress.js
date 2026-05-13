@@ -306,13 +306,27 @@ function renderMilestones() {
     </div>
   `).join('');
 }
+let _progressProgramFilter = null;
+
 function renderExerciseProgressTracker() {
   const progList  = document.getElementById('exerciseProgressTracker');
   if(!progList) return;
   const activeExs = db.exercises.filter(ex => db.workouts.some(w => w.exercises.some(e => e.exId === ex.id)));
 
+  // Build program filter dropdown
+  let filterHtml = '';
+  const programsWithWorkouts = (db.programs || []).filter(p => db.workouts.some(w => w.programId === p.id));
+  if (programsWithWorkouts.length > 0) {
+    filterHtml = `<div class="prog-filter-bar">
+      <select class="form-input prog-filter-select" id="progressProgramFilter" onchange="_progressProgramFilter=this.value||null;renderExerciseProgressTracker();">
+        <option value="">${t('allPrograms')}</option>
+        ${programsWithWorkouts.map(p => `<option value="${p.id}" ${_progressProgramFilter === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+
   if (activeExs.length === 0) {
-    progList.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📈</div><div class="empty-text">Noch keine Trainingsdaten für Übungen verfügbar.</div></div>`;
+    progList.innerHTML = filterHtml + `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📈</div><div class="empty-text">Noch keine Trainingsdaten für Übungen verfügbar.</div></div>`;
     return;
   }
 
@@ -326,7 +340,7 @@ function renderExerciseProgressTracker() {
   
   const locale = lang === 'de' ? 'de-DE' : 'en-GB';
 
-  progList.innerHTML = cats.map(cat => {
+  progList.innerHTML = filterHtml + cats.map(cat => {
     const type     = getCatType(cat);
     const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
     const catLabel = t('cats')[cat] || cat;
@@ -337,7 +351,8 @@ function renderExerciseProgressTracker() {
     const catId    = 'progCat_' + cat.replace(/[^a-z]/gi, '');
     const isOpen   = localStorage.getItem('gymtrack_acc_' + cat) === 'true';
 
-    const exCards = exs.map(ex => _buildExCard(ex, type, locale, catClass)).join('');
+    const exCards = exs.map(ex => _buildExCard(ex, type, locale, catClass)).filter(Boolean).join('');
+    if (!exCards) return '';
     return `<div class="prog-cat-group">
       <div class="prog-cat-header" onclick="toggleProgCat('${catId}', '${cat}')">
         <span class="cat-badge ${catClass}">${catLabel}</span>
@@ -346,7 +361,7 @@ function renderExerciseProgressTracker() {
       </div>
       <div class="prog-cat-body" id="${catId}" style="display:${isOpen ? 'block' : 'none'};">${exCards}</div>
     </div>`;
-  }).join('');
+  }).filter(Boolean).join('');
 }
 
 window.toggleProgCat = function(id, rawCat) {
@@ -362,9 +377,14 @@ window.toggleProgCat = function(id, rawCat) {
 }
 
 function _buildExCard(ex, type, locale, catClass) {
-  const workoutsWithEx = db.workouts
+  let workoutsWithEx = db.workouts
     .filter(w => w.exercises.some(e => e.exId === ex.id))
     .sort((a, b) => new Date(a.date||a.startTime).getTime() - new Date(b.date||b.startTime).getTime());
+
+  // Apply program filter if active
+  if (_progressProgramFilter) {
+    workoutsWithEx = workoutsWithEx.filter(w => w.programId === _progressProgramFilter);
+  }
 
   if (workoutsWithEx.length === 0) return '';
 
