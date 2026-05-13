@@ -563,13 +563,15 @@ function quickAddExercise() {
   const name = nameInput.value.trim();
   const category = catSelect.value;
   if (!name) { nameInput.focus(); return; }
-  const newId = uid();
-  db.exercises.push({ id: newId, name, category });
-  save();
+  
+  closeSubModal('exercisePickerModal');
+  openAddExerciseFromPicker();
+  
+  document.getElementById('exName').value = name;
+  document.getElementById('exCategory').value = category;
+  if (typeof updateCategoryHint === 'function') updateCategoryHint();
+  
   nameInput.value = '';
-  addExerciseToWorkout(newId);
-  haptic('success');
-  showToast(t('save') + ' ✓');
 }
 
 function openAddExerciseFromPicker() {
@@ -637,8 +639,11 @@ function openLogSets(idx) {
   const lpDiv    = document.getElementById('lastPerformance');
   let lpHtml = '';
 
-  if (ex && ex.notes && !we.isCustom) {
-    lpHtml += `<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin-bottom:10px;">📝 ${ex.notes}</div>`;
+  if (ex && !we.isCustom) {
+    lpHtml += `<div style="margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Notiz (GymLab)</div>
+      <textarea class="form-input" placeholder="Notiz für diese Übung..." style="resize:none;height:50px;line-height:1.4;font-size:13px;background:rgba(200,241,53,0.03);border-color:rgba(200,241,53,0.2);" oninput="updateGlobalExNote('${ex.id}', this.value)">${ex.notes || ''}</textarea>
+    </div>`;
   }
   if (lastPerf && lastPerf.sets.length > 0) {
     const setsHtml = _renderSetBadges(lastPerf.sets, type);
@@ -741,7 +746,7 @@ function addSetRow(data) {
       ${typeBtn}
       <input class="set-input" type="number" placeholder="0.0" value="${km}" inputmode="decimal" oninput="recalcPace(this.parentElement)"/>
       <input class="set-input" type="text" placeholder="0:00" value="${time}" inputmode="numeric" oninput="recalcPace(this.parentElement)"/>
-      <input class="set-input pace-display" type="text" placeholder="–" value="${pace}" readonly/>
+      <input class="set-input pace-display" type="text" placeholder="–" value="${pace}"/>
       ${rpeInput}
       ${rmBtn}`;
   } else if (type === 'stretch') {
@@ -802,8 +807,8 @@ function saveSets() {
 
     const inputs = row.querySelectorAll('.set-input:not(.set-rpe)');
     if (type === 'cardio') {
-      const km = parseFloat(inputs[0].value), time = inputs[1].value.trim(), pace = inputs[2].value;
-      if (km > 0 && time) sets.push({ type: sType, rpe, km, time, pace });
+      const km = parseFloat(inputs[0].value), time = inputs[1].value.trim(), pace = inputs[2].value.trim();
+      if (km > 0 || time || pace) sets.push({ type: sType, rpe, km: km||0, time, pace });
     } else if (type === 'stretch') {
       const minutes = parseFloat(inputs[0].value);
       if (minutes > 0) sets.push({ minutes });
@@ -972,6 +977,14 @@ function startRestTimer() {
     _updateRestDisplay();
   }, 500);
 }
+
+window.updateGlobalExNote = function(exId, val) {
+  const ex = db.exercises.find(e => e.id === exId);
+  if (ex) {
+    ex.notes = val;
+    save();
+  }
+};
 
 // When returning from background: re-sync + prominent alert if timer already done
 document.addEventListener('visibilitychange', () => {

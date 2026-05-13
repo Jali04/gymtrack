@@ -34,6 +34,7 @@ document.addEventListener('touchstart', e => {
 
 document.addEventListener('touchend', e => {
   if (document.querySelector('.modal-overlay.open')) return;
+  if (e.target.closest('.qs-scroll-container') || e.target.closest('#quickStartTemplates') || e.target.closest('.horizontal-scroll') || e.target.closest('#monthlyRecap')) return;
   const dx = e.changedTouches[0].clientX - swipeStartX;
   const dy = e.changedTouches[0].clientY - swipeStartY;
   if (Date.now() - swipeStartTime > 400 || Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
