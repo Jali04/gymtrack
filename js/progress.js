@@ -114,28 +114,18 @@ function renderMeasurements() {
   });
   list.innerHTML = html;
   
-  // Render Simple CSS Chart (Last 10 entries max, reversed so oldest is left)
-  const chartData = db.measurements.slice(0, 10).reverse();
+  // Render SVG Line Chart (Last 12 entries, oldest on left)
+  const chartData = db.measurements.slice(0, 12).reverse();
   if (chartData.length < 2) {
-    chart.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:12px;margin-bottom:10px;">Mehr Daten für Diagramm benötigt</div>`;
+    chart.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:12px;padding:20px 0;">Mehr Daten für Diagramm benötigt</div>`;
     return;
   }
-  
-  const minW = Math.min(...chartData.map(d => d.weight)) - 2;
-  const maxW = Math.max(...chartData.map(d => d.weight)) + 2;
-  const range = maxW - minW;
-  
-  let chartHtml = ``;
-  chartData.forEach(d => {
-    const htPct = ((d.weight - minW) / range) * 100;
-    chartHtml += `
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">${d.weight}</div>
-        <div style="width:100%;max-width:24px;background:var(--accent);border-radius:4px 4px 0 0;height:${Math.max(5, htPct)}%;"></div>
-      </div>
-    `;
+  const points = chartData.map(d => {
+    const date = new Date(d.date);
+    return { x: `${date.getDate()}.${date.getMonth()+1}.`, y: d.weight };
   });
-  chart.innerHTML = chartHtml;
+  chart.style.display = 'block';
+  chart.innerHTML = _buildLineChart(points, { width: 320, height: 140, color: 'var(--accent)' });
 }
 
 function deleteMeasurement(id) {
@@ -149,43 +139,135 @@ function deleteMeasurement(id) {
 function requestPicsAccess() {
   const pin = localStorage.getItem('gymtrack_pics_pin');
   if (!pin) {
-    // If no PIN set, offer to set one exactly once per session or just let them in.
-    // simpler: just open it, the lock icon in the modal lets them set it.
     openModal('picsProgressModal');
     return;
   }
-  
-  const attempt = prompt('Bitte PIN eingeben, um Fotos zu entsperren:');
-  if (attempt === null) return; // User cancelled
-  
-  if (attempt === pin) {
-    openModal('picsProgressModal');
-  } else {
-    showToast('Falsche PIN');
-  }
+  openPinModal('access', () => openModal('picsProgressModal'));
 }
 
 function configurePicPin() {
   const currentPin = localStorage.getItem('gymtrack_pics_pin');
-  
   if (currentPin) {
-    const attempt = prompt('Aktuelle PIN eingeben, um sie zu ändern oder zu entfernen:');
-    if (attempt === null) return;
-    if (attempt !== currentPin) {
-      showToast('Falsche PIN');
-      return;
-    }
-  }
-  
-  const newPin = prompt('Neue PIN eingeben (leer lassen, um den Schutz zu entfernen):');
-  if (newPin === null) return; // User cancelled
-  
-  if (newPin.trim() === '') {
-    localStorage.removeItem('gymtrack_pics_pin');
-    showToast('PIN-Schutz entfernt');
+    openModal('pinConfigModal');
   } else {
-    localStorage.setItem('gymtrack_pics_pin', newPin.trim());
-    showToast('PIN-Schutz aktiviert');
+    openPinModal('setup', null);
+  }
+}
+
+/* ---- Custom PIN Numpad ---- */
+const _pinState = { mode: 'access', value: '', setupTemp: '', onSuccess: null };
+
+function openPinModal(mode, onSuccess) {
+  _pinState.mode      = mode;
+  _pinState.value     = '';
+  _pinState.setupTemp = '';
+  _pinState.onSuccess = onSuccess;
+  const sub   = document.getElementById('pinModalSubtitle');
+  const title = document.getElementById('pinModalTitle');
+  const err   = document.getElementById('pinError');
+  const labels = {
+    access:        ['Fotos entsperren',    'PIN eingeben'],
+    setup:         ['Schutz einrichten',   'Neue PIN wählen'],
+    change_verify: ['PIN ändern',          'Aktuelle PIN'],
+    remove_verify: ['Schutz entfernen',    'Aktuelle PIN'],
+  };
+  const [s, ti] = labels[mode] || ['', 'PIN eingeben'];
+  if (sub)   sub.textContent   = s;
+  if (title) title.textContent = ti;
+  if (err)   err.textContent   = '';
+  _updatePinDots();
+  openModal('pinModal');
+}
+
+function closePinModal() { closeModal('pinModal'); }
+
+function pinInput(digit) {
+  if (_pinState.value.length >= 4) return;
+  _pinState.value += digit;
+  _updatePinDots();
+  haptic('light');
+  if (_pinState.value.length === 4) setTimeout(_pinSubmit, 180);
+}
+
+function pinDelete() {
+  if (!_pinState.value.length) return;
+  _pinState.value = _pinState.value.slice(0, -1);
+  _updatePinDots();
+  haptic('light');
+}
+
+function _updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pinDot' + i);
+    if (d) d.classList.toggle('filled', i < _pinState.value.length);
+  }
+}
+
+function _pinSubmit() {
+  const { mode, value: val, setupTemp, onSuccess } = _pinState;
+  const storedPin = localStorage.getItem('gymtrack_pics_pin');
+  const titleEl   = document.getElementById('pinModalTitle');
+  const subEl     = document.getElementById('pinModalSubtitle');
+  const errEl     = document.getElementById('pinError');
+
+  if (mode === 'access') {
+    if (val === storedPin) {
+      closeModal('pinModal');
+      if (onSuccess) onSuccess();
+    } else { _pinError('Falsche PIN'); }
+
+  } else if (mode === 'setup') {
+    _pinState.setupTemp = val;
+    _pinState.mode      = 'setup_confirm';
+    _pinState.value     = '';
+    titleEl.textContent = 'PIN wiederholen';
+    subEl.textContent   = 'Bestätigen';
+    if (errEl) errEl.textContent = '';
+    _updatePinDots();
+
+  } else if (mode === 'setup_confirm') {
+    if (val === setupTemp) {
+      localStorage.setItem('gymtrack_pics_pin', val);
+      closeModal('pinModal');
+      showToast('🔒 PIN-Schutz aktiviert');
+    } else {
+      _pinState.mode      = 'setup';
+      _pinState.setupTemp = '';
+      _pinState.value     = '';
+      titleEl.textContent = 'Neue PIN wählen';
+      subEl.textContent   = 'Nochmal versuchen';
+      _pinError('PINs stimmen nicht überein');
+    }
+
+  } else if (mode === 'change_verify') {
+    if (val === storedPin) {
+      _pinState.mode  = 'setup';
+      _pinState.value = '';
+      titleEl.textContent = 'Neue PIN wählen';
+      subEl.textContent   = 'Neue PIN';
+      if (errEl) errEl.textContent = '';
+      _updatePinDots();
+    } else { _pinError('Falsche PIN'); }
+
+  } else if (mode === 'remove_verify') {
+    if (val === storedPin) {
+      localStorage.removeItem('gymtrack_pics_pin');
+      closeModal('pinModal');
+      showToast('PIN-Schutz entfernt');
+    } else { _pinError('Falsche PIN'); }
+  }
+}
+
+function _pinError(msg) {
+  const errEl  = document.getElementById('pinError');
+  const dotsEl = document.getElementById('pinDots');
+  if (errEl) errEl.textContent = msg;
+  _pinState.value = '';
+  _updatePinDots();
+  haptic('error');
+  if (dotsEl) {
+    dotsEl.classList.add('pin-shake');
+    setTimeout(() => dotsEl.classList.remove('pin-shake'), 500);
   }
 }
 
@@ -342,7 +424,7 @@ function renderExerciseProgressTracker() {
 
   progList.innerHTML = filterHtml + cats.map(cat => {
     const type     = getCatType(cat);
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+    const catClass = getCatClass(type);
     const catLabel = t('cats')[cat] || cat;
     const exs      = activeExs.filter(e => e.category === cat);
     // Sort exercises alphabetically
@@ -554,26 +636,12 @@ window.openExGraph = function(exId) {
     return;
   }
   
-  // Keep last 10 points
-  const drawPoints = dataPoints.slice(-10);
-  
-  const minW = Math.max(0, Math.min(...drawPoints.map(d => d.weight)) * 0.8);
-  const maxW = Math.max(...drawPoints.map(d => d.weight)) * 1.1; // 10% headroom
-  const range = maxW - minW;
-  
-  let chartHtml = ``;
-  drawPoints.forEach(d => {
-    const htPct = Math.max(5, ((d.weight - minW) / range) * 100);
-    const dateStr = `${d.date.getDate()}.${d.date.getMonth()+1}.`;
-    chartHtml += `
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;">
-        <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px;">${d.weight}</div>
-        <div style="width:100%;max-width:32px;background:var(--accent);border-radius:4px 4px 0 0;height:${htPct}%;opacity:0.8;"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px;">${dateStr}</div>
-      </div>
-    `;
-  });
-  
-  chartContainer.innerHTML = chartHtml;
+  // Keep last 12 points
+  const drawPoints = dataPoints.slice(-12);
+  const points = drawPoints.map(d => ({
+    x: `${d.date.getDate()}.${d.date.getMonth()+1}.`,
+    y: d.weight
+  }));
+  chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color: 'var(--accent)' });
   openModal('exGraphModal');
 };

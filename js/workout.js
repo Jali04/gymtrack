@@ -38,6 +38,8 @@ function renderLog() {
   document.getElementById('activeWorkout').style.display = 'none';
   _renderRestConfig();
   _renderQuickStartTemplates();
+  _renderStreakBanner();
+  if (typeof renderWeekStatusBanner === 'function') renderWeekStatusBanner();
 
   const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
   const recent  = document.getElementById('recentWorkouts');
@@ -49,7 +51,7 @@ function renderLog() {
   }
 
   recent.innerHTML = ws.map(w => {
-    const d         = new Date(w.date).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const d         = new Date(w.date || w.startTime).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const totalSets = w.exercises.reduce((a, e) => a + e.sets.length, 0);
     let durationHtml = '';
     if (w.endTime && w.startTime) {
@@ -62,32 +64,13 @@ function renderLog() {
       const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
       const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
       const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
-      const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-      
-      const typeColors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
-      
-      let setsHtml = '';
-      if (type === 'cardio') {
-         setsHtml = e.sets.map(s => {
-           const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
-           const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
-           return `<span class="set-badge">${tBadge}${s.km}km ${s.time} (${s.pace})${rBadge}</span>`;
-         }).join('');
-      }
-      else if (type === 'stretch') {
-         setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
-      }
-      else {
-         setsHtml = e.sets.map(s => {
-           const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
-           const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
-           return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
-         }).join('');
-      }
+      const catClass = getCatClass(type);
+
+      let setsHtml = _renderSetBadges(e.sets, type);
       const hiitBadges = (e.hiitSets || []).map(_hiitBadge).join('');
       const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
       return `<div style="margin-bottom:10px;">
-        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${name}<span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${name}<span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span>${e.supersetGroup ? '<span style="background:rgba(200,241,53,0.15);border:1px solid rgba(200,241,53,0.4);border-radius:5px;font-size:10px;padding:1px 5px;color:var(--accent);font-weight:700;margin-left:5px;">SS</span>' : ''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${hiitBadges}${timerBadge}</div>
         ${e.note ? `<div style="margin-top:5px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
       </div>`;
@@ -140,6 +123,8 @@ function deleteLogWorkout(id) {
   if (!confirm(t('confirmDeleteWorkout'))) return;
   db.workouts = db.workouts.filter(w => w.id !== id);
   save();
+  if (typeof revokeCountAchievements === 'function') revokeCountAchievements();
+  if (typeof renderAchievements === 'function') renderAchievements();
   renderLog();
   haptic('light');
 }
@@ -187,43 +172,37 @@ function renderActiveWorkout() {
       const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
       const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
       const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
-      const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
-
-      const typeColors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
+      const catClass = getCatClass(type);
 
     const hiits    = e.hiitSets || [];
-    let setsHtml = '';
-    if (type === 'cardio') {
-       setsHtml = e.sets.map(s => {
-         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
-         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
-         return `<span class="set-badge">${tBadge}${s.km}km ${s.time} (${s.pace})${rBadge}</span>`;
-       }).join('');
-    }
-    else if (type === 'stretch') {
-       setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
-    }
-    else {
-       setsHtml = e.sets.map(s => {
-         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
-         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
-         return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
-       }).join('');
-    }
+    let setsHtml = _renderSetBadges(e.sets, type);
     const hiitBadges  = hiits.map(_hiitBadge).join('');
     const timerBadge  = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
     if (!setsHtml && !hiitBadges && !e.timerSec) setsHtml = `<span style="color:var(--muted);font-size:13px;">${t('noEntries')}</span>`;
 
-    return `<div class="exercise-card">
+    // Superset indicator
+    const hasSS = !!e.supersetGroup;
+    const ssPartner = hasSS ? cw.exercises.findIndex((x, j) => j !== i && x.supersetGroup === e.supersetGroup) : -1;
+    const ssLabel = hasSS
+      ? `<span style="background:rgba(200,241,53,0.15);border:1px solid rgba(200,241,53,0.4);border-radius:6px;font-size:10px;padding:2px 6px;color:var(--accent);font-weight:700;margin-left:6px;">⟨ SS ⟩</span>`
+      : '';
+    const ssBtn = hasSS
+      ? `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;color:var(--accent2);" onclick="unlinkSuperset(${i})">🔗 Superset lösen</button>`
+      : `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;" onclick="startSupersetLink(${i})">🔗 Superset</button>`;
+
+    return `<div class="exercise-card${hasSS ? ' superset-card' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span></div>
+        <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span>${ssLabel}</div>
         <button class="close-btn" onclick="removeWorkoutExercise(${i})">✕</button>
       </div>
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${hiitBadges}${timerBadge}</div>
       ${e.note ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
-      <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="openLogSets(${i})">
-        ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
-      </button>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+        ${ssBtn}
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="openLogSets(${i})">
+          ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
+        </button>
+      </div>
     </div>`;
   }).join('');
 
@@ -231,10 +210,81 @@ function renderActiveWorkout() {
 }
 
 function removeWorkoutExercise(idx) {
+  // If part of a superset, clean up the link
+  const e = db.currentWorkout.exercises[idx];
+  if (e.supersetGroup) unlinkSuperset(idx, true);
   db.currentWorkout.exercises.splice(idx, 1);
   save();
   renderActiveWorkout();
   haptic('light');
+}
+
+/* ---- Supersets ---- */
+let _supersetLinkSource = null; // index of the exercise waiting to be linked
+
+function startSupersetLink(idx) {
+  const cw = db.currentWorkout;
+  if (!cw || cw.exercises.length < 2) {
+    showToast('Mindestens 2 Übungen für Superset nötig');
+    return;
+  }
+  _supersetLinkSource = idx;
+  showToast('Tippe eine andere Übung an, um sie zu verknüpfen');
+  // Highlight all other cards as clickable targets
+  const cards = document.querySelectorAll('#workoutExercises .exercise-card');
+  cards.forEach((card, i) => {
+    if (i !== idx) {
+      card.style.border = '2px dashed var(--accent)';
+      card.style.cursor = 'pointer';
+      card.setAttribute('data-ss-target', i);
+      card.addEventListener('click', _supersetTargetClick, { once: true });
+    } else {
+      card.style.border = '2px solid var(--accent)';
+    }
+  });
+}
+
+function _supersetTargetClick(e) {
+  const targetIdx = parseInt(this.getAttribute('data-ss-target'));
+  _finalizeSupersetLink(targetIdx);
+}
+
+function _finalizeSupersetLink(targetIdx) {
+  // Reset visual state
+  document.querySelectorAll('#workoutExercises .exercise-card').forEach(card => {
+    card.style.border = '';
+    card.style.cursor = '';
+    card.removeEventListener('click', _supersetTargetClick);
+  });
+
+  if (_supersetLinkSource === null) return;
+  const srcIdx = _supersetLinkSource;
+  _supersetLinkSource = null;
+
+  const cw = db.currentWorkout;
+  const groupId = uid();
+  cw.exercises[srcIdx].supersetGroup    = groupId;
+  cw.exercises[targetIdx].supersetGroup = groupId;
+  save();
+  renderActiveWorkout();
+  haptic('success');
+  showToast('⟨ SS ⟩ Superset verknüpft');
+}
+
+function unlinkSuperset(idx, silent) {
+  const cw = db.currentWorkout;
+  if (!cw) return;
+  const groupId = cw.exercises[idx].supersetGroup;
+  if (!groupId) return;
+  cw.exercises.forEach(e => {
+    if (e.supersetGroup === groupId) delete e.supersetGroup;
+  });
+  save();
+  if (!silent) {
+    renderActiveWorkout();
+    haptic('light');
+    showToast('Superset gelöst');
+  }
 }
 
 function finishWorkout() {
@@ -260,6 +310,9 @@ function finishWorkout() {
   if (typeof checkAchievements === 'function') {
     checkAchievements(cw);
   }
+  if (typeof showWorkoutTrophyToast === 'function') {
+    showWorkoutTrophyToast();
+  }
 }
 
 function cancelWorkout() {
@@ -270,6 +323,7 @@ function cancelWorkout() {
   save();
   document.getElementById('activeWorkout').style.display = 'none';
   document.getElementById('quickStart').style.display    = 'block';
+  renderLog();
   haptic('light');
 }
 
@@ -445,7 +499,7 @@ function _buildExPickerListHtml(query) {
   let catHtml = categories.map(cat => {
     const catLabel = t('cats')[cat] || cat;
     const type = getCatType(cat);
-    const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+    const catClass = getCatClass(type);
     let exs = db.exercises.filter(e => e.category === cat);
     if (q) exs = exs.filter(e => e.name.toLowerCase().includes(q));
     if (exs.length === 0) return '';
@@ -587,25 +641,7 @@ function openLogSets(idx) {
     lpHtml += `<div style="background:rgba(200,241,53,0.07);border:1px solid rgba(200,241,53,0.2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin-bottom:10px;">📝 ${ex.notes}</div>`;
   }
   if (lastPerf && lastPerf.sets.length > 0) {
-    const typeColors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
-    let setsHtml = '';
-    if (type === 'cardio') {
-       setsHtml = lastPerf.sets.map(s => {
-         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
-         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
-         return `<span class="set-badge">${tBadge}${s.km}km ${s.time} (${s.pace})${rBadge}</span>`;
-       }).join('');
-    }
-    else if (type === 'stretch') {
-       setsHtml = lastPerf.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
-    }
-    else {
-       setsHtml = lastPerf.sets.map(s => {
-         const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${typeColors[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
-         const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
-         return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
-       }).join('');
-    }
+    const setsHtml = _renderSetBadges(lastPerf.sets, type);
     const lastNoteHtml = lastPerf.note ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${lastPerf.note}</div>` : '';
     lpHtml += `<div class="exercise-last"><div class="label">${t('lastPerf') || 'Letztes Mal'}</div><div class="sets-row">${setsHtml}</div>${lastNoteHtml}</div>`;
   }
@@ -667,16 +703,15 @@ function _setupSetColHeaders(type) {
 
 function _cycleSetType(btn) {
   const types = ['N', 'W', 'D'];
-  const colors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
   const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Aufwärmsatz', 'D': t('setDropTitle') || 'Dropsatz' };
-  
+
   let current = btn.dataset.type || 'N';
   let nextIdx = (types.indexOf(current) + 1) % types.length;
   let next = types[nextIdx];
   
   btn.dataset.type = next;
   btn.textContent = t('set' + (next === 'N' ? 'Normal' : next === 'W' ? 'Warmup' : 'Drop')) || next;
-  btn.style.color = colors[next];
+  btn.style.color = TYPE_COLORS[next];
   btn.title = titles[next];
   haptic('light');
 }
@@ -689,11 +724,10 @@ function addSetRow(data) {
   
   const sType = data && data.type ? data.type : 'N';
   const rpe   = data && data.rpe ? data.rpe : '';
-  const colors = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
   const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Aufwärmsatz', 'D': t('setDropTitle') || 'Dropsatz' };
   const sTypeDisplay = t('set' + (sType === 'N' ? 'Normal' : sType === 'W' ? 'Warmup' : 'Drop')) || sType;
 
-  const typeBtn = `<button class="set-type-btn" data-type="${sType}" style="color:${colors[sType]};" title="${titles[sType]}" onclick="_cycleSetType(this)">${sTypeDisplay}</button>`;
+  const typeBtn = `<button class="set-type-btn" data-type="${sType}" style="color:${TYPE_COLORS[sType]};" title="${titles[sType]}" onclick="_cycleSetType(this)">${sTypeDisplay}</button>`;
   const rpeInput = `<input class="set-input set-rpe" type="number" placeholder="–" value="${rpe}" min="1" max="10" inputmode="numeric"/>`;
 
   const rmBtn = `<button class="remove-set" onclick="this.parentElement.remove();reindexSets();">
@@ -860,6 +894,7 @@ function _showNextExSuggestions() {
 let restTimerInterval = null;
 let restTimerSec      = 0;
 let restTimerMax      = 90;
+let restTimerEndAt    = 0; // timestamp when rest ends (background-safe)
 
 /* ---- Rest Timer Config ---- */
 function _getRestCfg() {
@@ -896,34 +931,85 @@ function restTimerAdj(delta) {
   haptic('light');
 }
 
+function _requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
 function startRestTimer() {
   const cfg = _getRestCfg();
   if (!cfg.enabled) return;
+  _requestNotifPermission();
+
   clearInterval(restTimerInterval);
-  restTimerSec = cfg.sec;
-  restTimerMax = cfg.sec;
+  restTimerMax   = cfg.sec;
+  restTimerEndAt = Date.now() + cfg.sec * 1000;
+  restTimerSec   = cfg.sec;
+
   const overlay = document.getElementById('restTimerOverlay');
   if (!overlay) return;
   overlay.style.display = 'flex';
   _updateRestDisplay();
+
+  // Schedule SW notification for Android / installed PWA users
+  if (typeof _postSwMsg === 'function') {
+    _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: cfg.sec * 1000 });
+  }
+
   restTimerInterval = setInterval(() => {
-    restTimerSec--;
+    restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
     if (restTimerSec <= 3 && restTimerSec > 0) haptic('light');
     if (restTimerSec <= 0) {
       clearInterval(restTimerInterval);
       restTimerInterval = null;
+      restTimerEndAt    = 0;
       overlay.style.display = 'none';
-      haptic('success');
+      if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
       showToast('✓ ' + t('restDone'));
       return;
     }
     _updateRestDisplay();
-  }, 1000);
+  }, 500);
+}
+
+// When returning from background: re-sync + prominent alert if timer already done
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && restTimerEndAt) {
+    restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+    if (restTimerSec <= 0) {
+      clearInterval(restTimerInterval);
+      restTimerInterval = null;
+      restTimerEndAt    = 0;
+      const overlay = document.getElementById('restTimerOverlay');
+      if (overlay) overlay.style.display = 'none';
+      if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
+      showToast('✓ ' + t('restDone'));
+    } else {
+      _updateRestDisplay();
+    }
+  }
+});
+
+function _renderStreakBanner() {
+  const banner = document.getElementById('streakBanner');
+  if (!banner) return;
+  const streak = typeof calcStreak === 'function' ? calcStreak() : 0;
+  if (streak >= 2) {
+    const msgs = ['', '', '2 Tage am Stück – weiter so!', '3 Tage Streak – Feuer! 🔥', '4 Tage – du bist nicht aufzuhalten!', '5 Tage Streak – Maschine!'];
+    const msg = msgs[Math.min(streak, msgs.length - 1)] || `${streak} Tage Streak – unglaublich!`;
+    banner.style.display = 'block';
+    banner.innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(200,241,53,0.08);border:1px solid rgba(200,241,53,0.25);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;color:var(--accent);">🔥 ${streak}-Tage-Streak &mdash; ${msg}</div>`;
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function skipRestTimer() {
   clearInterval(restTimerInterval);
   restTimerInterval = null;
+  restTimerEndAt    = 0;
+  if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
   const overlay = document.getElementById('restTimerOverlay');
   if (overlay) overlay.style.display = 'none';
   haptic('light');
