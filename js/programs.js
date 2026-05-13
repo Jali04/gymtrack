@@ -236,7 +236,7 @@ function saveProgram() {
     db.programs.push({
       id: uid(),
       name: name,
-      days: days
+      schedule: schedule
     });
   }
   
@@ -265,7 +265,7 @@ async function openProgramShare(id) {
   if (!prog) return;
 
   // Collect all templates referenced by this program
-  const tmplIds = [...new Set(prog.days.map(d => d.templateId))];
+  const tmplIds = [...new Set(Object.values(prog.schedule || {}))];
   const templates = tmplIds
     .map(tid => db.templates.find(t => t.id === tid))
     .filter(Boolean)
@@ -278,13 +278,13 @@ async function openProgramShare(id) {
     .filter(Boolean)
     .map(({ id, name, category, notes }) => ({ id, name, category, ...(notes ? { notes } : {}) }));
 
-  const payload = { v: 'p', p: { id: prog.id, name: prog.name, days: prog.days }, t: templates, e: exercises };
+  const payload = { v: 'p', p: { id: prog.id, name: prog.name, schedule: prog.schedule }, t: templates, e: exercises };
   const code = await compressPayload(payload);
 
   // Re-use the template share modal
   document.getElementById('tmplShareCode').value = code;
   document.getElementById('tmplShareName').textContent = prog.name;
-  document.getElementById('tmplShareDesc').textContent = `${prog.days.length} Tage · ${templates.length} Vorlagen`;
+  document.getElementById('tmplShareDesc').textContent = `${Object.values(prog.schedule || {}).length} Tage · ${templates.length} Vorlagen`;
   document.getElementById('tmplShareCopyConfirm').style.display = 'none';
   openModal('tmplShareModal');
 }
