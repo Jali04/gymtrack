@@ -28,6 +28,22 @@ let _migrationNeeded = false;
 db.workouts.forEach(w => {
   if (!w.date && w.startTime) { w.date = w.startTime; _migrationNeeded = true; }
 });
+
+// Migration: convert programs from sequential days array to weekly schedule object
+db.programs.forEach(p => {
+  if (p.days && Array.isArray(p.days)) {
+    p.schedule = {};
+    const mapDays = [1, 2, 3, 4, 5, 6, 0];
+    p.days.forEach((d, i) => {
+      if (i < 7 && d.templateId) {
+        p.schedule[mapDays[i]] = d.templateId;
+      }
+    });
+    delete p.days;
+    _migrationNeeded = true;
+  }
+});
+
 if (_migrationNeeded) save();
 
 const DEFAULT_EXERCISES = [

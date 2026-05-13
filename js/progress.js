@@ -388,21 +388,21 @@ function renderMilestones() {
     </div>
   `).join('');
 }
-let _progressProgramFilter = null;
+let _progressTemplateFilter = null;
 
 function renderExerciseProgressTracker() {
   const progList  = document.getElementById('exerciseProgressTracker');
   if(!progList) return;
   const activeExs = db.exercises.filter(ex => db.workouts.some(w => w.exercises.some(e => e.exId === ex.id)));
 
-  // Build program filter dropdown
+  // Build template filter dropdown
   let filterHtml = '';
-  const programsWithWorkouts = (db.programs || []).filter(p => db.workouts.some(w => w.programId === p.id));
-  if (programsWithWorkouts.length > 0) {
+  const templatesWithWorkouts = (db.templates || []).filter(t => db.workouts.some(w => w.templateId === t.id));
+  if (templatesWithWorkouts.length > 0) {
     filterHtml = `<div class="prog-filter-bar">
-      <select class="form-input prog-filter-select" id="progressProgramFilter" onchange="_progressProgramFilter=this.value||null;renderExerciseProgressTracker();">
-        <option value="">${t('allPrograms')}</option>
-        ${programsWithWorkouts.map(p => `<option value="${p.id}" ${_progressProgramFilter === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+      <select class="form-input prog-filter-select" id="progressTemplateFilter" onchange="_progressTemplateFilter=this.value||null;renderExerciseProgressTracker();">
+        <option value="">Alle Vorlagen (Gesamtfortschritt)</option>
+        ${templatesWithWorkouts.map(t => `<option value="${t.id}" ${_progressTemplateFilter === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
       </select>
     </div>`;
   }
@@ -463,9 +463,9 @@ function _buildExCard(ex, type, locale, catClass) {
     .filter(w => w.exercises.some(e => e.exId === ex.id))
     .sort((a, b) => new Date(a.date||a.startTime).getTime() - new Date(b.date||b.startTime).getTime());
 
-  // Apply program filter if active
-  if (_progressProgramFilter) {
-    workoutsWithEx = workoutsWithEx.filter(w => w.programId === _progressProgramFilter);
+  // Apply template filter if active
+  if (_progressTemplateFilter) {
+    workoutsWithEx = workoutsWithEx.filter(w => w.templateId === _progressTemplateFilter);
   }
 
   if (workoutsWithEx.length === 0) return '';

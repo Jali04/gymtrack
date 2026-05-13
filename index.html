@@ -650,10 +650,9 @@
     </div>
     
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <label class="form-label" style="margin:0;" id="lblProgDays">Tage (Workouts)</label>
+      <label class="form-label" style="margin:0;" id="lblProgDays">Wochenplan</label>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openCreateTemplate()" id="btnNestedAddTmpl">+ Vorlage</button>
-        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="addProgramDay()" id="btnAddProgDay">+ Tag</button>
+        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openCreateTemplate()" id="btnNestedAddTmpl">+ Vorlage erstellen</button>
       </div>
     </div>
     
@@ -663,21 +662,6 @@
     
     <button class="btn btn-primary" onclick="saveProgram()" id="btnSaveProgram">Speichern</button>
     <button class="btn btn-danger" id="deleteProgBtn" style="display:none;margin-top:8px;" onclick="deleteProgram()">Programm löschen</button>
-  </div>
-</div>
-
-<!-- Start Program Modal -->
-<div class="modal-overlay" id="startProgramModal">
-  <div class="modal" style="padding:20px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" style="font-size:18px;">Programm starten</div>
-      <div class="close-btn" onclick="closeModal('startProgramModal')">✕</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Start-Datum wählen (Tabelle beginnt an diesem Tag mit Tag 1)</label>
-      <input type="date" class="form-input" id="progStartDate">
-    </div>
-    <button class="btn btn-primary" onclick="confirmStartProgram()">Aktivieren</button>
   </div>
 </div>
 

@@ -19,11 +19,17 @@ function renderPrograms() {
     const border = isActive ? 'border:1px solid var(--accent);' : 'border:1px solid transparent;';
     const tag = isActive ? `<span style="background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;">AKTIV</span>` : '';
 
-    // Quick summarize days
-    let summaries = p.days.map((d, i) => {
-      const tpl = db.templates.find(x => x.id === d.templateId);
-      return `<div style="font-size:12px;color:var(--muted);">Tag ${i+1}: ${tpl ? tpl.name : 'Unbekannt'}</div>`;
-    }).join('');
+    // Quick summarize days (1=Mon, 2=Tue... 0=Sun)
+    const displayDays = [1, 2, 3, 4, 5, 6, 0];
+    let summaries = displayDays.map(d => {
+      const tplId = p.schedule ? p.schedule[d] : null;
+      if (!tplId) return '';
+      const tpl = db.templates.find(x => x.id === tplId);
+      const dayName = t('weekDays')[d].substr(0, 2); // e.g. Mo, Di
+      return `<div style="font-size:12px;color:var(--muted);"><span style="display:inline-block;width:30px;font-weight:600;">${dayName}</span> ${tpl ? tpl.name : 'Unbekannt'}</div>`;
+    }).filter(Boolean).join('');
+    
+    if (!summaries) summaries = `<div style="font-size:12px;color:var(--muted);">Keine Workouts geplant</div>`;
 
     list.innerHTML += `
       <div class="card" style="margin-bottom:12px;${border};cursor:pointer;" onclick="openEditProgram('${p.id}')">
@@ -34,7 +40,7 @@ function renderPrograms() {
         <div style="display:flex;gap:8px;margin-top:12px;">
           ${isActive
              ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();quitProgram()">Programm beenden</button>`
-             : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openStartProgramModal('${p.id}')">Aktivieren</button>`
+             : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();activateProgram('${p.id}')">Aktivieren</button>`
           }
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openProgramShare('${p.id}')">📤 Teilen</button>
         </div>
@@ -43,23 +49,12 @@ function renderPrograms() {
   });
 }
 
-let pendingStartProgramId = null;
-function openStartProgramModal(id) {
-  pendingStartProgramId = id;
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const dEl = document.getElementById('progStartDate');
-  if (dEl) dEl.value = `${y}-${m}-${day}`;
-  openModal('startProgramModal');
-}
-
-function confirmStartProgram() {
-  const dEl = document.getElementById('progStartDate');
-  if (!dEl || !dEl.value) { alert('Bitte ein valides Datum wählen'); return; }
-  setProgramActive(pendingStartProgramId, dEl.value);
-  closeModal('startProgramModal');
+function activateProgram(id) {
+  db.activeProgram = { id: id };
+  save();
+  renderPrograms();
+  updateActiveProgramBanner();
+  showToast('Programm aktiviert');
 }
 
 function updateActiveProgramBanner() {
@@ -72,62 +67,33 @@ function updateActiveProgramBanner() {
   }
   
   const prog = db.programs.find(x => x.id === db.activeProgram.id);
-  if (!prog || !prog.days.length) {
+  if (!prog || !prog.schedule) {
     db.activeProgram = null;
     save();
     banner.style.display = 'none';
     return;
   }
   
-  // Protect legacy programs
-  if (!db.activeProgram.startDate) {
-     const dummyStart = new Date();
-     dummyStart.setDate(dummyStart.getDate() - (db.activeProgram.currentDayIndex || 0));
-     const y = dummyStart.getFullYear();
-     const m = String(dummyStart.getMonth() + 1).padStart(2, '0');
-     const d = String(dummyStart.getDate()).padStart(2, '0');
-     db.activeProgram.startDate = `${y}-${m}-${d}`;
-     save();
-  }
+  const todayDayIndex = new Date().getDay(); // 0=Sun, 1=Mon...
+  const todayTplId = prog.schedule[todayDayIndex];
   
-  // Calculate relative day
-  const startD = new Date(db.activeProgram.startDate);
-  startD.setHours(0,0,0,0);
-  const now = new Date();
-  now.setHours(0,0,0,0);
-  const diffTime = now - startD;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  document.getElementById('activeProgramName').textContent = prog.name;
   
-  // If diffDays is negative, program hasn't started yet
-  if (diffDays < 0) {
-    document.getElementById('activeProgramName').textContent = prog.name;
-    document.getElementById('activeProgramNext').textContent = `Beginnt in ${Math.abs(diffDays)} Tag(en)`;
+  if (!todayTplId) {
+    document.getElementById('activeProgramNext').innerHTML = `Heute: <span style="color:var(--muted);font-weight:700;">Ruhetag</span>`;
     banner.style.display = 'block';
     return;
   }
   
-  // Wrap around based on program length
-  const currDayIndex = diffDays % prog.days.length;
-  let nextDay = prog.days[currDayIndex];
-  
-  const tpl = db.templates.find(x => x.id === nextDay.templateId);
+  const tpl = db.templates.find(x => x.id === todayTplId);
   const tplName = tpl ? tpl.name : 'Gelöschte Vorlage';
   
   let typeObj = tpl ? (tpl.type || 'training') : 'training';
   let typeLabel = typeObj === 'training' ? 'TRAINING' : typeObj === 'rest' ? 'ACTIVE REST' : 'COUCH POTATO';
   const typeColors = { 'training': 'var(--accent)', 'rest': '#f5a623', 'couch': '#d0021b' };
   
-  document.getElementById('activeProgramName').textContent = prog.name;
-  document.getElementById('activeProgramNext').innerHTML = `Heute: Tag ${currDayIndex + 1} &mdash; <span style="color:${typeColors[typeObj]};font-weight:700;">${tplName} (${typeLabel})</span>`;
+  document.getElementById('activeProgramNext').innerHTML = `Heute: <span style="color:${typeColors[typeObj]};font-weight:700;">${tplName} (${typeLabel})</span>`;
   banner.style.display = 'block';
-}
-
-function setProgramActive(id, startDateIsoStr) {
-  db.activeProgram = { id: id, startDate: startDateIsoStr, currentDayIndex: 0 };
-  save();
-  renderPrograms();
-  updateActiveProgramBanner();
-  showToast('Programm aktiviert');
 }
 
 function quitProgram() {
@@ -141,38 +107,28 @@ function quitProgram() {
 function startNextProgramDay() {
   if (!db.activeProgram || db.currentWorkout) return;
   const prog = db.programs.find(x => x.id === db.activeProgram.id);
-  if (!prog || !prog.days.length || !db.activeProgram.startDate) return;
+  if (!prog || !prog.schedule) return;
   
-  const startD = new Date(db.activeProgram.startDate);
-  startD.setHours(0,0,0,0);
-  const now = new Date();
-  now.setHours(0,0,0,0);
-  const diffTime = now - startD;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const todayDayIndex = new Date().getDay();
+  const todayTplId = prog.schedule[todayDayIndex];
   
-  if (diffDays < 0) {
-    alert('Dieses Programm hat noch nicht begonnen.');
+  if (!todayTplId) {
+    alert('Heute ist ein Ruhetag! Kein Workout geplant.');
     return;
   }
   
-  const currDayIndex = diffDays % prog.days.length;
-  const nextDay = prog.days[currDayIndex];
-  if (!nextDay) return;
-  
-  const tpl = db.templates.find(x => x.id === nextDay.templateId);
+  const tpl = db.templates.find(x => x.id === todayTplId);
   if (!tpl) {
-    alert('Die Vorlage für diesen Tag wurde gelöscht.');
+    alert('Die Vorlage für heute wurde gelöscht.');
     return;
   }
   
-  // Even if it's a rest day, we could start the workout with the rest template or not
   if (tpl.type === 'couch' || tpl.type === 'rest') {
      if(!confirm(`Heute ist als "${tpl.type === 'rest' ? 'Active Rest' : 'Couch Potato'}" markiert. Dennoch ein Training dafür dokumentieren?`)) {
        return;
      }
   }
   
-  // Create a workout from the template (templates store exerciseIds, not exercises)
   const wo = {
     id: uid(),
     date: Date.now(),
@@ -181,10 +137,9 @@ function startNextProgramDay() {
     exercises: (tpl.exerciseIds || []).map(exId => ({ exId, sets: [] }))
   };
   
-  // Add reference to track that this came from a program day
-  wo.programDayId = `${prog.id}_day${currDayIndex}`;
+  wo.programDayId = `${prog.id}_wday${todayDayIndex}`;
   wo.programId = prog.id;
-  wo.templateId = nextDay.templateId;
+  wo.templateId = todayTplId;
   
   db.currentWorkout = wo;
   save();
@@ -195,15 +150,48 @@ function startNextProgramDay() {
 
 /* --- Program Builder Modal --- */
 
+function _buildProgramDayRows(schedule = {}) {
+  const list = document.getElementById('progDaysList');
+  list.innerHTML = '';
+  // 1=Mon, 2=Tue... 6=Sat, 0=Sun
+  const displayDays = [1, 2, 3, 4, 5, 6, 0];
+  
+  let tmplOptions = `<option value="">-- Ruhetag --</option>`;
+  db.templates.forEach(t => {
+    tmplOptions += `<option value="${t.id}">${t.name}</option>`;
+  });
+  
+  displayDays.forEach(d => {
+    const dayName = t('weekDays')[d];
+    const selTmpl = schedule[d] || '';
+    
+    const div = document.createElement('div');
+    div.className = 'card prog-day-row';
+    div.style.padding = '10px';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.gap = '8px';
+    
+    div.innerHTML = `
+      <div style="font-weight:700;width:90px;">${dayName}</div>
+      <select class="form-input prog-day-select" data-day="${d}" style="margin:0;">
+        ${tmplOptions}
+      </select>
+    `;
+    
+    // Set selected value
+    div.querySelector('select').value = selTmpl;
+    list.appendChild(div);
+  });
+}
+
 function openCreateProgram() {
   currentProgId = null;
   document.getElementById('progName').value = '';
   document.getElementById('deleteProgBtn').style.display = 'none';
   document.getElementById('programModalTitle').textContent = 'Programm erstellen';
   
-  document.getElementById('progDaysList').innerHTML = '';
-  addProgramDay(); // Start with 1 day
-  
+  _buildProgramDayRows({});
   openModal('programModal');
 }
 
@@ -216,61 +204,8 @@ function openEditProgram(id) {
   document.getElementById('progName').value = p.name;
   document.getElementById('deleteProgBtn').style.display = 'block';
   
-  const list = document.getElementById('progDaysList');
-  list.innerHTML = '';
-  
-  p.days.forEach(d => {
-    addProgramDay(d.templateId);
-  });
-  
+  _buildProgramDayRows(p.schedule || {});
   openModal('programModal');
-}
-
-function addProgramDay(selectedTemplateId = '') {
-  const list = document.getElementById('progDaysList');
-  const div = document.createElement('div');
-  div.className = 'card prog-day-row';
-  div.style.padding = '10px';
-  div.style.display = 'flex';
-  div.style.alignItems = 'center';
-  div.style.gap = '8px';
-  
-  const dayIndex = list.children.length + 1;
-  const lbl = document.createElement('div');
-  lbl.style.fontWeight = '700';
-  lbl.style.width = '50px';
-  lbl.textContent = `Tag ${dayIndex}`;
-  
-  const sel = document.createElement('select');
-  sel.className = 'form-input prog-day-select';
-  sel.style.margin = '0';
-  
-  // Populate templates
-  sel.innerHTML = `<option value="">-- Vorlage wählen --</option>`;
-  db.templates.forEach(t => {
-    sel.innerHTML += `<option value="${t.id}" ${t.id === selectedTemplateId ? 'selected' : ''}>${t.name}</option>`;
-  });
-  
-  const delBtn = document.createElement('button');
-  delBtn.className = 'close-btn'; // Restyling the X button
-  delBtn.style.padding = '6px';
-  delBtn.textContent = '✕';
-  delBtn.onclick = () => {
-    div.remove();
-    renumberProgramDays();
-  };
-  
-  div.appendChild(lbl);
-  div.appendChild(sel);
-  div.appendChild(delBtn);
-  list.appendChild(div);
-}
-
-function renumberProgramDays() {
-  const list = document.getElementById('progDaysList');
-  Array.from(list.children).forEach((row, idx) => {
-    row.children[0].textContent = `Tag ${idx + 1}`;
-  });
 }
 
 function saveProgram() {
@@ -278,21 +213,24 @@ function saveProgram() {
   if (!name) return alert('Name fehlt');
   
   const daySelects = document.querySelectorAll('.prog-day-select');
-  const days = [];
+  const schedule = {};
+  let hasWorkout = false;
   
   daySelects.forEach(sel => {
+    const dayIdx = sel.getAttribute('data-day');
     if (sel.value) {
-      days.push({ templateId: sel.value });
+      schedule[dayIdx] = sel.value;
+      hasWorkout = true;
     }
   });
   
-  if (days.length === 0) return alert('Mindestens ein Tag muss eine Vorlage haben');
+  if (!hasWorkout) return alert('Mindestens ein Tag muss eine Vorlage haben');
   
   if (currentProgId) {
     const p = db.programs.find(x => x.id === currentProgId);
     if (p) {
       p.name = name;
-      p.days = days;
+      p.schedule = schedule;
     }
   } else {
     db.programs.push({

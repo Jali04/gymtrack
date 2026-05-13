@@ -659,12 +659,12 @@ function openLogSets(idx) {
 
 function getLastPerformance(exId, currentWorkoutId) {
   const cw = db.currentWorkout;
-  const programId = cw ? cw.programId : null;
+  const templateId = cw ? cw.templateId : null;
   let relevant;
-  if (programId) {
-    // Program-specific: only compare with workouts from the same program
+  if (templateId) {
+    // Template-specific: compare with workouts spawned from the exact same template
     relevant = db.workouts
-      .filter(w => w.id !== currentWorkoutId && w.programId === programId && w.exercises.some(e => !e.isCustom && e.exId === exId))
+      .filter(w => w.id !== currentWorkoutId && w.templateId === templateId && w.exercises.some(e => !e.isCustom && e.exId === exId))
       .sort((a, b) => b.date - a.date);
   }
   if (!relevant || relevant.length === 0) {

@@ -103,7 +103,8 @@ const TR = {
     programFilter: 'Programm-Filter', allPrograms: 'Alle Programme', thisProgram: 'Dieses Programm',
     quickAddPlaceholder: 'Neue Übung…', quickAddBtn: 'Erstellen & hinzufügen',
     suggestNextEx: 'Nächste Übung?', fromSameCat: 'Gleiche Kategorie',
-    noSearchResults: 'Keine Treffer'
+    noSearchResults: 'Keine Treffer',
+    weekDays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
@@ -205,7 +206,8 @@ const TR = {
     programFilter: 'Program Filter', allPrograms: 'All Programs', thisProgram: 'This Program',
     quickAddPlaceholder: 'New exercise…', quickAddBtn: 'Create & add',
     suggestNextEx: 'Next exercise?', fromSameCat: 'Same category',
-    noSearchResults: 'No results'
+    noSearchResults: 'No results',
+    weekDays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   }
 };
 
