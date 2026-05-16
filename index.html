@@ -781,20 +781,9 @@
       <label class="form-label">Wochentage <span class="info-icon" onclick="showInfo('Wochentage', 'Tippe die Tage an, an denen du das Supplement nehmen willst.')">ℹ️</span></label>
       <div id="suppFreqDaysContainer" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group">
-        <label class="form-label">Einnahmen/Tag</label>
-        <select class="form-input" id="suppTimesPerDay">
-          <option value="1">1×</option>
-          <option value="2">2×</option>
-          <option value="3">3×</option>
-          <option value="4">4×</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label" id="lblSuppSupply">Vorrat <span class="info-icon" onclick="showInfo('Vorrat (Packungsgröße)', 'Wie viel ist in der Packung? Wir ziehen jede Einnahme davon ab und warnen dich, wenn es leer wird. (z.B. 90 Kapseln)')">ℹ️</span></label>
-        <input type="number" class="form-input" id="suppSupplySize" placeholder="z.B. 90" inputmode="decimal">
-      </div>
+    <div class="form-group">
+      <label class="form-label" id="lblSuppSupply">Vorrat <span class="info-icon" onclick="showInfo('Vorrat (Packungsgröße)', 'Wie viel ist in der Packung? Wir ziehen jede Einnahme davon ab und warnen dich, wenn es leer wird. (z.B. 90 Kapseln)')">ℹ️</span></label>
+      <input type="number" class="form-input" id="suppSupplySize" placeholder="z.B. 90" inputmode="decimal">
     </div>
     <div class="form-group">
       <label class="form-label">Notizen</label>

@@ -319,7 +319,6 @@ function openAddSupplement() {
   document.getElementById('suppFreqValue').value = '2';
   document.getElementById('suppFreqDaysRow').style.display = 'block';
   document.getElementById('suppFreqValueRow').style.display = 'none';
-  document.getElementById('suppTimesPerDay').value = '1';
   document.getElementById('suppTimeOfDay').value = 'morgens';
   document.getElementById('suppNotes').value = '';
   document.getElementById('suppSupplySize').value = '';
@@ -344,7 +343,6 @@ function openEditSupplement(id) {
   document.getElementById('suppScoopSize').value = s.scoopSize || '';
   document.getElementById('suppFrequency').value = s.frequency;
   document.getElementById('suppFreqValue').value = s.frequencyValue || 2;
-  document.getElementById('suppTimesPerDay').value = s.timesPerDay || 1;
   document.getElementById('suppTimeOfDay').value = s.timeOfDay || 'morgens';
   document.getElementById('suppNotes').value = s.notes || '';
   document.getElementById('suppSupplySize').value = s.supplySize || '';
@@ -429,7 +427,6 @@ function saveSupplement() {
     frequency: document.getElementById('suppFrequency').value,
     frequencyValue: parseInt(document.getElementById('suppFreqValue').value) || 2,
     frequencyDays: [..._selectedFreqDays],
-    timesPerDay: parseInt(document.getElementById('suppTimesPerDay').value) || 1,
     timeOfDay: document.getElementById('suppTimeOfDay').value,
     notes: document.getElementById('suppNotes').value.trim(),
     supplySize: parseFloat(document.getElementById('suppSupplySize').value) || 0,
