@@ -2,7 +2,7 @@
    GYMTRACK — Navigation + Swipe
    ============================================= */
 
-const PAGE_ORDER = ['log', 'gymlab', 'calendar', 'stats'];
+const PAGE_ORDER = ['log', 'gymlab', 'calendar', 'supps'];
 
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -13,7 +13,7 @@ function showPage(id, btn) {
   if (id === 'log')      renderLog();
   if (id === 'gymlab')   renderGymLab();
   if (id === 'progress') renderProgress();
-  if (id === 'stats')    { renderStats(); renderAchievements(); }
+  if (id === 'supps')    { if (typeof renderSupplements === 'function') renderSupplements(); }
   if (id === 'calendar') { renderCalendar(); renderStats(); }
 }
 

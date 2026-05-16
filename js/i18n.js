@@ -104,7 +104,25 @@ const TR = {
     quickAddPlaceholder: 'Neue Übung…', quickAddBtn: 'Erstellen & hinzufügen',
     suggestNextEx: 'Nächste Übung?', fromSameCat: 'Gleiche Kategorie',
     noSearchResults: 'Keine Treffer',
-    weekDays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+    weekDays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+    // Supplements
+    navSupps: 'Supps', suppToday: 'Heute fällig', suppMySupps: 'Meine Supplements',
+    suppNew: 'Supplement hinzufügen', suppEdit: 'Supplement bearbeiten',
+    suppTaken: 'genommen', suppNoneDue: 'Heute keine Supplements fällig',
+    suppEmpty: 'Noch keine Supplements angelegt', suppAdherence: 'Treue 30d',
+    suppLeft: 'übrig', suppConfirmDelete: 'Supplement wirklich löschen?',
+    suppFormLabel: 'Form', suppDosageLabel: 'Dosierung', suppUnitLabel: 'Einheit',
+    suppScoopLabel: 'Löffelmaß', suppFreqLabel: 'Frequenz', suppFreqDaily: 'Täglich',
+    suppFreqEveryX: 'Alle X Tage', suppFreqWeekdays: 'Bestimmte Wochentage',
+    suppFreqEveryLabel: 'Alle wie viele Tage?', suppTimesLabel: 'Einnahmen pro Tag',
+    suppTimeLabel: 'Tageszeit', suppSupplyLabel: 'Packungsgröße (Gesamt)',
+    suppSupplyHint: 'z.B. 90 für 90 Kapseln', suppColorLabel: 'Farbe',
+    suppActiveLabel: 'Aktiv', suppScoopPlaceholder: 'z.B. 1 Messlöffel = 5g',
+    suppNotesLabel: 'Notizen', suppNotesPlaceholder: 'z.B. Mit Mahlzeit einnehmen...',
+    // Template persistence
+    saveToTemplate: '📌 Zur Vorlage', savedToTemplate: '✓ In Vorlage gespeichert',
+    tmplUpdateTitle: 'Vorlage aktualisieren?', tmplUpdateDesc: 'Du hast neue Übungen hinzugefügt. Sollen sie dauerhaft in der Vorlage gespeichert werden?',
+    tmplUpdateConfirm: 'Ausgewählte übernehmen', tmplUpdateSkip: 'Überspringen'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
@@ -207,7 +225,25 @@ const TR = {
     quickAddPlaceholder: 'New exercise…', quickAddBtn: 'Create & add',
     suggestNextEx: 'Next exercise?', fromSameCat: 'Same category',
     noSearchResults: 'No results',
-    weekDays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    weekDays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    // Supplements
+    navSupps: 'Supps', suppToday: 'Due Today', suppMySupps: 'My Supplements',
+    suppNew: 'Add Supplement', suppEdit: 'Edit Supplement',
+    suppTaken: 'taken', suppNoneDue: 'No supplements due today',
+    suppEmpty: 'No supplements added yet', suppAdherence: 'Adherence 30d',
+    suppLeft: 'left', suppConfirmDelete: 'Really delete supplement?',
+    suppFormLabel: 'Form', suppDosageLabel: 'Dosage', suppUnitLabel: 'Unit',
+    suppScoopLabel: 'Scoop Size', suppFreqLabel: 'Frequency', suppFreqDaily: 'Daily',
+    suppFreqEveryX: 'Every X Days', suppFreqWeekdays: 'Specific Weekdays',
+    suppFreqEveryLabel: 'Every how many days?', suppTimesLabel: 'Doses per Day',
+    suppTimeLabel: 'Time of Day', suppSupplyLabel: 'Package Size (Total)',
+    suppSupplyHint: 'e.g. 90 for 90 capsules', suppColorLabel: 'Color',
+    suppActiveLabel: 'Active', suppScoopPlaceholder: 'e.g. 1 scoop = 5g',
+    suppNotesLabel: 'Notes', suppNotesPlaceholder: 'e.g. Take with meal...',
+    // Template persistence
+    saveToTemplate: '📌 Save to Template', savedToTemplate: '✓ Saved to Template',
+    tmplUpdateTitle: 'Update Template?', tmplUpdateDesc: 'You added new exercises. Save them permanently to the template?',
+    tmplUpdateConfirm: 'Save Selected', tmplUpdateSkip: 'Skip'
   }
 };
 

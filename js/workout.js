@@ -123,8 +123,6 @@ function deleteLogWorkout(id) {
   if (!confirm(t('confirmDeleteWorkout'))) return;
   db.workouts = db.workouts.filter(w => w.id !== id);
   save();
-  if (typeof revokeCountAchievements === 'function') revokeCountAchievements();
-  if (typeof renderAchievements === 'function') renderAchievements();
   renderLog();
   haptic('light');
 }
@@ -190,6 +188,15 @@ function renderActiveWorkout() {
       ? `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;color:var(--accent2);" onclick="unlinkSuperset(${i})">🔗 Superset lösen</button>`
       : `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;" onclick="startSupersetLink(${i})">🔗 Superset</button>`;
 
+    // Template persist button (show if exercise is not in the original template)
+    let persistBtn = '';
+    if (cw.templateId) {
+      const tmpl = db.templates.find(x => x.id === cw.templateId);
+      if (tmpl && !tmpl.exerciseIds.includes(e.exId) && e.exId) {
+        persistBtn = `<button class="tmpl-persist-btn" onclick="event.stopPropagation();saveExerciseToTemplate('${e.exId}', this)">${t('saveToTemplate')}</button>`;
+      }
+    }
+
     return `<div class="exercise-card${hasSS ? ' superset-card' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span>${ssLabel}</div>
@@ -202,6 +209,7 @@ function renderActiveWorkout() {
         <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="openLogSets(${i})">
           ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
         </button>
+        ${persistBtn}
       </div>
     </div>`;
   }).join('');
@@ -307,12 +315,8 @@ function finishWorkout() {
   flashWorkoutComplete();
   showToast(t('workoutDone'));
   
-  if (typeof checkAchievements === 'function') {
-    checkAchievements(cw);
-  }
-  if (typeof showWorkoutTrophyToast === 'function') {
-    showWorkoutTrophyToast();
-  }
+  // Check if new exercises were added to a template-based workout
+  _checkTemplateUpdates(cw);
 }
 
 function cancelWorkout() {
@@ -1046,3 +1050,104 @@ function _updateRestDisplay() {
     arc.style.strokeDashoffset = c * (1 - pct);
   }
 }
+
+/* ---- Template Exercise Persistence ---- */
+function saveExerciseToTemplate(exId, btnEl) {
+  const cw = db.currentWorkout;
+  if (!cw || !cw.templateId) return;
+  const tmpl = db.templates.find(x => x.id === cw.templateId);
+  if (!tmpl) return;
+  if (tmpl.exerciseIds.includes(exId)) return;
+  
+  tmpl.exerciseIds.push(exId);
+  save();
+  
+  // Update button to show "saved"
+  if (btnEl) {
+    btnEl.textContent = t('savedToTemplate');
+    btnEl.classList.add('saved');
+  }
+  haptic('success');
+  showToast(t('savedToTemplate'));
+}
+
+let _pendingTemplateUpdate = null;
+
+function _checkTemplateUpdates(finishedWorkout) {
+  if (!finishedWorkout.templateId) return;
+  const tmpl = db.templates.find(x => x.id === finishedWorkout.templateId);
+  if (!tmpl) return;
+  
+  // Find exercises that were added during the workout but not in the template
+  const newExIds = finishedWorkout.exercises
+    .filter(e => e.exId && !e.isCustom && !tmpl.exerciseIds.includes(e.exId))
+    .map(e => e.exId);
+  
+  if (newExIds.length === 0) return;
+  
+  _pendingTemplateUpdate = {
+    templateId: finishedWorkout.templateId,
+    newExIds: [...newExIds],
+    selected: [...newExIds] // all selected by default
+  };
+  
+  _renderTemplateUpdateDialog();
+  openModal('tmplUpdateModal');
+}
+
+function _renderTemplateUpdateDialog() {
+  const state = _pendingTemplateUpdate;
+  if (!state) return;
+  
+  document.getElementById('tmplUpdateTitle').textContent = t('tmplUpdateTitle');
+  document.getElementById('tmplUpdateDesc').textContent = t('tmplUpdateDesc');
+  document.getElementById('btnTmplUpdateConfirm').textContent = t('tmplUpdateConfirm');
+  
+  const list = document.getElementById('tmplUpdateExList');
+  list.innerHTML = state.newExIds.map(exId => {
+    const ex = getEx(exId);
+    const name = ex ? ex.name : exId;
+    const cat = ex ? (t('cats')[ex.category] || ex.category) : '';
+    const catType = ex ? getCatType(ex.category) : 'strength';
+    const catClass = getCatClass(catType);
+    const isSelected = state.selected.includes(exId);
+    
+    return `<div class="tmpl-update-item${isSelected ? ' selected' : ''}" onclick="_toggleTmplUpdateItem('${exId}')">
+      <div class="tmpl-update-check">${isSelected ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
+      <div>
+        <div style="font-weight:600;font-size:14px;">${name}</div>
+        <span class="cat-badge ${catClass}" style="font-size:10px;">${cat}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _toggleTmplUpdateItem(exId) {
+  if (!_pendingTemplateUpdate) return;
+  const idx = _pendingTemplateUpdate.selected.indexOf(exId);
+  if (idx === -1) _pendingTemplateUpdate.selected.push(exId);
+  else _pendingTemplateUpdate.selected.splice(idx, 1);
+  _renderTemplateUpdateDialog();
+  haptic('light');
+}
+
+function confirmTemplateUpdate() {
+  if (!_pendingTemplateUpdate) { closeModal('tmplUpdateModal'); return; }
+  const tmpl = db.templates.find(x => x.id === _pendingTemplateUpdate.templateId);
+  if (tmpl && _pendingTemplateUpdate.selected.length > 0) {
+    _pendingTemplateUpdate.selected.forEach(exId => {
+      if (!tmpl.exerciseIds.includes(exId)) tmpl.exerciseIds.push(exId);
+    });
+    save();
+    showToast(`✓ ${_pendingTemplateUpdate.selected.length} ${t('exercises')} ${t('savedToTemplate')}`);
+  }
+  _pendingTemplateUpdate = null;
+  closeModal('tmplUpdateModal');
+  haptic('success');
+}
+
+function skipTemplateUpdate() {
+  _pendingTemplateUpdate = null;
+  closeModal('tmplUpdateModal');
+}
+

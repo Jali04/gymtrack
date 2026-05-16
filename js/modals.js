@@ -250,6 +250,16 @@ function _mergeImportedDb(imported) {
     if (!db.measurements) db.measurements = [];
     imported.measurements.forEach(m => { if (!db.measurements.find(x => x.id === m.id)) db.measurements.push(m); });
   }
+  if (imported.supplements) {
+    if (!db.supplements) db.supplements = [];
+    imported.supplements.forEach(s => { if (!db.supplements.find(x => x.id === s.id)) db.supplements.push(s); });
+  }
+  if (imported.supplementLog) {
+    if (!db.supplementLog) db.supplementLog = [];
+    imported.supplementLog.forEach(l => {
+      if (!db.supplementLog.find(x => x.date === l.date && x.supId === l.supId)) db.supplementLog.push(l);
+    });
+  }
   save(); closeModal('importModal'); renderStats(); renderHistory();
   showToast(t('importSuccess'));
 }

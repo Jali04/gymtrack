@@ -20,6 +20,7 @@ function initUI() {
     updateActiveProgramBanner();
   }
   if (typeof renderAchievements === 'function') renderAchievements();
+  if (typeof updateSuppNavBadge === 'function') updateSuppNavBadge();
 }
 
 // Boot

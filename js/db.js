@@ -22,6 +22,8 @@ if (!db.programs) db.programs = [];
 if (typeof db.activeProgram === 'undefined') db.activeProgram = null;
 if (!db.achievements) db.achievements = [];
 if (!db.weekStatus) db.weekStatus = { weekKey: 0, mode: 'normal' };
+if (!db.supplements) db.supplements = [];
+if (!db.supplementLog) db.supplementLog = [];
 
 // Migration: ensure all workouts have a date field (fallback to startTime)
 let _migrationNeeded = false;

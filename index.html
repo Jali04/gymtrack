@@ -136,58 +136,9 @@
   <div class="stats-grid" id="statsGrid" style="margin-bottom:16px;"></div>
 </div>
 
-<!-- Erfolg (formerly Stats) -->
-<div class="page" id="page-stats">
-  <div class="section-title" style="font-size:20px;display:flex;justify-content:space-between;align-items:center;" id="ttlAchievements">
-    Erfolge & Rang
-    <button onclick="openModal('rankInfoModal')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;letter-spacing:0.3px;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-      Ränge
-    </button>
-  </div>
-
-  <!-- Trophy count banner -->
-  <div id="trophyCountBanner" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
-    <!-- Total trophies (main currency) -->
-    <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:12px;padding:12px;text-align:center;box-shadow:0 0 12px rgba(200,241,53,0.12);">
-      <div style="font-size:22px;margin-bottom:2px;">🏆</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--accent);line-height:1;" id="trophyTotalCount">0</div>
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Trophäen</div>
-    </div>
-    <!-- Achievement badges -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
-      <div style="font-size:22px;margin-bottom:2px;">🎖️</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--text);line-height:1;" id="trophyBadgeFrac">0/14</div>
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Abzeichen</div>
-    </div>
-    <!-- Streak -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;" id="streakCard">
-      <div style="font-size:22px;margin-bottom:2px;">🔥</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--text);line-height:1;" id="streakCount">0</div>
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Tage Streak</div>
-    </div>
-  </div>
-
-  <!-- Rank Road (Clash Royale style) -->
-  <div id="rankRoad" class="rank-road" style="margin-bottom:16px;"></div>
-
-  <!-- Ranking Module -->
-  <div id="rankingCard" class="card" style="margin-bottom:16px;padding:16px;">
-    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Dein aktueller Rang</div>
-    <div id="userRankTitle" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent);line-height:1;margin-bottom:8px;">Beginner</div>
-    <div id="userRankSub" style="font-size:13px;color:var(--text);">Absolviere weitere Workouts, um aufzusteigen!</div>
-    <!-- Rank progress bar -->
-    <div id="rankProgressBar" style="margin-top:12px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
-      <div id="rankProgressFill" style="height:100%;background:var(--accent);border-radius:3px;transition:width 0.6s ease;width:0%;"></div>
-    </div>
-    <div id="rankProgressLabel" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>
-  </div>
-
-  <div class="section-title" style="font-size:16px;margin-top:20px;">Deine Trophäen</div>
-  <div id="achievementsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;"></div>
-
-  <div class="section-title" style="font-size:16px;margin-top:20px;">Meilensteine</div>
-  <div id="milestonesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+<!-- Supps -->
+<div class="page" id="page-supps">
+  <div class="supp-content"></div>
 </div>
 
 <!-- Progress -->
@@ -219,9 +170,9 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     Kalender
   </button>
-  <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4a2 2 0 000 4h2"/><path d="M18 9h2a2 2 0 010 4h-2"/><path d="M6 9v4a6 6 0 0012 0V9H6z"/><path d="M9 21h6"/><path d="M12 17v4"/></svg>
-    Erfolg
+  <button class="nav-btn" data-page="supps" onclick="showPage('supps',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-6 4.5h9m-9 3h6"/></svg>
+    Supps
   </button>
   <button class="nav-btn" data-page="progress" onclick="showPage('progress',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
@@ -765,17 +716,116 @@
   </div>
 </div>
 
-<!-- Rank Info Modal -->
-<div class="modal-overlay" id="rankInfoModal">
-  <div class="modal" style="padding:20px;">
+
+<!-- Supplement Modal -->
+<div class="modal-overlay" id="supplementModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" style="font-size:18px;">Ränge & Punkte</div>
-      <div class="close-btn" onclick="closeModal('rankInfoModal')">✕</div>
+      <div class="modal-title" id="suppModalTitle">Supplement</div>
+      <div class="close-btn" onclick="closeModal('supplementModal')">✕</div>
     </div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-      Trophäen bekommst du für jedes Training (+1) und für freigeschaltete Abzeichen (+3 bis +20). Damit steigst du im Rang auf.
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="suppName" placeholder="z.B. Kreatin">
     </div>
-    <div id="rankInfoList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label" id="lblSuppForm">Form</label>
+        <select class="form-input" id="suppForm" onchange="_onSuppFormChange()">
+          <option value="capsule">Kapsel</option>
+          <option value="powder">Pulver</option>
+          <option value="liquid">Flüssig</option>
+          <option value="tablet">Tablette</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblSuppTime">Tageszeit</label>
+        <select class="form-input" id="suppTimeOfDay">
+          <option value="morgens">☀️ Morgens</option>
+          <option value="mittags">🌤️ Mittags</option>
+          <option value="abends">🌙 Abends</option>
+          <option value="vor_training">💪 Vor Training</option>
+          <option value="nach_training">🏋️ Nach Training</option>
+          <option value="egal">⏰ Jederzeit</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label" id="lblSuppDosage">Dosierung</label>
+        <input type="number" class="form-input" id="suppDosage" placeholder="z.B. 5" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblSuppUnit">Einheit</label>
+        <input class="form-input" id="suppUnit" placeholder="g / mg / Kapseln">
+      </div>
+    </div>
+    <div class="form-group" id="suppScoopRow" style="display:none;">
+      <label class="form-label" id="lblSuppScoop">Löffelmaß</label>
+      <input class="form-input" id="suppScoopSize" placeholder="z.B. 1 Messlöffel = 5g">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="lblSuppFreq">Frequenz</label>
+      <select class="form-input" id="suppFrequency" onchange="_onSuppFreqChange()">
+        <option value="daily">Täglich</option>
+        <option value="every_x_days">Alle X Tage</option>
+        <option value="weekdays">Bestimmte Wochentage</option>
+      </select>
+    </div>
+    <div class="form-group" id="suppFreqValueRow" style="display:none;">
+      <label class="form-label">Alle wie viele Tage?</label>
+      <input type="number" class="form-input" id="suppFreqValue" value="2" min="2" max="30" inputmode="numeric">
+    </div>
+    <div class="form-group" id="suppFreqDaysRow" style="display:none;">
+      <label class="form-label">Wochentage</label>
+      <div id="suppFreqDaysContainer" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Einnahmen/Tag</label>
+        <select class="form-input" id="suppTimesPerDay">
+          <option value="1">1×</option>
+          <option value="2">2×</option>
+          <option value="3">3×</option>
+          <option value="4">4×</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblSuppSupply">Packungsgröße</label>
+        <input type="number" class="form-input" id="suppSupplySize" placeholder="z.B. 90" inputmode="decimal">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notizen</label>
+      <textarea class="form-input" id="suppNotes" placeholder="z.B. Mit Mahlzeit einnehmen..." style="resize:none;height:60px;line-height:1.5;"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="lblSuppColor">Farbe</label>
+      <div id="suppColorPicker" style="display:flex;gap:8px;"></div>
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+      <label class="form-label" style="margin:0;" id="lblSuppActive">Aktiv</label>
+      <label class="toggle">
+        <input type="checkbox" id="suppActive" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <button class="btn btn-primary" onclick="saveSupplement()">Speichern</button>
+    <button class="btn btn-danger" id="deleteSuppBtn" style="display:none;" onclick="deleteSupplement()">Supplement löschen</button>
+    <button class="btn btn-secondary" onclick="closeModal('supplementModal')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Template Update Dialog -->
+<div class="modal-overlay" id="tmplUpdateModal">
+  <div class="modal" style="padding:20px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="tmplUpdateTitle">Vorlage aktualisieren?</div>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;" id="tmplUpdateDesc">Du hast neue Übungen hinzugefügt. Sollen sie dauerhaft in der Vorlage gespeichert werden?</p>
+    <div id="tmplUpdateExList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+    <button class="btn btn-primary" id="btnTmplUpdateConfirm" onclick="confirmTemplateUpdate()">Ausgewählte übernehmen</button>
+    <button class="btn btn-secondary" onclick="skipTemplateUpdate()">Überspringen</button>
   </div>
 </div>
 
@@ -797,7 +847,6 @@ function _postSwMsg(msg) {
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <script src="js/db.js?v=4.4"></script>
 <script src="js/i18n.js?v=4.4"></script>
-<script src="js/achievements.js?v=4.4"></script>
 <script src="js/modals.js?v=4.4"></script>
 <script src="js/nav.js?v=4.4"></script>
 <script src="js/workout.js?v=4.4"></script>
@@ -811,8 +860,9 @@ function _postSwMsg(msg) {
 <script src="js/ui.js?v=4.4"></script>
 <script src="js/splash.js?v=4.4"></script>
 <script src="js/progress.js?v=4.4"></script>
-<script src="js/programs.js?v=4.4"></script>
-<script src="js/tools.js?v=4.4"></script>
+<script src="js/programs.js?v=4.5"></script>
+<script src="js/supplements.js?v=4.5"></script>
+<script src="js/tools.js?v=4.5"></script>
 <script src="js/app.js?v=4.4"></script>
 
 </body>
