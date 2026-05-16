@@ -58,9 +58,17 @@ function showToast(message) {
   toast.className   = 'success-toast';
   toast.textContent = message;
   document.body.appendChild(toast);
-  toast.addEventListener('animationend', e => {
-    if (e.animationName === 'toastOut') toast.remove();
-  });
+  setTimeout(() => { toast.classList.add('show'); }, 10);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+function showInfo(title, text) {
+  document.getElementById('infoModalTitle').textContent = title;
+  document.getElementById('infoModalText').textContent = text;
+  openModal('infoModal');
 }
 
 /* ---- Workout Complete Flash ---- */

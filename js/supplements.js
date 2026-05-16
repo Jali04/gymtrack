@@ -99,6 +99,9 @@ function _getSuppStreak(supId) {
   }
   while (true) {
     const dk = _dateKey(d);
+    // Break if we check before the supplement was even created
+    if (d < new Date(new Date(sup.createdAt).setHours(0,0,0,0))) break;
+    
     if (!_wasDueOn(sup, d)) { d.setDate(d.getDate() - 1); continue; }
     if (db.supplementLog.some(l => l.date === dk && l.supId === supId && l.taken)) {
       streak++;
@@ -312,9 +315,9 @@ function openAddSupplement() {
   document.getElementById('suppUnit').value = lang === 'en' ? 'capsules' : 'Kapseln';
   document.getElementById('suppScoopSize').value = '';
   document.getElementById('suppScoopRow').style.display = 'none';
-  document.getElementById('suppFrequency').value = 'daily';
+  document.getElementById('suppFrequency').value = 'weekdays';
   document.getElementById('suppFreqValue').value = '2';
-  document.getElementById('suppFreqDaysRow').style.display = 'none';
+  document.getElementById('suppFreqDaysRow').style.display = 'block';
   document.getElementById('suppFreqValueRow').style.display = 'none';
   document.getElementById('suppTimesPerDay').value = '1';
   document.getElementById('suppTimeOfDay').value = 'morgens';
@@ -323,7 +326,7 @@ function openAddSupplement() {
   document.getElementById('deleteSuppBtn').style.display = 'none';
   document.getElementById('suppActive').checked = true;
   _resetSuppColorPicker(SUPP_COLORS[0]);
-  _updateSuppFreqDays([]);
+  _updateSuppFreqDays([0,1,2,3,4,5,6]); // Select all days by default
   _onSuppFormChange();
   _onSuppFreqChange();
   openModal('supplementModal');

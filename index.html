@@ -726,12 +726,12 @@
       <div class="close-btn" onclick="closeModal('supplementModal')">✕</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Name</label>
+      <label class="form-label">Name <span class="info-icon" onclick="showInfo('Name', 'Der Name deines Supplements, z.B. Kreatin, Whey Protein, Magnesium.')">ℹ️</span></label>
       <input class="form-input" id="suppName" placeholder="z.B. Kreatin">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group">
-        <label class="form-label" id="lblSuppForm">Form</label>
+        <label class="form-label" id="lblSuppForm">Form <span class="info-icon" onclick="showInfo('Form', 'In welcher Form liegt das Supplement vor? Pulver, Kapseln, etc.')">ℹ️</span></label>
         <select class="form-input" id="suppForm" onchange="_onSuppFormChange()">
           <option value="capsule">Kapsel</option>
           <option value="powder">Pulver</option>
@@ -740,7 +740,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" id="lblSuppTime">Tageszeit</label>
+        <label class="form-label" id="lblSuppTime">Tageszeit <span class="info-icon" onclick="showInfo('Tageszeit', 'Wann nimmst du dieses Supplement am besten ein? Das dient nur zur Sortierung.')">ℹ️</span></label>
         <select class="form-input" id="suppTimeOfDay">
           <option value="morgens">☀️ Morgens</option>
           <option value="mittags">🌤️ Mittags</option>
@@ -753,32 +753,32 @@
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group">
-        <label class="form-label" id="lblSuppDosage">Dosierung</label>
-        <input type="number" class="form-input" id="suppDosage" placeholder="z.B. 5" inputmode="decimal">
+        <label class="form-label" id="lblSuppDosage">Menge <span class="info-icon" onclick="showInfo('Menge (Dosierung)', 'Wie viel nimmst du? Gib hier einfach die Zahl ein, oder was du möchtest (z.B. 5 oder 1.5).')">ℹ️</span></label>
+        <input type="text" class="form-input" id="suppDosage" placeholder="z.B. 5">
       </div>
       <div class="form-group">
-        <label class="form-label" id="lblSuppUnit">Einheit</label>
+        <label class="form-label" id="lblSuppUnit">Einheit <span class="info-icon" onclick="showInfo('Einheit', 'Was ist die Maßeinheit? z.B. Gramm (g), Kapseln, Scoops, etc.')">ℹ️</span></label>
         <input class="form-input" id="suppUnit" placeholder="g / mg / Kapseln">
       </div>
     </div>
     <div class="form-group" id="suppScoopRow" style="display:none;">
-      <label class="form-label" id="lblSuppScoop">Löffelmaß</label>
+      <label class="form-label" id="lblSuppScoop">Löffelmaß <span class="info-icon" onclick="showInfo('Löffelmaß', 'Optional: Wie viel Gramm entspricht ein Messlöffel? (Hilfreich bei Pulver)')">ℹ️</span></label>
       <input class="form-input" id="suppScoopSize" placeholder="z.B. 1 Messlöffel = 5g">
     </div>
     <div class="form-group">
-      <label class="form-label" id="lblSuppFreq">Frequenz</label>
+      <label class="form-label" id="lblSuppFreq">Frequenz <span class="info-icon" onclick="showInfo('Frequenz', 'Wie oft nimmst du dieses Supplement? Du kannst bestimmte Wochentage festlegen, so wie beim Training.')">ℹ️</span></label>
       <select class="form-input" id="suppFrequency" onchange="_onSuppFreqChange()">
+        <option value="weekdays">Bestimmte Wochentage</option>
         <option value="daily">Täglich</option>
         <option value="every_x_days">Alle X Tage</option>
-        <option value="weekdays">Bestimmte Wochentage</option>
       </select>
     </div>
     <div class="form-group" id="suppFreqValueRow" style="display:none;">
       <label class="form-label">Alle wie viele Tage?</label>
       <input type="number" class="form-input" id="suppFreqValue" value="2" min="2" max="30" inputmode="numeric">
     </div>
-    <div class="form-group" id="suppFreqDaysRow" style="display:none;">
-      <label class="form-label">Wochentage</label>
+    <div class="form-group" id="suppFreqDaysRow">
+      <label class="form-label">Wochentage <span class="info-icon" onclick="showInfo('Wochentage', 'Tippe die Tage an, an denen du das Supplement nehmen willst.')">ℹ️</span></label>
       <div id="suppFreqDaysContainer" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -792,7 +792,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" id="lblSuppSupply">Packungsgröße</label>
+        <label class="form-label" id="lblSuppSupply">Vorrat <span class="info-icon" onclick="showInfo('Vorrat (Packungsgröße)', 'Wie viel ist in der Packung? Wir ziehen jede Einnahme davon ab und warnen dich, wenn es leer wird. (z.B. 90 Kapseln)')">ℹ️</span></label>
         <input type="number" class="form-input" id="suppSupplySize" placeholder="z.B. 90" inputmode="decimal">
       </div>
     </div>
@@ -814,6 +814,16 @@
     <button class="btn btn-primary" onclick="saveSupplement()">Speichern</button>
     <button class="btn btn-danger" id="deleteSuppBtn" style="display:none;" onclick="deleteSupplement()">Supplement löschen</button>
     <button class="btn btn-secondary" onclick="closeModal('supplementModal')">Abbrechen</button>
+  </div>
+</div>
+
+<!-- Generic Info Modal -->
+<div class="modal-overlay" id="infoModal">
+  <div class="modal" style="padding:20px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="infoModalTitle" style="margin-bottom:12px;">Info</div>
+    <div id="infoModalText" style="font-size:14px;color:var(--text);line-height:1.5;margin-bottom:20px;"></div>
+    <button class="btn btn-primary" onclick="closeModal('infoModal')">Verstanden</button>
   </div>
 </div>
 
