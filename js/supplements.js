@@ -3,6 +3,11 @@
    ============================================= */
 
 let editingSuppId = null;
+let currentSuppsDate = new Date();
+Object.defineProperty(window, 'currentSuppsDate', {
+  get() { return currentSuppsDate; },
+  set(v) { currentSuppsDate = v; }
+});
 
 const SUPP_COLORS = ['#c8f135','#38bdf8','#f59e0b','#a78bfa','#f87171','#34d399'];
 const SUPP_FORMS  = ['capsule','powder','liquid','tablet'];
@@ -38,9 +43,12 @@ function _isDueToday(sup) {
   return true;
 }
 
+function _isTakenOn(supId, dateKey) {
+  return db.supplementLog.some(l => l.date === dateKey && l.supId === supId && l.taken);
+}
+
 function _isTakenToday(supId) {
-  const key = _todayKey();
-  return db.supplementLog.some(l => l.date === key && l.supId === supId && l.taken);
+  return _isTakenOn(supId, _todayKey());
 }
 
 function _getTakenCount(supId, dateKey) {
@@ -145,16 +153,19 @@ function renderSupplements() {
   const page = document.getElementById('page-supps');
   if (!page) return;
 
-  const todaySupps  = db.supplements.filter(s => s.active && _isDueToday(s));
-  const takenCount  = todaySupps.filter(s => _isTakenToday(s.id)).length;
-  const totalDue    = todaySupps.length;
+  const targetDateKey = _dateKey(currentSuppsDate);
+  const isTargetToday = targetDateKey === _todayKey();
+
+  const dueSupps    = db.supplements.filter(s => _wasDueOn(s, currentSuppsDate));
+  const takenCount  = dueSupps.filter(s => _isTakenOn(s.id, targetDateKey)).length;
+  const totalDue    = dueSupps.length;
   const pct         = totalDue > 0 ? Math.round((takenCount / totalDue) * 100) : 100;
   const allDone     = takenCount >= totalDue && totalDue > 0;
 
   // Group by time of day
   const groups = {};
   SUPP_TIME.forEach(t => { groups[t] = []; });
-  todaySupps.forEach(s => {
+  dueSupps.forEach(s => {
     const key = s.timeOfDay || 'egal';
     if (!groups[key]) groups[key] = [];
     groups[key].push(s);
@@ -174,7 +185,7 @@ function renderSupplements() {
       if (supps.length === 0) return;
       todayHtml += `<div class="supp-time-group-label">${_timeLabel(timeKey)}</div>`;
       supps.forEach(s => {
-        const taken = _isTakenToday(s.id);
+        const taken = _isTakenOn(s.id, targetDateKey);
         const streak = _getSuppStreak(s.id);
         const supply = _getSupplyRemaining(s);
         const supplyWarn = supply !== null && supply <= s.dosage * 5;
@@ -198,7 +209,8 @@ function renderSupplements() {
       });
     });
   } else if (db.supplements.length > 0) {
-    todayHtml = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">✅</div><div class="empty-text">${t('suppNoneDue')}</div></div>`;
+    const emptyMsg = isTargetToday ? t('suppNoneDue') : (lang === 'en' ? 'No supplements due on this day' : 'Keine Supplements fällig an diesem Tag');
+    todayHtml = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">✅</div><div class="empty-text">${emptyMsg}</div></div>`;
   } else {
     todayHtml = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">💊</div><div class="empty-text">${t('suppEmpty')}</div></div>`;
   }
@@ -251,12 +263,28 @@ function renderSupplements() {
     }).join('');
   }
 
+  const todayLabel = isTargetToday ? t('suppToday') : (lang === 'en' ? 'Supplements Due' : 'Supplements fällig');
+  const maxDate = _todayKey();
+
+  let dateNavHtml = `
+    <div class="supp-date-nav" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-bottom:16px;">
+      <button class="cal-nav" onclick="changeSuppDate(-1)" style="font-family:'DM Sans',sans-serif;font-weight:bold;">‹</button>
+      <div style="position:relative;font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;user-select:none;">
+        <span style="font-size:14px;color:var(--accent);">📅</span>
+        <span id="suppDateLabel">${_formatSuppDate(currentSuppsDate)}</span>
+        <input type="date" id="suppDatePicker" value="${targetDateKey}" max="${maxDate}" onchange="onSuppDatePickerChange(this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">
+      </div>
+      <button class="cal-nav" id="suppDateNextBtn" onclick="changeSuppDate(1)" ${isTargetToday ? 'disabled style="opacity:0.25;cursor:default;"' : ''} style="font-family:'DM Sans',sans-serif;font-weight:bold;">›</button>
+    </div>
+  `;
+
   // Build page
   const container = page.querySelector('.supp-content') || page;
   container.innerHTML = `
-    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
-      ${t('suppToday')}
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      ${todayLabel}
     </div>
+    ${dateNavHtml}
     ${todayHtml}
     <div class="divider"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -271,16 +299,59 @@ function renderSupplements() {
 
 /* ---- Toggle Taken ---- */
 function toggleSuppTaken(supId) {
-  const key = _todayKey();
+  const key = _dateKey(currentSuppsDate);
   const existing = db.supplementLog.findIndex(l => l.date === key && l.supId === supId && l.taken);
   if (existing !== -1) {
     db.supplementLog.splice(existing, 1);
   } else {
-    db.supplementLog.push({ date: key, supId, taken: true, takenAt: Date.now() });
+    let takenAt = Date.now();
+    if (key !== _todayKey()) {
+      const d = new Date(currentSuppsDate);
+      d.setHours(12, 0, 0, 0);
+      takenAt = d.getTime();
+    }
+    db.supplementLog.push({ date: key, supId, taken: true, takenAt });
   }
   save();
   renderSupplements();
   haptic('success');
+}
+
+function changeSuppDate(offset) {
+  const d = new Date(currentSuppsDate);
+  d.setDate(d.getDate() + offset);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const checkDate = new Date(d); checkDate.setHours(0,0,0,0);
+  if (checkDate > today) return; // Prevent future dates
+  currentSuppsDate = d;
+  renderSupplements();
+  haptic('light');
+}
+
+function onSuppDatePickerChange(val) {
+  if (!val) return;
+  const parts = val.split('-');
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (d > today) return; // Prevent future dates
+  currentSuppsDate = d;
+  renderSupplements();
+  haptic('light');
+}
+
+function _formatSuppDate(date) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(date); target.setHours(0,0,0,0);
+  const diffTime = today - target;
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    return lang === 'en' ? 'Today' : 'Heute';
+  } else if (diffDays === 1) {
+    return lang === 'en' ? 'Yesterday' : 'Gestern';
+  } else {
+    return target.toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
 }
 
 /* ---- Nav Badge ---- */

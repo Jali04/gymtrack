@@ -263,7 +263,8 @@ function toggleLang() {
   const id = active.id.replace('page-', '');
   const renders = {
     log: renderLog, gymlab: renderGymLab,
-    stats: renderStats, calendar: renderCalendar
+    stats: renderStats, calendar: renderCalendar,
+    supps: renderSupplements
   };
   if (renders[id]) renders[id]();
   // Re-render HIIT config labels if timer modal is open
@@ -277,7 +278,7 @@ function applyTranslations() {
   const sp = (id, key) => { const el = document.getElementById(id); if (el) el.placeholder  = t(key); };
 
   // Nav
-  const navMap = { log: 'navTraining', gymlab: 'navGymLab', calendar: 'navCalendar', stats: 'navStats' };
+  const navMap = { log: 'navTraining', gymlab: 'navGymLab', calendar: 'navCalendar', stats: 'navStats', supps: 'navSupps', progress: 'navProgress' };
   document.querySelectorAll('.nav-btn').forEach(btn => {
     const pg = btn.dataset.page;
     if (!pg || !navMap[pg]) return;
