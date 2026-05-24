@@ -838,12 +838,23 @@
       
       <!-- AI Header -->
       <div class="ai-chat-header">
-        <div class="ai-header-title">🤖 <span id="lblAiCoachTitle">AI Coach</span></div>
+        <!-- Left: History Toggle -->
+        <button class="ai-icon-btn" onclick="toggleAiHistory()" title="Chatverlauf">
+          💬
+        </button>
+        
+        <!-- Center: Title & Model Pill -->
+        <div class="ai-header-center" onclick="toggleAiSettings()" title="API Einstellungen öffnen">
+          <span class="ai-header-title-text" id="lblAiCoachTitle">AI Coach</span>
+          <span class="ai-active-model-badge" id="lblAiActiveModelBadge">Gemini 3.5 Flash</span>
+        </div>
+        
+        <!-- Right: New Chat & Close -->
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="ai-settings-toggle-btn" onclick="startNewChat()" title="Neuer Chat">➕ <span id="lblAiNewChatBtn">New</span></button>
-          <button class="ai-settings-toggle-btn" onclick="toggleAiHistory()" title="Chatverlauf">💬 <span id="lblAiHistoryBtn">History</span></button>
-          <button class="ai-settings-toggle-btn" onclick="toggleAiSettings()" title="API Einstellungen">⚙️ <span id="lblAiSettingsBtn">Settings</span></button>
-          <div class="close-btn" onclick="closeModal('aiCoachModal')">✕</div>
+          <button class="ai-icon-btn" onclick="startNewChat()" title="Neuer Chat">
+            ➕
+          </button>
+          <div class="close-btn" onclick="closeModal('aiCoachModal')" style="margin-left:4px;">✕</div>
         </div>
       </div>
       

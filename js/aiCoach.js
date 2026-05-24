@@ -134,7 +134,10 @@ function applyAiTranslations() {
   );
   s('lblAiOnboardGeminiDesc', 'Verbinde deinen eigenen kostenlosen Key. Erfordert keine Kreditkarte und bietet Zugriff auf das schlaue Gemini 3 Pro.', 'Connect your own free API key. Requires no credit card and gives access to the smart Gemini 3 Pro.');
   s('lblAiOnboardStep1', 'Klicke hier, um Google AI Studio zu öffnen ↗', 'Click here to open Google AI Studio ↗');
-  s('lblAiOnboardStep2', 'Klicke auf "Get API Key" und erstelle einen neuen Schlüssel.', 'Click on "Get API Key" and create a new key.');
+  s('lblAiOnboardStep2', 
+    'Klicke auf "Get API Key" und erstelle einen neuen Schlüssel. (Tipp: Falls ein Ausweis verlangt wird, hinterlege einfach dein Geburtsdatum (18+) in deinem Google-Konto, dann entfällt die Ausweispflicht meistens).', 
+    'Click on "Get API Key" and create a new key. (Tip: If an ID is requested, simply set your birthdate to 18+ in your Google Account settings, which usually bypasses the ID check).'
+  );
   s('lblAiOnboardStep3', 'Kopiere den Schlüssel und füge ihn hier ein:', 'Copy the key and paste it here:');
   s('btnSaveAiOnboard', 'Schlüssel speichern & starten', 'Save Key & Start');
   sp('aiOnboardKeyInput', 'API-Key einfügen...', 'Paste API-Key...');
@@ -225,6 +228,7 @@ function saveAiSettings() {
 
   toggleAiSettings();
   checkShowOnboarding();
+  updateActiveModelBadge();
   showToast(lang === 'de' ? 'Einstellungen gespeichert' : 'Settings saved');
 }
 
@@ -261,6 +265,7 @@ function openAiCoach() {
   renderChatFeed();
   checkShowOnboarding();
   updateSendButtonState();
+  updateActiveModelBadge();
 }
 
 // Check Chrome local AI availability
@@ -1073,7 +1078,11 @@ function renderHistoryList() {
   if (!listContainer) return;
   
   const isDe = (lang === 'de');
-  const sortedKeys = Object.keys(aiChats).sort((a, b) => aiChats[b].created - aiChats[a].created);
+  const sortedKeys = Object.keys(aiChats).sort((a, b) => {
+    const timeA = aiChats[a].created || 0;
+    const timeB = aiChats[b].created || 0;
+    return timeB - timeA;
+  });
   
   if (sortedKeys.length === 0) {
     listContainer.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:13px; padding:12px;">${isDe ? 'Keine vergangenen Chats' : 'No past chats'}</div>`;
@@ -1094,6 +1103,8 @@ function renderHistoryList() {
 }
 
 function startNewChat() {
+  saveCurrentChat(); // Save the current chat before switching
+  
   const isDe = (lang === 'de');
   const newId = 'chat_' + Date.now();
   const welcome = isDe
@@ -1120,6 +1131,7 @@ function startNewChat() {
   renderChatFeed();
   checkShowOnboarding();
   updateSendButtonState();
+  updateActiveModelBadge();
   showToast(isDe ? 'Neuer Chat gestartet' : 'New chat started');
 }
 
@@ -1186,6 +1198,23 @@ function updateSendButtonState() {
     btn.innerHTML = '▶';
     btn.style.background = 'var(--accent)';
     btn.style.color = '#0a0a0a';
+  }
+}
+
+function updateActiveModelBadge() {
+  const badge = document.getElementById('lblAiActiveModelBadge');
+  if (!badge) return;
+  
+  if (aiProvider === 'chrome') {
+    badge.textContent = 'Chrome Nano';
+  } else {
+    if (aiModel === 'gemini-3.5-flash') {
+      badge.textContent = 'Gemini 3.5 Flash';
+    } else if (aiModel === 'gemini-3-pro') {
+      badge.textContent = 'Gemini 3 Pro';
+    } else {
+      badge.textContent = aiCustomModel || aiModel;
+    }
   }
 }
 
