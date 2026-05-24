@@ -100,6 +100,7 @@ function applyAiTranslations() {
   const sp = (id, de, en) => { const el = document.getElementById(id); if (el) el.placeholder = isDe ? de : en; };
 
   s('lblAiCoachTitle', 'AI Coach', 'AI Coach');
+  s('lblAiClearBtn', 'Löschen', 'Clear');
   s('lblAiSettingsBtn', 'Einstellungen', 'Settings');
   s('lblAiSettingsTitle', 'API EINSTELLUNGEN', 'API SETTINGS');
   s('lblAiProvider', 'Quelle / Provider', 'AI Provider');
@@ -216,6 +217,17 @@ function openAiCoach() {
   applyAiTranslations();
   initAiCoachSettings();
 
+  const savedHistory = localStorage.getItem('gym_ai_chat_history');
+  if (savedHistory) {
+    try {
+      aiChatHistory = JSON.parse(savedHistory);
+    } catch (e) {
+      aiChatHistory = [];
+    }
+  } else {
+    aiChatHistory = [];
+  }
+
   const feed = document.getElementById('aiChatFeed');
   if (aiChatHistory.length === 0) {
     // Add warm initial message
@@ -225,6 +237,7 @@ function openAiCoach() {
       : 'Hello! I am your personal AI Coach. I can help you optimize your training, nutrition, and supplements. How can I assist you today?';
     
     aiChatHistory.push({ role: 'coach', text: welcome, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
+    localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
   }
 
   renderChatFeed();
@@ -654,6 +667,7 @@ async function sendAiMessage() {
   const now = new Date();
   const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   aiChatHistory.push({ role: 'user', text: text, time: timeStr });
+  localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
   
   input.value = '';
   aiIsLoading = true;
@@ -669,9 +683,30 @@ async function sendAiMessage() {
       : `Error connecting to the AI: ${e.message}. Please check your API key in the settings.`;
     aiChatHistory.push({ role: 'coach', text: errText, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
   } finally {
+    localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
     aiIsLoading = false;
     renderChatFeed();
   }
+}
+
+// Clear chat history
+function clearAiChat() {
+  const isDe = (lang === 'de');
+  if (!confirm(isDe ? 'Chatverlauf wirklich löschen?' : 'Really delete chat history?')) return;
+  
+  aiChatHistory = [];
+  localStorage.removeItem('gym_ai_chat_history');
+  
+  // Re-initialize with greeting
+  const welcome = isDe
+    ? 'Hallo! Ich bin dein persönlicher KI-Coach. Ich unterstütze dich bei deinem Training, deiner Ernährung und deinen Supplements. Wie kann ich dir heute helfen?'
+    : 'Hello! I am your personal AI Coach. I can help you optimize your training, nutrition, and supplements. How can I assist you today?';
+  
+  aiChatHistory.push({ role: 'coach', text: welcome, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
+  localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
+  
+  renderChatFeed();
+  showToast(isDe ? 'Verlauf gelöscht' : 'History cleared');
 }
 
 async function requestAiResponse(userMessage) {

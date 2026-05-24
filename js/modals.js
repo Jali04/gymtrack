@@ -27,6 +27,9 @@ function openModal(id) {
   
   el.style.zIndex = maxZ + 1;
   el.classList.add('open');
+
+  // Prevent background scrolling
+  document.body.classList.add('modal-open');
 }
 
 function closeModal(id) {
@@ -37,6 +40,12 @@ function closeModal(id) {
   
   if (id === 'addExerciseModal') {
     window._openedFromPicker = false;
+  }
+
+  // Restore background scrolling if no other modals are open
+  const openModals = document.querySelectorAll('.modal-overlay.open');
+  if (openModals.length === 0) {
+    document.body.classList.remove('modal-open');
   }
 }
 
@@ -331,4 +340,69 @@ async function shareTemplateNative() {
   } else {
     copyTemplateShare();
   }
+}
+
+// Swipe down to close gesture for all modals
+document.addEventListener('DOMContentLoaded', () => {
+  initSwipeToClose();
+});
+
+function initSwipeToClose() {
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach(modal => {
+    const handle = modal.querySelector('.modal-handle');
+    if (!handle) return;
+    
+    const overlay = modal.closest('.modal-overlay');
+    if (!overlay) return;
+    const modalId = overlay.id;
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    handle.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY;
+      isDragging = true;
+      modal.style.transition = 'none'; // Disable transition during active drag
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', e => {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const diffY = currentY - startY;
+      
+      if (diffY > 0) {
+        modal.style.transform = `translateY(${diffY}px)`;
+      }
+    }, { passive: true });
+
+    handle.addEventListener('touchend', e => {
+      if (!isDragging) return;
+      isDragging = false;
+      modal.style.transition = ''; // Reset transition style
+
+      const diffY = currentY - startY;
+      if (diffY > 120) {
+        // Dragged down far enough - animate slide down and close
+        modal.style.transition = 'transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)';
+        modal.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+          if (SUB_MODALS.includes(modalId)) {
+            closeSubModal(modalId);
+          } else {
+            closeModal(modalId);
+          }
+          // Reset styles after modal closing is triggered
+          modal.style.transition = '';
+          modal.style.transform = '';
+        }, 220);
+      } else {
+        // Snap back up
+        modal.style.transform = '';
+      }
+      startY = 0;
+      currentY = 0;
+    });
+  });
 }
