@@ -32,6 +32,8 @@
       style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:13px;cursor:pointer;">☀️</button>
     <button onclick="toggleLang()" id="langBtn"
       style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">EN</button>
+    <button onclick="openAiCoach()" title="AI Coach" id="aiCoachBtn"
+      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;margin-right:2px;">🤖</button>
     <button onclick="openExportModal()" title="Backup & Einstellungen"
       style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">⚙️</button>
   </div>
@@ -828,6 +830,92 @@
   </div>
 </div>
 
+<!-- AI Coach Modal -->
+<div class="modal-overlay" id="aiCoachModal">
+  <div class="modal ai-modal">
+    <div class="modal-handle"></div>
+    <div class="ai-chat-container">
+      
+      <!-- AI Header -->
+      <div class="ai-chat-header">
+        <div class="ai-header-title">🤖 <span id="lblAiCoachTitle">AI Coach</span></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="ai-settings-toggle-btn" onclick="toggleAiSettings()" title="API Einstellungen">⚙️ <span id="lblAiSettingsBtn">Settings</span></button>
+          <div class="close-btn" onclick="closeModal('aiCoachModal')">✕</div>
+        </div>
+      </div>
+      
+      <!-- Settings Panel -->
+      <div class="ai-settings-panel" id="aiSettingsPanel">
+        <div class="ai-settings-title" id="lblAiSettingsTitle">API EINSTELLUNGEN</div>
+        
+        <div class="form-group">
+          <label class="form-label" id="lblAiProvider">Provider / Quelle</label>
+          <select class="form-input" id="aiProviderSelect" onchange="onAiProviderChange()">
+            <option value="gemini">Google Gemini API (100% Gratis)</option>
+            <option value="chrome">Chrome Local AI (On-Device, Gratis)</option>
+          </select>
+        </div>
+        
+        <div id="aiGeminiConfig">
+          <div class="form-group">
+            <label class="form-label" id="lblAiModel">Modell</label>
+            <select class="form-input" id="aiModelSelect" onchange="onAiModelChange()">
+              <option value="gemini-3.5-flash">Gemini 3.5 Flash (Standard, Schnell)</option>
+              <option value="gemini-3-pro">Gemini 3 Pro (Intelligent, Gründlich)</option>
+              <option value="custom">Custom Modellname (selbst eingeben)</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="aiCustomModelRow" style="display:none;">
+            <label class="form-label" id="lblAiCustomModel">Custom Modellname</label>
+            <input type="text" class="form-input" id="aiCustomModelInput" placeholder="z.B. gemini-3.5-pro">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              Gemini API Key 
+              <span style="float:right;"><a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent);text-decoration:underline;font-size:11px;" id="lnkGetApiKey">Kostenlosen Key holen ↗</a></span>
+            </label>
+            <input type="password" class="form-input" id="aiApiKeyInput" placeholder="AI Studio API-Key einfügen...">
+            <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4;" id="txtAiKeyHint">Der API-Key wird nur lokal in deinem Browser gesichert. Der Standard-Developer-Tarif bei Google ist absolut gratis und erfordert keine Kreditkarte.</div>
+          </div>
+        </div>
+        
+        <div id="aiChromeConfig" style="display:none;">
+          <div style="font-size:12.5px;color:var(--muted);line-height:1.4;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);" id="txtAiChromeHint">
+            Nutzt die lokale Gemini Nano KI deines Webbrowsers. Komplett offline, kostenlos und ohne Key. 
+            <br><br>
+            <strong>Status:</strong> <span id="aiChromeStatus" style="color:var(--accent2);font-weight:700;">Überprüfe Kompatibilität...</span>
+          </div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="saveAiSettings()" style="margin-top:10px;" id="btnSaveAiSettings">Speichern & Schließen</button>
+      </div>
+      
+      <!-- Chat Feed -->
+      <div class="ai-chat-feed" id="aiChatFeed">
+        <!-- Messages loaded dynamically -->
+      </div>
+      
+      <!-- Suggestion prompts -->
+      <div class="ai-suggestions-row" id="aiSuggestionsRow">
+        <button class="ai-suggestion-chip" onclick="triggerAiPreset('analyse')">📊 <span id="chipAnalyse">Analyse mein Training</span></button>
+        <button class="ai-suggestion-chip" onclick="triggerAiPreset('nutrition')">🍎 <span id="chipNutrition">Ernährungsplan</span></button>
+        <button class="ai-suggestion-chip" onclick="triggerAiPreset('supps')">💊 <span id="chipSupps">Supplement-Check</span></button>
+        <button class="ai-suggestion-chip" onclick="triggerAiPreset('plan')">💪 <span id="chipPlan">Plan erstellen</span></button>
+      </div>
+      
+      <!-- Chat Input Area -->
+      <div class="ai-chat-input-row">
+        <input type="text" class="ai-chat-input" id="aiChatInput" placeholder="Frag deinen Coach..." onkeydown="if(event.key==='Enter') sendAiMessage()" autocomplete="off">
+        <button class="ai-send-btn" id="aiSendBtn" onclick="sendAiMessage()">▶</button>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
 <!-- ===== SCRIPTS (order matters) ===== -->
 <script>
 // Register Service Worker for background rest-timer notifications
@@ -863,6 +951,7 @@ function _postSwMsg(msg) {
 <script src="js/supplements.js?v=4.6"></script>
 <script src="js/tools.js?v=4.5"></script>
 <script src="js/app.js?v=4.6"></script>
+<script src="js/aiCoach.js?v=1.0"></script>
 
 </body>
 </html>

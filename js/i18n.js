@@ -363,6 +363,8 @@ function applyTranslations() {
 
   const calPage = document.getElementById('page-calendar');
   if (calPage && calPage.classList.contains('active')) renderCalendar();
+  
+  if (typeof applyAiTranslations === 'function') applyAiTranslations();
 }
 
 function updateCategoryHint() {
