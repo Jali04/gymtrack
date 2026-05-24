@@ -104,6 +104,7 @@ function applyAiTranslations() {
   const sp = (id, de, en) => { const el = document.getElementById(id); if (el) el.placeholder = isDe ? de : en; };
 
   s('lblAiCoachTitle', 'AI Coach', 'AI Coach');
+  s('lblAiNewChatBtn', 'Neu', 'New');
   s('lblAiHistoryBtn', 'Verlauf', 'History');
   s('lblAiSettingsBtn', 'Einstellungen', 'Settings');
   s('lblAiSettingsTitle', 'API EINSTELLUNGEN', 'API SETTINGS');
