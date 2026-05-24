@@ -502,6 +502,40 @@ function importAiPayload(payloadB64, buttonId) {
     // Safety check on schema values (Prompt Injection defence)
     sanitizePayload(payload);
 
+    // Normalize payload to guarantee compatibility with _mergeImportedDb
+    if (payload.v === 't') {
+      if (!payload.t) payload.t = {};
+      if (!payload.t.id) payload.t.id = 'ai_temp_' + uid();
+      if (!payload.t.type) payload.t.type = 'training';
+      if (!payload.t.exerciseIds) payload.t.exerciseIds = [];
+      if (!payload.e || !Array.isArray(payload.e)) payload.e = [];
+    } else if (payload.v === 'p') {
+      if (!payload.p) payload.p = {};
+      if (!payload.p.id) payload.p.id = 'ai_prog_' + uid();
+      if (!payload.t || !Array.isArray(payload.t)) payload.t = [];
+      if (!payload.e || !Array.isArray(payload.e)) payload.e = [];
+      
+      // Auto-assign missing IDs for templates inside the program
+      payload.t.forEach(tmpl => {
+        if (!tmpl.id) tmpl.id = 'ai_temp_' + uid();
+        if (!tmpl.type) tmpl.type = 'training';
+        if (!tmpl.exerciseIds) tmpl.exerciseIds = [];
+      });
+
+      // Auto-resolve program schedule values mapping
+      if (payload.p.schedule) {
+        for (let day in payload.p.schedule) {
+          const ref = payload.p.schedule[day];
+          if (!ref) continue;
+          // Find template by ID or Name
+          let targetTmpl = payload.t.find(t => t.id === ref || t.name === ref);
+          if (targetTmpl) {
+            payload.p.schedule[day] = targetTmpl.id;
+          }
+        }
+      }
+    }
+
     // Call GymTrack's existing merge function
     _mergeImportedDb(payload);
     
