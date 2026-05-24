@@ -840,7 +840,7 @@
       <div class="ai-chat-header">
         <div class="ai-header-title">🤖 <span id="lblAiCoachTitle">AI Coach</span></div>
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="ai-settings-toggle-btn" onclick="clearAiChat()" title="Chatverlauf löschen">🗑 <span id="lblAiClearBtn">Clear</span></button>
+          <button class="ai-settings-toggle-btn" onclick="toggleAiHistory()" title="Chatverlauf">💬 <span id="lblAiHistoryBtn">History</span></button>
           <button class="ai-settings-toggle-btn" onclick="toggleAiSettings()" title="API Einstellungen">⚙️ <span id="lblAiSettingsBtn">Settings</span></button>
           <div class="close-btn" onclick="closeModal('aiCoachModal')">✕</div>
         </div>
@@ -892,6 +892,17 @@
         </div>
         
         <button class="btn btn-primary" onclick="saveAiSettings()" style="margin-top:10px;" id="btnSaveAiSettings">Speichern & Schließen</button>
+      </div>
+
+      <!-- History Panel -->
+      <div class="ai-history-panel" id="aiHistoryPanel" style="display:none;">
+        <div class="ai-history-header">
+          <div class="ai-settings-title" id="lblAiHistoryTitle">CHATVERLAUF</div>
+          <button class="btn btn-primary btn-sm" onclick="startNewChat()" id="btnNewChat" style="padding:4px 8px;font-size:12px;">+ Neuer Chat</button>
+        </div>
+        <div class="ai-history-list" id="aiHistoryList">
+          <!-- Chat list items injected dynamically -->
+        </div>
       </div>
 
       <!-- Onboarding Screen -->

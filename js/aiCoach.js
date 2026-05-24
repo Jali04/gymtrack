@@ -3,8 +3,12 @@
    ============================================= */
 
 let aiSettingsVisible = false;
+let aiHistoryVisible  = false;
 let aiChatHistory     = [];
+let aiChats           = {};
+let aiActiveChatId    = '';
 let aiIsLoading       = false;
+let aiAbortController = null;
 
 // Default values loaded from localStorage
 let aiProvider    = localStorage.getItem('gym_ai_provider') || 'gemini';
@@ -100,9 +104,11 @@ function applyAiTranslations() {
   const sp = (id, de, en) => { const el = document.getElementById(id); if (el) el.placeholder = isDe ? de : en; };
 
   s('lblAiCoachTitle', 'AI Coach', 'AI Coach');
-  s('lblAiClearBtn', 'Löschen', 'Clear');
+  s('lblAiHistoryBtn', 'Verlauf', 'History');
   s('lblAiSettingsBtn', 'Einstellungen', 'Settings');
   s('lblAiSettingsTitle', 'API EINSTELLUNGEN', 'API SETTINGS');
+  s('lblAiHistoryTitle', 'CHATVERLAUF', 'CHAT HISTORY');
+  s('btnNewChat', '+ Neuer Chat', '+ New Chat');
   s('lblAiProvider', 'Quelle / Provider', 'AI Provider');
   s('lblAiModel', 'Modell', 'Model');
   s('lblAiCustomModel', 'Custom Modellname', 'Custom Model Name');
@@ -121,7 +127,10 @@ function applyAiTranslations() {
   // Onboarding translations
   s('lblAiOnboardTitle', '🤖 Willkommen beim AI Coach!', '🤖 Welcome to AI Coach!');
   s('lblAiOnboardIntro', 'Wähle eine der folgenden zwei kostenlosen Optionen, um deinen persönlichen Coach zu starten:', 'Choose one of the following two free options to start your personal coach:');
-  s('lblAiOnboardChromeDesc', 'Nutzt die in deinem Browser integrierte Gemini Nano KI. 100% offline, gratis und datenschutzfreundlich.', 'Uses the Gemini Nano AI built into your browser. 100% offline, free, and privacy-friendly.');
+  s('lblAiOnboardChromeDesc', 
+    'Nutzt die in deinem Browser integrierte Gemini Nano KI (100% offline & gratis).\n\n⚠️ iOS (iPhone/iPad): Auf Apple-Geräten ist die lokale KI technisch nicht verfügbar (selbst wenn die App über Chrome zum Home-Bildschirm hinzugefügt wird, da iOS im Standalone-Modus immer WebKit erzwingt). Nutze dort bitte Option B.\n\n💡 PC/Mac/Android: Installiere die App in Chrome (Installations-Button in der Adressleiste) und aktiviere in chrome://flags die Optionen "Prompt API" und "Gemini Nano".', 
+    'Uses the Gemini Nano AI built into your browser (100% offline & free).\n\n⚠️ iOS (iPhone/iPad): Local AI is technically unsupported on Apple devices (even if added via Chrome, as iOS forces WebKit in standalone mode). Please use Option B.\n\n💡 PC/Mac/Android: Install the app from Chrome (install icon in URL bar) and enable "Prompt API" and "Gemini Nano" in chrome://flags.'
+  );
   s('lblAiOnboardGeminiDesc', 'Verbinde deinen eigenen kostenlosen Key. Erfordert keine Kreditkarte und bietet Zugriff auf das schlaue Gemini 3 Pro.', 'Connect your own free API key. Requires no credit card and gives access to the smart Gemini 3 Pro.');
   s('lblAiOnboardStep1', 'Klicke hier, um Google AI Studio zu öffnen ↗', 'Click here to open Google AI Studio ↗');
   s('lblAiOnboardStep2', 'Klicke auf "Get API Key" und erstelle einen neuen Schlüssel.', 'Click on "Get API Key" and create a new key.');
@@ -145,8 +154,8 @@ function applyAiTranslations() {
   const txtChromeHint = document.getElementById('txtAiChromeHint');
   if (txtChromeHint) {
     txtChromeHint.innerHTML = isDe
-      ? 'Nutzt die lokale Gemini Nano KI deines Webbrowsers. Komplett offline, kostenlos und ohne Key.<br><br><strong>Status:</strong> <span id="aiChromeStatus" style="color:var(--accent2);font-weight:700;">Überprüfe Kompatibilität...</span>'
-      : 'Uses the local Gemini Nano AI of your browser. Fully offline, free, and keyless.<br><br><strong>Status:</strong> <span id="aiChromeStatus" style="color:var(--accent2);font-weight:700;">Checking compatibility...</span>';
+      ? 'Nutzt die lokale Gemini Nano KI deines Webbrowsers (kostenlos & offline).<br><br>⚠️ <strong>iOS Hinweis (iPhone/iPad):</strong> Nicht verfügbar, da iOS für alle Browser und Home-Bildschirm-Apps im Hintergrund die WebKit-Engine erzwingt. Bitte nutze dort die Gemini API (Option B).<br><br>💡 <strong>PC/Mac/Android:</strong> Installiere die PWA aus Chrome und aktiviere in <code>chrome://flags</code> die Optionen "Prompt API" und "On-device Model".<br><br><strong>Status:</strong> <span id="aiChromeStatus" style="color:var(--accent2);font-weight:700;">Überprüfe Kompatibilität...</span>'
+      : 'Uses the local Gemini Nano AI of your browser (free & offline).<br><br>⚠️ <strong>iOS Note (iPhone/iPad):</strong> Unsupported, as iOS forces the WebKit engine for all browsers and Home Screen apps. Please use the Gemini API (Option B) there.<br><br>💡 <strong>PC/Mac/Android:</strong> Install the PWA from Chrome and enable "Prompt API" and "On-device Model" in <code>chrome://flags</code>.<br><br><strong>Status:</strong> <span id="aiChromeStatus" style="color:var(--accent2);font-weight:700;">Checking compatibility...</span>';
   }
 }
 
@@ -224,6 +233,9 @@ function toggleAiSettings() {
   aiSettingsVisible = !aiSettingsVisible;
   if (aiSettingsVisible) {
     panel.classList.add('open');
+    aiHistoryVisible = false;
+    const histPanel = document.getElementById('aiHistoryPanel');
+    if (histPanel) histPanel.classList.remove('open');
   } else {
     panel.classList.remove('open');
     checkShowOnboarding(); // check onboarding state when settings is closed
@@ -236,31 +248,18 @@ function openAiCoach() {
   applyAiTranslations();
   initAiCoachSettings();
 
-  const savedHistory = localStorage.getItem('gym_ai_chat_history');
-  if (savedHistory) {
-    try {
-      aiChatHistory = JSON.parse(savedHistory);
-    } catch (e) {
-      aiChatHistory = [];
-    }
-  } else {
-    aiChatHistory = [];
-  }
+  aiSettingsVisible = false;
+  aiHistoryVisible = false;
+  const settPanel = document.getElementById('aiSettingsPanel');
+  if (settPanel) settPanel.classList.remove('open');
+  const histPanel = document.getElementById('aiHistoryPanel');
+  if (histPanel) histPanel.classList.remove('open');
 
-  const feed = document.getElementById('aiChatFeed');
-  if (aiChatHistory.length === 0) {
-    // Add warm initial message
-    const isDe = (lang === 'de');
-    const welcome = isDe
-      ? 'Hallo! Ich bin dein persönlicher KI-Coach. Ich unterstütze dich bei deinem Training, deiner Ernährung und deinen Supplements. Wie kann ich dir heute helfen?'
-      : 'Hello! I am your personal AI Coach. I can help you optimize your training, nutrition, and supplements. How can I assist you today?';
-    
-    aiChatHistory.push({ role: 'coach', text: welcome, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
-    localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
-  }
+  loadAiChats();
 
   renderChatFeed();
   checkShowOnboarding();
+  updateSendButtonState();
 }
 
 // Check Chrome local AI availability
@@ -675,7 +674,12 @@ function triggerAiPreset(type) {
 
 // Fetch API core
 async function sendAiMessage() {
-  if (aiIsLoading) return;
+  const isDe = (lang === 'de');
+  
+  if (aiIsLoading) {
+    abortAiRequest();
+    return;
+  }
   
   const input = document.getElementById('aiChatInput');
   if (!input) return;
@@ -687,46 +691,62 @@ async function sendAiMessage() {
   const now = new Date();
   const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   aiChatHistory.push({ role: 'user', text: text, time: timeStr });
-  localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
+  
+  // Auto-generate title on first message in this chat
+  if (aiChats[aiActiveChatId] && aiChats[aiActiveChatId].title === (isDe ? 'Neuer Chat' : 'New Chat')) {
+    let newTitle = text.length > 25 ? text.substring(0, 25) + '...' : text;
+    aiChats[aiActiveChatId].title = newTitle;
+  }
+  
+  saveCurrentChat();
   
   input.value = '';
   aiIsLoading = true;
+  updateSendButtonState();
   renderChatFeed();
+  
+  aiAbortController = new AbortController();
   
   try {
     const responseText = await requestAiResponse(text);
     aiChatHistory.push({ role: 'coach', text: responseText, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
   } catch(e) {
-    const isDe = (lang === 'de');
+    if (e.name === 'AbortError') {
+      // Ignore adding error text if user aborted the call
+      return;
+    }
     const errText = isDe
       ? `Fehler bei der Verbindung mit der KI: ${e.message}. Bitte überprüfe deinen API-Key in den Einstellungen.`
       : `Error connecting to the AI: ${e.message}. Please check your API key in the settings.`;
     aiChatHistory.push({ role: 'coach', text: errText, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
   } finally {
-    localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
     aiIsLoading = false;
+    aiAbortController = null;
+    saveCurrentChat();
+    updateSendButtonState();
     renderChatFeed();
   }
 }
 
-// Clear chat history
+// Clear active chat history
 function clearAiChat() {
   const isDe = (lang === 'de');
   if (!confirm(isDe ? 'Chatverlauf wirklich löschen?' : 'Really delete chat history?')) return;
   
-  aiChatHistory = [];
-  localStorage.removeItem('gym_ai_chat_history');
-  
-  // Re-initialize with greeting
   const welcome = isDe
     ? 'Hallo! Ich bin dein persönlicher KI-Coach. Ich unterstütze dich bei deinem Training, deiner Ernährung und deinen Supplements. Wie kann ich dir heute helfen?'
     : 'Hello! I am your personal AI Coach. I can help you optimize your training, nutrition, and supplements. How can I assist you today?';
   
-  aiChatHistory.push({ role: 'coach', text: welcome, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
-  localStorage.setItem('gym_ai_chat_history', JSON.stringify(aiChatHistory));
+  aiChatHistory = [{ role: 'coach', text: welcome, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }];
   
+  if (aiChats[aiActiveChatId]) {
+    aiChats[aiActiveChatId].title = isDe ? 'Neuer Chat' : 'New Chat';
+    aiChats[aiActiveChatId].history = aiChatHistory;
+  }
+  
+  saveCurrentChat();
   renderChatFeed();
-  showToast(isDe ? 'Verlauf gelöscht' : 'History cleared');
+  showToast(isDe ? 'Verlauf zurückgesetzt' : 'History reset');
 }
 
 async function requestAiResponse(userMessage) {
@@ -767,6 +787,7 @@ async function requestGeminiAi(latestMessage) {
   
   const response = await fetch(url, {
     method: 'POST',
+    signal: aiAbortController ? aiAbortController.signal : undefined,
     headers: {
       'Content-Type': 'application/json'
     },
@@ -950,6 +971,220 @@ async function renderOnboardChromeStatus() {
         ${isDe ? 'Dennoch aktivieren' : 'Activate anyway'}
       </button>
     `;
+  }
+}
+
+/* Multi-Chat History & Aborting Queries */
+function loadAiChats() {
+  const isDe = (lang === 'de');
+  
+  const savedChats = localStorage.getItem('gym_ai_chats');
+  if (savedChats) {
+    try {
+      aiChats = JSON.parse(savedChats);
+    } catch(e) {
+      aiChats = {};
+    }
+  } else {
+    aiChats = {};
+  }
+  
+  aiActiveChatId = localStorage.getItem('gym_ai_active_chat_id') || '';
+  
+  // Migration of old single chat history
+  const oldHistoryStr = localStorage.getItem('gym_ai_chat_history');
+  if (oldHistoryStr && Object.keys(aiChats).length === 0) {
+    try {
+      const oldHistory = JSON.parse(oldHistoryStr);
+      if (oldHistory && oldHistory.length > 0) {
+        const migId = 'chat_mig_' + Date.now();
+        aiChats[migId] = {
+          id: migId,
+          title: isDe ? 'Bisheriger Chat' : 'Previous Chat',
+          history: oldHistory,
+          created: Date.now()
+        };
+        aiActiveChatId = migId;
+        localStorage.setItem('gym_ai_chats', JSON.stringify(aiChats));
+        localStorage.setItem('gym_ai_active_chat_id', aiActiveChatId);
+        localStorage.removeItem('gym_ai_chat_history');
+      }
+    } catch(e) {
+      console.warn("Could not migrate old chat history:", e);
+    }
+  }
+  
+  if (Object.keys(aiChats).length === 0) {
+    const defaultId = 'chat_' + Date.now();
+    const welcome = isDe
+      ? 'Hallo! Ich bin dein persönlicher KI-Coach. Ich unterstütze dich bei deinem Training, deiner Ernährung und deinen Supplements. Wie kann ich dir heute helfen?'
+      : 'Hello! I am your personal AI Coach. I can help you optimize your training, nutrition, and supplements. How can I assist you today?';
+    
+    aiChats[defaultId] = {
+      id: defaultId,
+      title: isDe ? 'Neuer Chat' : 'New Chat',
+      history: [{ role: 'coach', text: welcome, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }],
+      created: Date.now()
+    };
+    aiActiveChatId = defaultId;
+    localStorage.setItem('gym_ai_chats', JSON.stringify(aiChats));
+    localStorage.setItem('gym_ai_active_chat_id', aiActiveChatId);
+  }
+  
+  if (aiChats[aiActiveChatId]) {
+    aiChatHistory = aiChats[aiActiveChatId].history;
+  } else {
+    const keys = Object.keys(aiChats);
+    if (keys.length > 0) {
+      aiActiveChatId = keys[0];
+      aiChatHistory = aiChats[aiActiveChatId].history;
+      localStorage.setItem('gym_ai_active_chat_id', aiActiveChatId);
+    }
+  }
+}
+
+function saveCurrentChat() {
+  if (aiChats[aiActiveChatId]) {
+    aiChats[aiActiveChatId].history = aiChatHistory;
+    localStorage.setItem('gym_ai_chats', JSON.stringify(aiChats));
+  }
+}
+
+function toggleAiHistory() {
+  const panel = document.getElementById('aiHistoryPanel');
+  if (!panel) return;
+  aiHistoryVisible = !aiHistoryVisible;
+  if (aiHistoryVisible) {
+    panel.classList.add('open');
+    renderHistoryList();
+    
+    aiSettingsVisible = false;
+    const settPanel = document.getElementById('aiSettingsPanel');
+    if (settPanel) settPanel.classList.remove('open');
+  } else {
+    panel.classList.remove('open');
+    checkShowOnboarding();
+  }
+}
+
+function renderHistoryList() {
+  const listContainer = document.getElementById('aiHistoryList');
+  if (!listContainer) return;
+  
+  const isDe = (lang === 'de');
+  const sortedKeys = Object.keys(aiChats).sort((a, b) => aiChats[b].created - aiChats[a].created);
+  
+  if (sortedKeys.length === 0) {
+    listContainer.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:13px; padding:12px;">${isDe ? 'Keine vergangenen Chats' : 'No past chats'}</div>`;
+    return;
+  }
+  
+  listContainer.innerHTML = sortedKeys.map(key => {
+    const chat = aiChats[key];
+    const activeClass = chat.id === aiActiveChatId ? 'active' : '';
+    
+    return `
+      <div class="ai-history-item ${activeClass}" onclick="selectChat('${chat.id}')">
+        <div class="ai-history-item-title">${chat.title}</div>
+        <button class="ai-history-item-delete" onclick="deleteChat('${chat.id}', event)" title="${isDe ? 'Chat löschen' : 'Delete chat'}">🗑</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function startNewChat() {
+  const isDe = (lang === 'de');
+  const newId = 'chat_' + Date.now();
+  const welcome = isDe
+    ? 'Hallo! Ich bin dein persönlicher KI-Coach. Ich unterstütze dich bei deinem Training, deiner Ernährung und deinen Supplements. Wie kann ich dir heute helfen?'
+    : 'Hello! I am your personal AI Coach. I can help you optimize your training, nutrition, and supplements. How can I assist you today?';
+  
+  aiChats[newId] = {
+    id: newId,
+    title: isDe ? 'Neuer Chat' : 'New Chat',
+    history: [{ role: 'coach', text: welcome, time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }],
+    created: Date.now()
+  };
+  
+  aiActiveChatId = newId;
+  aiChatHistory = aiChats[newId].history;
+  
+  localStorage.setItem('gym_ai_chats', JSON.stringify(aiChats));
+  localStorage.setItem('gym_ai_active_chat_id', aiActiveChatId);
+  
+  aiHistoryVisible = false;
+  const panel = document.getElementById('aiHistoryPanel');
+  if (panel) panel.classList.remove('open');
+  
+  renderChatFeed();
+  checkShowOnboarding();
+  updateSendButtonState();
+  showToast(isDe ? 'Neuer Chat gestartet' : 'New chat started');
+}
+
+function selectChat(chatId) {
+  if (!aiChats[chatId]) return;
+  
+  aiActiveChatId = chatId;
+  aiChatHistory = aiChats[chatId].history;
+  
+  localStorage.setItem('gym_ai_active_chat_id', aiActiveChatId);
+  
+  aiHistoryVisible = false;
+  const panel = document.getElementById('aiHistoryPanel');
+  if (panel) panel.classList.remove('open');
+  
+  renderChatFeed();
+  checkShowOnboarding();
+  updateSendButtonState();
+}
+
+function deleteChat(chatId, event) {
+  if (event) event.stopPropagation();
+  
+  const isDe = (lang === 'de');
+  if (!confirm(isDe ? 'Diesen Chat wirklich löschen?' : 'Really delete this chat?')) return;
+  
+  delete aiChats[chatId];
+  localStorage.setItem('gym_ai_chats', JSON.stringify(aiChats));
+  
+  if (aiActiveChatId === chatId) {
+    aiActiveChatId = '';
+    loadAiChats();
+  }
+  
+  renderHistoryList();
+  renderChatFeed();
+  checkShowOnboarding();
+  updateSendButtonState();
+  showToast(isDe ? 'Chat gelöscht' : 'Chat deleted');
+}
+
+function abortAiRequest() {
+  if (aiAbortController) {
+    aiAbortController.abort();
+    aiAbortController = null;
+  }
+  aiIsLoading = false;
+  
+  renderChatFeed();
+  updateSendButtonState();
+  
+  const isDe = (lang === 'de');
+  showToast(isDe ? 'Anfrage abgebrochen' : 'Request aborted');
+}
+
+function updateSendButtonState() {
+  const btn = document.getElementById('aiSendBtn');
+  if (!btn) return;
+  if (aiIsLoading) {
+    btn.innerHTML = '■';
+    btn.style.background = 'var(--accent2)';
+    btn.style.color = '#fff';
+  } else {
+    btn.innerHTML = '▶';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#0a0a0a';
   }
 }
 
