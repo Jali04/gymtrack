@@ -879,7 +879,7 @@
               <span style="float:right;"><a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent);text-decoration:underline;font-size:11px;" id="lnkGetApiKey">Kostenlosen Key holen ↗</a></span>
             </label>
             <input type="password" class="form-input" id="aiApiKeyInput" placeholder="AI Studio API-Key einfügen...">
-            <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4;" id="txtAiKeyHint">Der API-Key wird nur lokal in deinem Browser gesichert. Der Standard-Developer-Tarif bei Google ist absolut gratis und erfordert keine Kreditkarte.</div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4;" id="txtAiKeyHint">Der API-Key wird nur lokal in deinem Browser gesichert. Der Standard-Developer-Tarif bei Google is absolut gratis und erfordert keine Kreditkarte.</div>
           </div>
         </div>
         
@@ -892,6 +892,54 @@
         </div>
         
         <button class="btn btn-primary" onclick="saveAiSettings()" style="margin-top:10px;" id="btnSaveAiSettings">Speichern & Schließen</button>
+      </div>
+
+      <!-- Onboarding Screen -->
+      <div class="ai-onboarding-screen" id="aiOnboardingScreen" style="display:none;">
+        <div class="ai-onboarding-card">
+          <div class="ai-onboarding-title" id="lblAiOnboardTitle">🤖 Willkommen beim AI Coach!</div>
+          <div class="ai-onboarding-text" id="lblAiOnboardIntro">Wähle eine der folgenden zwei kostenlosen Optionen, um deinen persönlichen Coach zu starten:</div>
+          
+          <!-- Option A: Chrome Local AI -->
+          <div class="ai-onboard-option-card" id="aiOnboardOptChrome">
+            <div class="ai-onboard-option-header">
+              <span class="ai-onboard-option-badge">Option A</span>
+              <span class="ai-onboard-option-name">Chrome Lokale KI</span>
+            </div>
+            <div class="ai-onboard-option-desc" id="lblAiOnboardChromeDesc">Nutzt die in deinem Browser integrierte Gemini Nano KI. 100% offline, gratis und datenschutzfreundlich.</div>
+            <div id="aiOnboardChromeStatusBox" style="margin-top:10px;">
+              <!-- Status and action button injected here -->
+            </div>
+          </div>
+          
+          <!-- Option B: Gemini API Key -->
+          <div class="ai-onboard-option-card">
+            <div class="ai-onboard-option-header">
+              <span class="ai-onboard-option-badge">Option B</span>
+              <span class="ai-onboard-option-name">Google Gemini API-Key</span>
+            </div>
+            <div class="ai-onboard-option-desc" id="lblAiOnboardGeminiDesc">Verbinde deinen eigenen kostenlosen Key. Erfordert keine Kreditkarte und bietet Zugriff auf das schlaue Gemini 3 Pro.</div>
+            
+            <div class="ai-onboard-steps">
+              <div class="ai-onboard-step">
+                <span class="ai-onboard-step-num">1</span>
+                <span><a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent);text-decoration:underline;" id="lblAiOnboardStep1">Klicke hier, um Google AI Studio zu öffnen ↗</a></span>
+              </div>
+              <div class="ai-onboard-step">
+                <span class="ai-onboard-step-num">2</span>
+                <span id="lblAiOnboardStep2">Klicke auf "Get API Key" und erstelle einen neuen Schlüssel.</span>
+              </div>
+              <div class="ai-onboard-step">
+                <span class="ai-onboard-step-num">3</span>
+                <span id="lblAiOnboardStep3">Kopiere den Schlüssel und füge ihn hier ein:</span>
+              </div>
+            </div>
+            
+            <input type="password" class="form-input" id="aiOnboardKeyInput" placeholder="API-Key einfügen..." style="margin-top:10px;margin-bottom:12px;">
+            <button class="btn btn-primary" onclick="saveAiOnboardKey()" id="btnSaveAiOnboard">Schlüssel speichern & starten</button>
+          </div>
+          
+        </div>
       </div>
       
       <!-- Chat Feed -->

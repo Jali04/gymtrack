@@ -1922,7 +1922,10 @@ animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .ai-settings-panel.open {
   display: block;
+  overflow-y: auto;
+  max-height: 100%;
 }
+.ai-settings-panel.open ~ #aiOnboardingScreen,
 .ai-settings-panel.open ~ #aiChatFeed,
 .ai-settings-panel.open ~ #aiSuggestionsRow,
 .ai-settings-panel.open ~ .ai-chat-input-row {
@@ -2169,4 +2172,106 @@ animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   color: var(--muted);
   pointer-events: none;
   cursor: default;
+}
+
+/* AI Onboarding Screen Styling */
+.ai-onboarding-screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.ai-onboarding-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ai-onboarding-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.ai-onboarding-text {
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.ai-onboard-option-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ai-onboard-option-card:hover {
+  border-color: rgba(200,241,53,0.3);
+}
+
+.ai-onboard-option-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ai-onboard-option-badge {
+  background: rgba(200,241,53,0.1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ai-onboard-option-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.ai-onboard-option-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.ai-onboard-steps {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-onboard-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.ai-onboard-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #0a0a0a;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
 }

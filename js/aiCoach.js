@@ -118,6 +118,23 @@ function applyAiTranslations() {
   s('chipSupps', 'Supplement-Check', 'Supplement check');
   s('chipPlan', 'Plan erstellen', 'Create plan');
 
+  // Onboarding translations
+  s('lblAiOnboardTitle', '🤖 Willkommen beim AI Coach!', '🤖 Welcome to AI Coach!');
+  s('lblAiOnboardIntro', 'Wähle eine der folgenden zwei kostenlosen Optionen, um deinen persönlichen Coach zu starten:', 'Choose one of the following two free options to start your personal coach:');
+  s('lblAiOnboardChromeDesc', 'Nutzt die in deinem Browser integrierte Gemini Nano KI. 100% offline, gratis und datenschutzfreundlich.', 'Uses the Gemini Nano AI built into your browser. 100% offline, free, and privacy-friendly.');
+  s('lblAiOnboardGeminiDesc', 'Verbinde deinen eigenen kostenlosen Key. Erfordert keine Kreditkarte und bietet Zugriff auf das schlaue Gemini 3 Pro.', 'Connect your own free API key. Requires no credit card and gives access to the smart Gemini 3 Pro.');
+  s('lblAiOnboardStep1', 'Klicke hier, um Google AI Studio zu öffnen ↗', 'Click here to open Google AI Studio ↗');
+  s('lblAiOnboardStep2', 'Klicke auf "Get API Key" und erstelle einen neuen Schlüssel.', 'Click on "Get API Key" and create a new key.');
+  s('lblAiOnboardStep3', 'Kopiere den Schlüssel und füge ihn hier ein:', 'Copy the key and paste it here:');
+  s('btnSaveAiOnboard', 'Schlüssel speichern & starten', 'Save Key & Start');
+  sp('aiOnboardKeyInput', 'API-Key einfügen...', 'Paste API-Key...');
+
+  const optNames = document.querySelectorAll('.ai-onboarding-screen .ai-onboard-option-name');
+  if (optNames.length >= 2) {
+    optNames[0].textContent = isDe ? 'Chrome Lokale KI' : 'Chrome Local AI';
+    optNames[1].textContent = isDe ? 'Google Gemini API-Key' : 'Google Gemini API Key';
+  }
+
   const txtKeyHint = document.getElementById('txtAiKeyHint');
   if (txtKeyHint) {
     txtKeyHint.innerHTML = isDe
@@ -197,6 +214,7 @@ function saveAiSettings() {
   localStorage.setItem('gym_ai_key', aiApiKey);
 
   toggleAiSettings();
+  checkShowOnboarding();
   showToast(lang === 'de' ? 'Einstellungen gespeichert' : 'Settings saved');
 }
 
@@ -208,6 +226,7 @@ function toggleAiSettings() {
     panel.classList.add('open');
   } else {
     panel.classList.remove('open');
+    checkShowOnboarding(); // check onboarding state when settings is closed
   }
 }
 
@@ -241,6 +260,7 @@ function openAiCoach() {
   }
 
   renderChatFeed();
+  checkShowOnboarding();
 }
 
 // Check Chrome local AI availability
@@ -797,5 +817,139 @@ async function requestChromeAi(latestMessage) {
   const response = await session.prompt(prompt);
   session.destroy();
   return response;
+}
+
+/* Onboarding Logic */
+function checkShowOnboarding() {
+  const onboardScreen = document.getElementById('aiOnboardingScreen');
+  const chatFeed = document.getElementById('aiChatFeed');
+  const chatInputRow = document.querySelector('.ai-chat-input-row');
+  const suggestionsRow = document.getElementById('aiSuggestionsRow');
+  
+  if (!onboardScreen) return;
+
+  const isGeminiMissingKey = (aiProvider === 'gemini' && !aiApiKey);
+  const isChromeUnsupported = (aiProvider === 'chrome' && (typeof window.ai === 'undefined' || typeof window.ai.languageModel === 'undefined'));
+
+  if (isGeminiMissingKey || isChromeUnsupported) {
+    // Show onboarding
+    onboardScreen.style.display = 'block';
+    if (chatFeed) chatFeed.style.display = 'none';
+    if (chatInputRow) chatInputRow.style.display = 'none';
+    if (suggestionsRow) suggestionsRow.style.display = 'none';
+    
+    // Render Chrome status inside onboarding
+    renderOnboardChromeStatus();
+  } else {
+    // Hide onboarding, show chat
+    onboardScreen.style.display = 'none';
+    if (chatFeed) chatFeed.style.display = 'flex';
+    if (chatInputRow) chatInputRow.style.display = 'flex';
+    if (suggestionsRow) suggestionsRow.style.display = 'flex';
+  }
+}
+
+function saveAiOnboardKey() {
+  const input = document.getElementById('aiOnboardKeyInput');
+  if (!input) return;
+  const key = input.value.trim();
+  const isDe = (lang === 'de');
+  
+  if (!key) {
+    alert(isDe ? 'Bitte gib einen gültigen API-Key ein.' : 'Please enter a valid API key.');
+    return;
+  }
+  
+  aiApiKey = key;
+  aiProvider = 'gemini';
+  
+  localStorage.setItem('gym_ai_provider', aiProvider);
+  localStorage.setItem('gym_ai_key', aiApiKey);
+  
+  // Sync to settings inputs
+  const keyInput = document.getElementById('aiApiKeyInput');
+  if (keyInput) keyInput.value = aiApiKey;
+  const pSel = document.getElementById('aiProviderSelect');
+  if (pSel) pSel.value = aiProvider;
+  
+  onAiProviderChange();
+  checkShowOnboarding();
+  
+  showToast(isDe ? 'API-Key gespeichert & Coach gestartet!' : 'API Key saved & Coach started!');
+}
+
+function enableOnboardChromeAi() {
+  const isDe = (lang === 'de');
+  aiProvider = 'chrome';
+  
+  localStorage.setItem('gym_ai_provider', aiProvider);
+  
+  // Sync settings panel
+  const pSel = document.getElementById('aiProviderSelect');
+  if (pSel) pSel.value = aiProvider;
+  
+  onAiProviderChange();
+  checkShowOnboarding();
+  
+  showToast(isDe ? 'Chrome Lokale KI aktiviert!' : 'Chrome Local AI activated!');
+}
+
+async function renderOnboardChromeStatus() {
+  const box = document.getElementById('aiOnboardChromeStatusBox');
+  if (!box) return;
+  
+  const isDe = (lang === 'de');
+  
+  if (typeof window.ai === 'undefined' || typeof window.ai.languageModel === 'undefined') {
+    box.innerHTML = `
+      <div style="color:var(--accent2); font-size:12px; line-height:1.4; margin-bottom:8px;">
+        ${isDe 
+          ? '⚠️ Nicht verfügbar in diesem Browser. Bitte aktiviere die "Prompt API" in <code>chrome://flags</code>.' 
+          : '⚠️ Not available in this browser. Please enable "Prompt API" in <code>chrome://flags</code>.'}
+      </div>
+    `;
+    return;
+  }
+  
+  try {
+    const capabilities = await window.ai.languageModel.capabilities();
+    const available = capabilities.available;
+    
+    let statusText = '';
+    let statusColor = 'var(--text)';
+    let showButton = true;
+    let buttonText = isDe ? 'Chrome KI nutzen' : 'Use Chrome AI';
+    
+    if (available === 'readily') {
+      statusText = isDe ? '✅ Bereit zur Nutzung!' : '✅ Ready for use!';
+      statusColor = 'var(--accent)';
+    } else if (available === 'after-download') {
+      statusText = isDe 
+        ? '📥 Download erforderlich (wird automatisch geladen).' 
+        : '📥 Download required (will load automatically).';
+      statusColor = 'orange';
+      buttonText = isDe ? 'Download starten & nutzen' : 'Start download & use';
+    } else {
+      statusText = isDe ? '⚠️ Nicht bereit oder unsupported.' : '⚠️ Not ready or unsupported.';
+      statusColor = 'var(--accent2)';
+      buttonText = isDe ? 'Dennoch versuchen' : 'Try anyway';
+    }
+    
+    box.innerHTML = `
+      <div style="font-size:12px; margin-bottom:8px; line-height:1.4;">
+        <strong>Status:</strong> <span style="color:${statusColor}; font-weight:bold;">${statusText}</span>
+      </div>
+      ${showButton ? `<button class="btn btn-secondary btn-sm" onclick="enableOnboardChromeAi()" style="width:100%; padding:6px 12px; font-size:12px;">${buttonText}</button>` : ''}
+    `;
+  } catch (e) {
+    box.innerHTML = `
+      <div style="color:var(--accent2); font-size:12px; margin-bottom:8px; line-height:1.4;">
+        ${isDe ? '⚠️ Fehler beim Abfragen der Kompatibilität.' : '⚠️ Error checking compatibility.'}
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="enableOnboardChromeAi()" style="width:100%; padding:6px 12px; font-size:12px;">
+        ${isDe ? 'Dennoch aktivieren' : 'Activate anyway'}
+      </button>
+    `;
+  }
 }
 
