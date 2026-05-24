@@ -987,7 +987,19 @@ function loadAiChats() {
   const savedChats = localStorage.getItem('gym_ai_chats');
   if (savedChats) {
     try {
-      aiChats = JSON.parse(savedChats);
+      const parsed = JSON.parse(savedChats);
+      if (Array.isArray(parsed)) {
+        aiChats = {};
+        parsed.forEach(chat => {
+          if (chat && chat.id) {
+            aiChats[chat.id] = chat;
+          }
+        });
+      } else if (parsed && typeof parsed === 'object') {
+        aiChats = parsed;
+      } else {
+        aiChats = {};
+      }
     } catch(e) {
       aiChats = {};
     }
@@ -1137,6 +1149,8 @@ function startNewChat() {
 
 function selectChat(chatId) {
   if (!aiChats[chatId]) return;
+  
+  saveCurrentChat(); // Save the current chat before switching
   
   aiActiveChatId = chatId;
   aiChatHistory = aiChats[chatId].history;
