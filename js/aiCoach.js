@@ -371,25 +371,31 @@ function compileAiContext() {
 function parseMarkdownAndImports(text) {
   if (!text) return '';
   
-  // 1. Extract JSON-Gymtrack blocks to render them as interactive cards
   const importBlocks = [];
-  const regex = /```json-gymtrack([\s\S]*?)```/g;
-  
-  let match;
   let cleanText = text;
   
-  while ((match = regex.exec(text)) !== null) {
-    const rawJson = match[1].trim();
+  // Regex to match any markdown code block (e.g. ```json ... ``` or ```json-gymtrack ... ```)
+  const codeBlockRegex = /```([a-zA-Z0-9_-]*)\s*([\s\S]*?)```/g;
+  let match;
+  const blocksToRemove = [];
+  
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    const rawContent = match[2].trim();
     try {
-      const payload = JSON.parse(rawJson);
-      importBlocks.push(payload);
+      const payload = JSON.parse(rawContent);
+      if (payload && (payload.v === 't' || payload.v === 'p')) {
+        importBlocks.push(payload);
+        blocksToRemove.push(match[0]); // store the entire markdown block
+      }
     } catch(e) {
-      console.warn("AI output invalid json-gymtrack payload", e);
+      // Not a valid JSON payload for import, leave it to be formatted as code block
     }
   }
 
-  // Remove the json blocks from the conversational text
-  cleanText = cleanText.replace(regex, '');
+  // Remove the matched import blocks from the cleanText
+  blocksToRemove.forEach(block => {
+    cleanText = cleanText.replace(block, '');
+  });
 
   // 2. Format basic Markdown (escaped HTML to prevent injection)
   let html = cleanText
@@ -399,22 +405,30 @@ function parseMarkdownAndImports(text) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
-  // Restore line breaks
-  html = html.replace(/\n/g, '<br>');
+  // Convert standard code blocks to styled HTML pre/code blocks
+  html = html.replace(/```([a-zA-Z0-9_-]*)\s*([\s\S]*?)```/g, '<pre style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:monospace;font-size:12px;overflow-x:auto;margin:8px 0;color:var(--accent);">$2</pre>');
+
+  // Restore line breaks and parse lists
+  let lines = html.split('\n');
+  lines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      return `<div style="margin-left:14px;display:list-item;list-style-type:disc;padding-left:4px;">${trimmed.substring(2)}</div>`;
+    }
+    const matchNum = trimmed.match(/^(\d+)\.\s+(.*)/);
+    if (matchNum) {
+      return `<div style="margin-left:14px;display:list-item;list-style-type:decimal;padding-left:4px;">${matchNum[2]}</div>`;
+    }
+    return line;
+  });
+  html = lines.join('<br>');
+
+  // Remove double line breaks that follow block-level divs
+  html = html.replace(/<\/div><br>/g, '</div>');
 
   // Bold (**text** or __text__)
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
-
-  // Bullet points
-  html = html.replace(/(?:^|<br>)\s*-\s+(.*?)(?=<br>|$)/g, '$&').replace(/(?:^|<br>)\s*-\s+(.*?)/g, '<div style="margin-left:14px;display:list-item;list-style-type:disc;padding-left:4px;">$1</div>');
-  html = html.replace(/(?:^|<br>)\s*\*\s+(.*?)/g, '<div style="margin-left:14px;display:list-item;list-style-type:disc;padding-left:4px;">$1</div>');
-
-  // Ordered list
-  html = html.replace(/(?:^|<br>)\s*(\d+)\.\s+(.*?)/g, '<div style="margin-left:14px;display:list-item;list-style-type:decimal;padding-left:4px;">$2</div>');
-
-  // Clean trailing br tags inside list elements
-  html = html.replace(/<\/div><br>/g, '</div>');
 
   // 3. Render any action blocks at the bottom of the message
   if (importBlocks.length > 0) {
@@ -627,32 +641,39 @@ async function sendAiMessage() {
 }
 
 async function requestAiResponse(userMessage) {
-  // 1. Compile prompt context
-  const dbContext = compileAiContext();
-  
-  // Format conversation history
-  let chatHistoryStr = '';
-  // Skip initial welcoming message for token savings in history string if needed,
-  // but let's include all to maintain context
-  aiChatHistory.forEach(h => {
-    chatHistoryStr += `${h.role === 'user' ? 'Nutzer' : 'Coach'}: ${h.text}\n`;
-  });
-  
-  const prompt = `${dbContext}\nVERLAUF DER UNTERHALTUNG:\n${chatHistoryStr}\nCoach:`;
-
   if (aiProvider === 'chrome') {
-    return await requestChromeAi(prompt);
+    return await requestChromeAi(userMessage);
   } else {
-    return await requestGeminiAi(prompt);
+    return await requestGeminiAi(userMessage);
   }
 }
 
-async function requestGeminiAi(prompt) {
+async function requestGeminiAi(latestMessage) {
   if (!aiApiKey) {
     throw new Error(lang === 'de' ? 'API-Key fehlt' : 'API key is missing');
   }
 
-  // Construct standard fetch to generative language API
+  // Compile current database context
+  const dbContext = compileAiContext();
+
+  // Build official multi-turn contents array
+  const contents = [];
+  
+  // Add all history messages except the very last user message (which we will append with context)
+  for (let i = 0; i < aiChatHistory.length - 1; i++) {
+    const msg = aiChatHistory[i];
+    contents.push({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.text }]
+    });
+  }
+
+  // Add the last user message with context prepended to it
+  contents.push({
+    role: 'user',
+    parts: [{ text: `${dbContext}\n\nUser Question: ${latestMessage}` }]
+  });
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${aiApiKey}`;
   
   const response = await fetch(url, {
@@ -661,12 +682,7 @@ async function requestGeminiAi(prompt) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }]
-        }
-      ],
+      contents: contents,
       systemInstruction: {
         parts: [{ text: AI_SYSTEM_PROMPT }]
       },
@@ -691,18 +707,26 @@ async function requestGeminiAi(prompt) {
   throw new Error("Empty response received from Gemini API");
 }
 
-async function requestChromeAi(prompt) {
+async function requestChromeAi(latestMessage) {
   if (typeof window.ai === 'undefined' || typeof window.ai.languageModel === 'undefined') {
     throw new Error("Chrome Prompt API is not supported in this browser.");
   }
   
-  const fullPrompt = `${AI_SYSTEM_PROMPT}\n\n${prompt}`;
+  const dbContext = compileAiContext();
+  
+  // Build a single prompt for Chrome Nano
+  let prompt = `${AI_SYSTEM_PROMPT}\n\n${dbContext}\n\nCONVERSATION HISTORY:\n`;
+  aiChatHistory.forEach(h => {
+    prompt += `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.text}\n`;
+  });
+  prompt += `Assistant:`;
   
   const session = await window.ai.languageModel.create({
     temperature: 0.7
   });
   
-  const response = await session.prompt(fullPrompt);
+  const response = await session.prompt(prompt);
   session.destroy();
   return response;
 }
+
