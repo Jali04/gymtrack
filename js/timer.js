@@ -59,6 +59,7 @@ function hiitSelectMode(mode) {
   _hiitRenderPreset();
   _hiitRenderConfig();
   _hiitRenderDisplay();
+  _saveHiitState();
 }
 
 function _hiitRenderPreset() {
@@ -111,6 +112,7 @@ function hiitAdj(field, delta) {
   _hiitRenderConfig();
   _hiitRenderDisplay();
   haptic('light');
+  _saveHiitState();
 }
 
 /* ---------- timer display ---------- */
@@ -204,12 +206,14 @@ function _hiitBegin() {
   _hiitStartPhase('work');
   haptic('medium');
   _hiitUpdateBtn('pause');
+  _saveHiitState();
 }
 
 function _hiitPause() {
   clearInterval(hiitState.interval);
   hiitState.interval = null;
   _hiitUpdateBtn('resume');
+  _saveHiitState();
 }
 
 function _hiitResume() {
@@ -217,6 +221,7 @@ function _hiitResume() {
   _hiitTick();
   hiitState.interval = setInterval(_hiitTick, 250);
   _hiitUpdateBtn('pause');
+  _saveHiitState();
 }
 
 function _hiitStop() {
@@ -225,6 +230,8 @@ function _hiitStop() {
   hiitState.currentRound = 1;
   hiitState.phase        = 'idle';
   hiitState.elapsed      = 0;
+  hiitState.startTs      = null;
+  _saveHiitState();
 }
 
 function hiitReset() {
@@ -232,6 +239,7 @@ function hiitReset() {
   _hiitRenderDisplay();
   _hiitUpdateBtn('start');
   haptic('light');
+  _saveHiitState();
 }
 
 function hiitSkip() {
@@ -240,6 +248,7 @@ function hiitSkip() {
   hiitState.interval = null;
   _hiitPhaseEnd();
   haptic('light');
+  _saveHiitState();
 }
 
 function _hiitStartPhase(phase) {
@@ -249,6 +258,7 @@ function _hiitStartPhase(phase) {
   hiitState.startTs   = Date.now();
   _hiitRenderDisplay();
   hiitState.interval = setInterval(_hiitTick, 250);
+  _saveHiitState();
 }
 
 function _hiitTick() {
@@ -300,10 +310,12 @@ function _hiitNextRound() {
     if (typeof db !== 'undefined' && db.currentWorkout) {
       setTimeout(openHiitLogModal, 800);
     }
+    _saveHiitState();
     return;
   }
   hiitState.currentRound++;
   _hiitStartPhase('work');
+  _saveHiitState();
 }
 
 /* ---------- log HIIT to workout ---------- */
@@ -539,3 +551,124 @@ function _hiitUpdateBtn(state) {
   if (state === 'resume') { btn.textContent = '▶ ' + t('hiitResume'); btn.className = 'btn btn-primary hiit-ctrl-btn'; }
   if (state === 'start')  { btn.textContent = '▶ ' + t('hiitStart'); btn.className = 'btn btn-primary hiit-ctrl-btn'; }
 }
+
+function _saveHiitState() {
+  localStorage.setItem('dscpln_hiit_state', JSON.stringify({
+    mode: hiitState.mode,
+    workSec: hiitState.workSec,
+    restSec: hiitState.restSec,
+    rounds: hiitState.rounds,
+    currentRound: hiitState.currentRound,
+    phase: hiitState.phase,
+    remaining: hiitState.remaining,
+    elapsed: hiitState.elapsed,
+    startTs: hiitState.startTs,
+    isRunning: !!hiitState.interval
+  }));
+}
+
+function _restoreHiitState() {
+  try {
+    const saved = localStorage.getItem('dscpln_hiit_state');
+    if (saved) {
+      const state = JSON.parse(saved);
+      hiitState.mode = state.mode || 'tabata';
+      hiitState.workSec = state.workSec !== undefined ? state.workSec : 20;
+      hiitState.restSec = state.restSec !== undefined ? state.restSec : 10;
+      hiitState.rounds = state.rounds !== undefined ? state.rounds : 8;
+      hiitState.currentRound = state.currentRound !== undefined ? state.currentRound : 1;
+      hiitState.phase = state.phase || 'idle';
+      hiitState.remaining = state.remaining !== undefined ? state.remaining : 0;
+      hiitState.elapsed = state.elapsed !== undefined ? state.elapsed : 0;
+      hiitState.startTs = state.startTs ? parseInt(state.startTs) : null;
+      
+      const isRunning = !!state.isRunning;
+      
+      if (isRunning && hiitState.startTs && (hiitState.phase === 'work' || hiitState.phase === 'rest')) {
+        const isAmrap = hiitState.mode === 'amrap';
+        if (isAmrap) {
+          hiitState.elapsed = Math.floor((Date.now() - hiitState.startTs) / 1000);
+        } else {
+          let elapsedSec = (Date.now() - hiitState.startTs) / 1000;
+          let currentPhase = hiitState.phase;
+          let currentRound = hiitState.currentRound;
+          let finished = false;
+          
+          while (true) {
+            const dur = currentPhase === 'work' ? hiitState.workSec : hiitState.restSec;
+            if (elapsedSec < dur) {
+              hiitState.phase = currentPhase;
+              hiitState.currentRound = currentRound;
+              hiitState.remaining = dur - elapsedSec;
+              hiitState.startTs = Date.now() - elapsedSec * 1000;
+              break;
+            } else {
+              elapsedSec -= dur;
+              if (currentPhase === 'work') {
+                if (hiitState.restSec > 0) {
+                  currentPhase = 'rest';
+                } else {
+                  currentRound++;
+                  if (currentRound > hiitState.rounds) {
+                    finished = true;
+                    break;
+                  }
+                  currentPhase = 'work';
+                }
+              } else {
+                currentRound++;
+                if (currentRound > hiitState.rounds) {
+                  finished = true;
+                  break;
+                }
+                currentPhase = 'work';
+              }
+            }
+          }
+          
+          if (finished) {
+            hiitState.phase = 'done';
+            hiitState.currentRound = hiitState.rounds;
+            hiitState.remaining = 0;
+            hiitState.startTs = null;
+            if (hiitState.interval) clearInterval(hiitState.interval);
+            hiitState.interval = null;
+            _hiitRenderDisplay();
+            _hiitUpdateBtn('start');
+            if (typeof db !== 'undefined' && db.currentWorkout) {
+              setTimeout(openHiitLogModal, 800);
+            }
+            _saveHiitState();
+            return;
+          }
+        }
+        
+        // Resume ticking interval
+        if (hiitState.interval) clearInterval(hiitState.interval);
+        hiitState.interval = setInterval(_hiitTick, 250);
+        _hiitUpdateBtn('pause');
+      } else {
+        if (hiitState.interval) {
+          clearInterval(hiitState.interval);
+          hiitState.interval = null;
+        }
+        _hiitUpdateBtn(hiitState.phase === 'idle' || hiitState.phase === 'done' ? 'start' : 'resume');
+      }
+      _hiitRenderDisplay();
+    }
+  } catch (e) {
+    console.error('Error restoring HIIT state', e);
+  }
+}
+
+// When returning from background: re-sync HIIT timer
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    if (typeof _restoreHiitState === 'function') {
+      _restoreHiitState();
+    }
+  }
+});
+
+// Restore HIIT state on initial script load
+_restoreHiitState();

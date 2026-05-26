@@ -1005,8 +1005,21 @@
 let _swReg = null;
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')
-    .then(reg => { _swReg = reg; })
+    .then(reg => {
+      _swReg = reg;
+      // Proactively check for service worker updates
+      reg.update();
+    })
     .catch(() => {});
+
+  // Force page reload when a new service worker takes over (claiming clients)
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
 }
 function _postSwMsg(msg) {
   // Prefer active SW from registration, fall back to controller

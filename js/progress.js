@@ -203,15 +203,41 @@ function _updatePinDots() {
   }
 }
 
-function _pinSubmit() {
+async function hashPin(pin) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+async function _pinSubmit() {
   const { mode, value: val, setupTemp, onSuccess } = _pinState;
   const storedPin = localStorage.getItem('gymtrack_pics_pin');
   const titleEl   = document.getElementById('pinModalTitle');
   const subEl     = document.getElementById('pinModalSubtitle');
   const errEl     = document.getElementById('pinError');
 
+  async function verifyPin(entered, stored) {
+    if (!stored) return false;
+    const hashed = await hashPin(entered);
+    if (stored.length === 64) {
+      return hashed === stored;
+    } else {
+      // Legacy unhashed comparison
+      if (entered === stored) {
+        // Upgrade to hashed PIN
+        localStorage.setItem('gymtrack_pics_pin', hashed);
+        return true;
+      }
+      return false;
+    }
+  }
+
   if (mode === 'access') {
-    if (val === storedPin) {
+    const isValid = await verifyPin(val, storedPin);
+    if (isValid) {
       closeModal('pinModal');
       if (onSuccess) onSuccess();
     } else { _pinError('Falsche PIN'); }
@@ -227,7 +253,8 @@ function _pinSubmit() {
 
   } else if (mode === 'setup_confirm') {
     if (val === setupTemp) {
-      localStorage.setItem('gymtrack_pics_pin', val);
+      const hashed = await hashPin(val);
+      localStorage.setItem('gymtrack_pics_pin', hashed);
       closeModal('pinModal');
       showToast('🔒 PIN-Schutz aktiviert');
     } else {
@@ -240,7 +267,8 @@ function _pinSubmit() {
     }
 
   } else if (mode === 'change_verify') {
-    if (val === storedPin) {
+    const isValid = await verifyPin(val, storedPin);
+    if (isValid) {
       _pinState.mode  = 'setup';
       _pinState.value = '';
       titleEl.textContent = 'Neue PIN wählen';
@@ -250,7 +278,8 @@ function _pinSubmit() {
     } else { _pinError('Falsche PIN'); }
 
   } else if (mode === 'remove_verify') {
-    if (val === storedPin) {
+    const isValid = await verifyPin(val, storedPin);
+    if (isValid) {
       localStorage.removeItem('gymtrack_pics_pin');
       closeModal('pinModal');
       showToast('PIN-Schutz entfernt');

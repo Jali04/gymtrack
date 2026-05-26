@@ -25,29 +25,6 @@ if (!db.weekStatus) db.weekStatus = { weekKey: 0, mode: 'normal' };
 if (!db.supplements) db.supplements = [];
 if (!db.supplementLog) db.supplementLog = [];
 
-// Migration: ensure all workouts have a date field (fallback to startTime)
-let _migrationNeeded = false;
-db.workouts.forEach(w => {
-  if (!w.date && w.startTime) { w.date = w.startTime; _migrationNeeded = true; }
-});
-
-// Migration: convert programs from sequential days array to weekly schedule object
-db.programs.forEach(p => {
-  if (p.days && Array.isArray(p.days)) {
-    p.schedule = {};
-    const mapDays = [1, 2, 3, 4, 5, 6, 0];
-    p.days.forEach((d, i) => {
-      if (i < 7 && d.templateId) {
-        p.schedule[mapDays[i]] = d.templateId;
-      }
-    });
-    delete p.days;
-    _migrationNeeded = true;
-  }
-});
-
-if (_migrationNeeded) save();
-
 const DEFAULT_EXERCISES = [
   { id: 'e1',  name: 'Bankdrücken',     category: 'Brust' },
   { id: 'e2',  name: 'Kniebeugen',      category: 'Beine' },
@@ -60,14 +37,86 @@ const DEFAULT_EXERCISES = [
   { id: 'e9',  name: 'Laufen',          category: 'Cardio' },
   { id: 'e10', name: 'Hüftbeuger',      category: 'Dehnen' },
 ];
-if (db.exercises.length === 0) { db.exercises = DEFAULT_EXERCISES; save(); }
-// Migration: add Seilspringen if missing
-if (!db.exercises.find(e => e.name === 'Seilspringen')) {
-  db.exercises.push({ id: 'e11', name: 'Seilspringen', category: 'Cardio' });
-  save();
+if (db.exercises.length === 0) { db.exercises = DEFAULT_EXERCISES; }
+
+const SCHEMA_VERSION = 3;
+
+const MIGRATIONS = {
+  1: (data) => {
+    let changed = false;
+    if (data.workouts) {
+      data.workouts.forEach(w => {
+        if (!w.date && w.startTime) {
+          w.date = w.startTime;
+          changed = true;
+        }
+      });
+    }
+    return changed;
+  },
+  2: (data) => {
+    let changed = false;
+    if (data.programs) {
+      data.programs.forEach(p => {
+        if (p.days && Array.isArray(p.days)) {
+          p.schedule = {};
+          const mapDays = [1, 2, 3, 4, 5, 6, 0];
+          p.days.forEach((d, i) => {
+            if (i < 7 && d.templateId) {
+              p.schedule[mapDays[i]] = d.templateId;
+            }
+          });
+          delete p.days;
+          changed = true;
+        }
+      });
+    }
+    return changed;
+  },
+  3: (data) => {
+    let changed = false;
+    if (data.exercises) {
+      if (!data.exercises.find(e => e.name === 'Seilspringen')) {
+        data.exercises.push({ id: 'e11', name: 'Seilspringen', category: 'Cardio' });
+        changed = true;
+      }
+    }
+    return changed;
+  }
+};
+
+function runMigrations(data) {
+  let currentVersion = data.version || 0;
+  let changed = false;
+
+  for (let v = currentVersion + 1; v <= SCHEMA_VERSION; v++) {
+    if (MIGRATIONS[v]) {
+      const migrationChanged = MIGRATIONS[v](data);
+      if (migrationChanged) {
+        changed = true;
+      }
+      data.version = v;
+      changed = true;
+    }
+  }
+
+  // Also run migrations for merged/imported datasets to handle missing migrations
+  for (let v = 1; v <= SCHEMA_VERSION; v++) {
+    if (MIGRATIONS[v](data)) {
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+// Run migrations on startup
+if (runMigrations(db)) {
+  localStorage.setItem('gymdb', JSON.stringify(db));
 }
 
 function save() {
+  runMigrations(db);
   localStorage.setItem('gymdb', JSON.stringify(db));
 }
 
@@ -91,7 +140,7 @@ function _buildLineChart(points, opts) {
   const W = opts.width  || 300;
   const H = opts.height || 140;
   const color  = opts.color  || 'var(--accent)';
-  const pad    = { top: 16, right: 12, bottom: 28, left: 36 };
+  const pad    = { top: 20, right: 12, bottom: 28, left: 36 };
   const innerW = W - pad.left - pad.right;
   const innerH = H - pad.top  - pad.bottom;
 
@@ -108,8 +157,8 @@ function _buildLineChart(points, opts) {
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (innerH / 4) * i;
     const val = maxY - (rangeY / 4) * i;
-    grid += `<line x1="${pad.left}" y1="${y}" x2="${W - pad.right}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
-    grid += `<text x="${pad.left - 4}" y="${y + 4}" font-size="9" fill="var(--muted)" text-anchor="end">${val % 1 === 0 ? val : val.toFixed(1)}</text>`;
+    grid += `<line x1="${pad.left}" y1="${y}" x2="${W - pad.right}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,2" opacity="0.6"/>`;
+    grid += `<text x="${pad.left - 6}" y="${y + 3}" font-size="9" fill="var(--muted)" text-anchor="end" font-family="'DM Sans', sans-serif">${val % 1 === 0 ? val : val.toFixed(1)}</text>`;
   }
 
   // Polyline
@@ -120,30 +169,42 @@ function _buildLineChart(points, opts) {
   const areaLast  = `${toX(points.length - 1)},${pad.top + innerH}`;
   const areaPath  = `${areaFirst} ${polyPts} ${areaLast}`;
 
+  // Unique IDs for SVG gradients and filters to prevent overlap conflicts
+  const randId = Math.floor(Math.random() * 1000000);
+  const gradId = `chartGrad-${randId}`;
+  const glowId = `chartGlow-${randId}`;
+
   // Dots + X labels
   let dots = '', xLabels = '';
   points.forEach((p, i) => {
     const cx = toX(i), cy = toY(p.y);
     const isLast = i === points.length - 1;
-    dots += `<circle cx="${cx}" cy="${cy}" r="${isLast ? 4 : 3}" fill="${isLast ? color : 'var(--surface)'}" stroke="${color}" stroke-width="2"/>`;
+    dots += `<circle cx="${cx}" cy="${cy}" r="${isLast ? 4.5 : 3}" fill="${isLast ? color : 'var(--bg)'}" stroke="${color}" stroke-width="2"/>`;
     if (i === 0 || i === points.length - 1 || (points.length <= 6)) {
-      xLabels += `<text x="${cx}" y="${H - 6}" font-size="9" fill="var(--muted)" text-anchor="middle">${p.x}</text>`;
+      xLabels += `<text x="${cx}" y="${H - 6}" font-size="9" fill="var(--muted)" text-anchor="middle" font-family="'DM Sans', sans-serif">${p.x}</text>`;
     }
     if (isLast) {
-      dots += `<text x="${cx}" y="${cy - 8}" font-size="10" fill="${color}" font-weight="700" text-anchor="middle">${p.y % 1 === 0 ? p.y : p.y.toFixed(1)}</text>`;
+      dots += `<text x="${cx}" y="${cy - 9}" font-size="10.5" fill="${color}" font-weight="700" text-anchor="middle" font-family="'DM Sans', sans-serif" style="text-shadow: 0 1px 4px rgba(0,0,0,0.8);">${p.y % 1 === 0 ? p.y : p.y.toFixed(1)}</text>`;
     }
   });
 
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible;">
     <defs>
-      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
         <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
       </linearGradient>
+      <filter id="${glowId}" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
     </defs>
     ${grid}
-    <polygon points="${areaPath}" fill="url(#chartGrad)"/>
-    <polyline points="${polyPts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <polygon points="${areaPath}" fill="url(#${gradId})"/>
+    <polyline points="${polyPts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#${glowId})"/>
     ${dots}
     ${xLabels}
   </svg>`;

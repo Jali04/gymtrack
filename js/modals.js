@@ -142,7 +142,7 @@ function _triggerDownload(blob, filename) {
 
 async function shareToNotes() {
   // Prepare backup code first (fills hidden textarea)
-  const payload = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
+  const payload = await compressPayload(db);
   document.getElementById('exportText').value = payload;
 
   if (navigator.share) {

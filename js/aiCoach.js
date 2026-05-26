@@ -241,6 +241,9 @@ function toggleAiSettings() {
     aiHistoryVisible = false;
     const histPanel = document.getElementById('aiHistoryPanel');
     if (histPanel) histPanel.classList.remove('open');
+    if (aiProvider === 'chrome') {
+      checkChromeAiStatus();
+    }
   } else {
     panel.classList.remove('open');
     checkShowOnboarding(); // check onboarding state when settings is closed
@@ -268,14 +271,34 @@ function openAiCoach() {
   updateActiveModelBadge();
 }
 
+// Helper to get compatible Chrome AI API
+function getChromeAiAPI() {
+  if (typeof window.ai !== 'undefined') {
+    if (typeof window.ai.languageModel !== 'undefined') {
+      return {
+        type: 'languageModel',
+        api: window.ai.languageModel
+      };
+    }
+    if (typeof window.ai.assistant !== 'undefined') {
+      return {
+        type: 'assistant',
+        api: window.ai.assistant
+      };
+    }
+  }
+  return null;
+}
+
 // Check Chrome local AI availability
 async function checkChromeAiStatus() {
   const label = document.getElementById('aiChromeStatus');
   if (!label) return;
 
   const isDe = (lang === 'de');
+  const chromeAi = getChromeAiAPI();
 
-  if (typeof window.ai === 'undefined' || typeof window.ai.languageModel === 'undefined') {
+  if (!chromeAi) {
     label.textContent = isDe 
       ? 'Nicht verfügbar (Diese Chrome-Version unterstützt das Prompt API noch nicht. Aktiviere "Prompt API" in chrome://flags).'
       : 'Not available (This Chrome version does not support the Prompt API. Enable "Prompt API" in chrome://flags).';
@@ -284,9 +307,12 @@ async function checkChromeAiStatus() {
   }
 
   try {
-    const capabilities = await window.ai.languageModel.capabilities();
+    const capabilities = await chromeAi.api.capabilities();
     if (capabilities.available === 'no') {
       label.textContent = isDe ? 'Nicht bereit (Modell noch nicht heruntergeladen)' : 'Not ready (Model not downloaded yet)';
+      label.style.color = 'orange';
+    } else if (capabilities.available === 'after-download') {
+      label.textContent = isDe ? 'Bereit nach Download (Wird geladen wenn genutzt)' : 'Ready after download (Will download when used)';
       label.style.color = 'orange';
     } else {
       label.textContent = isDe ? 'Bereit (Lokales Nano-Modell aktiv)' : 'Ready (Local Nano model active)';
@@ -299,10 +325,29 @@ async function checkChromeAiStatus() {
 }
 
 // Context serialisation
-function compileAiContext() {
+function compileAiContext(provider = aiProvider) {
+  const isLocal = (provider === 'chrome');
+  const workoutLimit = isLocal ? 3 : 15;
+  const weightLimit = isLocal ? 5 : 20;
+  const supplementLogLimit = isLocal ? 5 : 30;
+  const achievementLimit = isLocal ? 5 : 20;
+
   let context = `AKTUELLER BENUTZERSTATUS & DATENBANK-KONTEXT:\n`;
   context += `Aktuelle Sprache: ${lang === 'de' ? 'Deutsch' : 'English'}\n`;
-  context += `Datum heute: ${new Date().toLocaleDateString()}\n\n`;
+  context += `Datum heute: ${new Date().toLocaleDateString()}\n`;
+
+  if (db.weekStatus && db.weekStatus.mode) {
+    const modeLabels = {
+      normal: 'Normal',
+      deload: 'Deload (Regeneration/leichte Woche)',
+      sick: 'Krank / Schonung',
+      vacation: 'Urlaub',
+      travel: 'Unterwegs / Reisen'
+    };
+    const mode = db.weekStatus.mode;
+    context += `Aktueller Wochen-Status des Nutzers: ${modeLabels[mode] || mode}\n`;
+  }
+  context += `\n`;
 
   // Exercises
   context += `VORHANDENE ÜBUNGEN IN DER DATENBANK:\n`;
@@ -334,36 +379,77 @@ function compileAiContext() {
   }
   context += `\n`;
 
+  // Achievements & Statistics
+  context += `ERFOLGE & STATISTIKEN:\n`;
+  const totalWorkouts = db.workouts ? db.workouts.length : 0;
+  context += `- Gesamtzahl absolvierte Workouts: ${totalWorkouts}\n`;
+  if (db.achievements && db.achievements.length > 0) {
+    context += `- Freigeschaltete Abzeichen: `;
+    const displayedAchievements = db.achievements.slice(0, achievementLimit);
+    const achList = displayedAchievements.map(a => {
+      const def = (typeof ACHIEVEMENTS_DEF !== 'undefined') ? ACHIEVEMENTS_DEF.find(d => d.id === a.id) : null;
+      return def ? `"${def.title}"` : `"${a.id}"`;
+    }).join(', ');
+    context += achList;
+    if (db.achievements.length > achievementLimit) {
+      context += ` (und ${db.achievements.length - achievementLimit} weitere)`;
+    }
+    context += `\n`;
+  }
+  context += `\n`;
+
   // Weight & BF logs
-  context += `GEWICHTSVERLAUF (Letzte 5 Einträge):\n`;
+  context += `GEWICHTSVERLAUF & ANALYSE (Letzte ${weightLimit} Einträge):\n`;
   if (db.measurements && db.measurements.length > 0) {
     const sortedMeas = [...db.measurements]
-      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-      .slice(0, 5);
-    sortedMeas.forEach(m => {
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    const displayMeas = sortedMeas.slice(0, weightLimit);
+    displayMeas.forEach(m => {
       const dStr = new Date(m.date).toLocaleDateString();
       context += `- Datum: ${dStr}, Gewicht: ${m.weight}kg${m.bf ? `, KFA: ${m.bf}%` : ''}${m.note ? `, Notiz: "${m.note}"` : ''}\n`;
     });
+    
+    // Weight trend calculations as goals/trends
+    if (sortedMeas.length >= 2) {
+      const latest = sortedMeas[0];
+      const oldest = sortedMeas[sortedMeas.length - 1];
+      const totalDiff = (latest.weight - oldest.weight).toFixed(1);
+      const direction = totalDiff > 0 ? 'Gewichtszunahme' : 'Gewichtsabnahme';
+      context += `-> Gesamter Gewichtstrend: ${direction} von ${Math.abs(totalDiff)}kg (von ${oldest.weight}kg auf ${latest.weight}kg über ${sortedMeas.length} Logs)\n`;
+      
+      if (sortedMeas.length >= 5) {
+        const recentDiff = (latest.weight - sortedMeas[Math.min(sortedMeas.length - 1, 4)].weight).toFixed(1);
+        const recentDirection = recentDiff > 0 ? 'Gewichtszunahme' : 'Gewichtsabnahme';
+        context += `-> Kurzfristiger Trend (letzte 5 Messungen): ${recentDirection} von ${Math.abs(recentDiff)}kg\n`;
+      }
+    }
   } else {
     context += `Keine Gewichtslogs registriert.\n`;
   }
   context += `\n`;
 
   // Supplements
-  context += `SUPPLEMENTS & EINNAHMEN:\n`;
+  context += `SUPPLEMENTS & EINNAHMEN (Letzte ${supplementLogLimit} Einnahmen):\n`;
   if (db.supplements && db.supplements.length > 0) {
     db.supplements.forEach(s => {
       const activeStr = s.active === false ? 'Inaktiv' : 'Aktiv';
-      context += `- Name: "${s.name}", Form: "${s.form}", Dosierung: "${s.dosage}${s.unit}" (${activeStr}), Tageszeit: "${s.timeOfDay || 'egal'}"\n`;
+      const streak = (typeof _getSuppStreak === 'function') ? _getSuppStreak(s.id) : 0;
+      const adherence = (typeof _getAdherence === 'function') ? _getAdherence(s.id, 30) : null;
+      context += `- Name: "${s.name}", Form: "${s.form}", Dosierung: "${s.dosage}${s.dosageUnit || s.unit || ''}" (${activeStr}), Tageszeit: "${s.timeOfDay || 'egal'}"`;
+      if (streak >= 2) context += `, Streak: ${streak} Tage`;
+      if (adherence !== null) context += `, Einnahmequote (30 Tage): ${adherence}%`;
+      context += `\n`;
     });
     // Log adherence
     if (db.supplementLog && db.supplementLog.length > 0) {
-      context += `- Letzte Logs (Datum & Supplement-ID):\n`;
+      context += `- Letzte Logs (Datum & Status):\n`;
       const recentLogs = [...db.supplementLog]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 10);
+        .slice(0, supplementLogLimit);
       recentLogs.forEach(l => {
-        context += `  * Einnahme am ${l.date} (Supp-ID: "${l.supId}")\n`;
+        const supp = db.supplements.find(s => s.id === l.supId);
+        const name = supp ? supp.name : `ID: ${l.supId}`;
+        context += `  * Einnahme am ${l.date}: "${name}" (${l.taken ? 'Eingenommen' : 'Nicht eingenommen'})\n`;
       });
     }
   } else {
@@ -372,11 +458,11 @@ function compileAiContext() {
   context += `\n`;
 
   // Workout History
-  context += `TRAININGSVERLAUF / LETZTE 5 WORKOUTS:\n`;
+  context += `TRAININGSVERLAUF / LETZTE ${workoutLimit} WORKOUTS:\n`;
   if (db.workouts && db.workouts.length > 0) {
     const recentWos = [...db.workouts]
       .sort((a, b) => (b.date || b.startTime) - (a.date || a.startTime))
-      .slice(0, 5);
+      .slice(0, workoutLimit);
     recentWos.forEach((w, index) => {
       const dStr = new Date(w.date || w.startTime).toLocaleDateString();
       const mins = w.endTime ? Math.round((w.endTime - w.startTime) / 60000) : null;
@@ -653,22 +739,54 @@ function triggerAiPreset(type) {
   const isDe = (lang === 'de');
   
   let msg = '';
+  const hasWorkouts = db.workouts && db.workouts.length > 0;
+  const hasWeight = db.measurements && db.measurements.length > 0;
+  const hasSupps = db.supplements && db.supplements.length > 0;
+  const hasActiveProgram = db.activeProgram && db.activeProgram.id;
+
   if (type === 'analyse') {
-    msg = isDe
-      ? 'Führe eine detaillierte Analyse meines Trainingsverlaufs durch. Welche Fortschritte siehst du? Wo gibt es Plateaus oder Verbesserungspotenzial?'
-      : 'Analyze my training history in detail. What progress do you see? Are there plateaus or areas for improvement?';
+    if (hasWorkouts) {
+      msg = isDe
+        ? 'Führe eine detaillierte Analyse meines Trainingsverlaufs durch. Welche Fortschritte siehst du? Wo gibt es Plateaus oder Verbesserungspotenzial?'
+        : 'Analyze my training history in detail. What progress do you see? Are there plateaus or areas for improvement?';
+    } else {
+      msg = isDe
+        ? 'Ich habe noch keine Workouts in der App geloggt. Gib mir Tipps, wie ich mein erstes Training optimal gestalte und tracke.'
+        : 'I haven\'t logged any workouts in the app yet. Give me tips on how to optimally design and track my first workout.';
+    }
   } else if (type === 'nutrition') {
-    msg = isDe
-      ? 'Erstelle mir einen personalisierten Ernährungsplan basierend auf meinem Gewicht und meinen Zielen.'
-      : 'Create a personalized nutrition plan for me based on my weight and fitness goals.';
+    if (hasWeight) {
+      const latestWeight = db.measurements[0].weight;
+      msg = isDe
+        ? `Erstelle mir einen personalisierten Ernährungsplan basierend auf meinem aktuellen Gewicht von ${latestWeight}kg und meinen Fitnesszielen.`
+        : `Create a personalized nutrition plan for me based on my current weight of ${latestWeight}kg and my fitness goals.`;
+    } else {
+      msg = isDe
+        ? 'Ich möchte einen personalisierten Ernährungsplan erstellen. Ich habe noch kein Gewicht geloggt. Welche Angaben benötigst du von mir?'
+        : 'I want to create a personalized nutrition plan. I haven\'t logged my weight yet. What details do you need from me?';
+    }
   } else if (type === 'supps') {
-    msg = isDe
-      ? 'Schau dir meine Supplements und meine Einnahmetreue an. Welche Tipps hast du zur Dosierung oder Optimierung?'
-      : 'Take a look at my supplements and my intake adherence. Do you have any tips regarding dosage or optimization?';
+    if (hasSupps) {
+      msg = isDe
+        ? 'Schau dir meine Supplements und meine Einnahmetreue an. Welche Tipps hast du zur Dosierung oder Optimierung?'
+        : 'Take a look at my supplements and my intake adherence. Do you have any tips regarding dosage or optimization?';
+    } else {
+      msg = isDe
+        ? 'Ich habe noch keine Supplements eingetragen. Welche Basis-Supplements (z.B. Kreatin, Protein) machen für mich Sinn und wie dosiere ich sie am besten?'
+        : 'I haven\'t added any supplements yet. Which basic supplements (e.g., creatine, protein) make sense for me and how should I dosage them?';
+    }
   } else if (type === 'plan') {
-    msg = isDe
-      ? 'Erstelle einen neuen Trainingsplan für mich. Schlage mir ein konkretes Programm vor, das ich direkt importieren kann.'
-      : 'Create a new training plan for me. Propose a concrete program that I can import directly.';
+    if (hasActiveProgram) {
+      const prog = db.programs.find(p => p.id === db.activeProgram.id);
+      const progName = prog ? prog.name : '';
+      msg = isDe
+        ? `Mein aktuelles Programm ist "${progName}". Ich möchte es optimieren oder einen neuen Plan erstellen. Kannst du mir ein neues Programm vorschlagen?`
+        : `My current program is "${progName}". I want to optimize it or create a new plan. Can you suggest a new program for me?`;
+    } else {
+      msg = isDe
+        ? 'Ich habe momentan kein aktives Trainingsprogramm. Erstelle einen strukturierten Wochenplan für mich mit konkreten Übungen zum Importieren.'
+        : 'I currently don\'t have an active training program. Create a structured weekly plan for me with concrete exercises that I can import.';
+    }
   }
 
   if (msg) {
@@ -769,7 +887,7 @@ async function requestGeminiAi(latestMessage) {
   }
 
   // Compile current database context
-  const dbContext = compileAiContext();
+  const dbContext = compileAiContext('gemini');
 
   // Build official multi-turn contents array
   const contents = [];
@@ -791,44 +909,91 @@ async function requestGeminiAi(latestMessage) {
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${aiApiKey}`;
   
-  const response = await fetch(url, {
-    method: 'POST',
-    signal: aiAbortController ? aiAbortController.signal : undefined,
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      contents: contents,
-      systemInstruction: {
-        parts: [{ text: AI_SYSTEM_PROMPT }]
-      },
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 8192
+  const maxRetries = 3;
+  let attempt = 0;
+  let delay = 1000;
+
+  while (true) {
+    attempt++;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: aiAbortController ? aiAbortController.signal : undefined,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: contents,
+          systemInstruction: {
+            parts: [{ text: AI_SYSTEM_PROMPT }]
+          },
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        const errMsg = errJson.error ? errJson.error.message : `HTTP status ${response.status}`;
+        
+        if ((response.status === 429 || (response.status >= 500 && response.status < 600)) && attempt <= maxRetries) {
+          console.warn(`Gemini API returned ${response.status}. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`);
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(resolve, delay);
+            if (aiAbortController) {
+              aiAbortController.signal.addEventListener('abort', () => {
+                clearTimeout(timeout);
+                reject(new DOMException('Aborted', 'AbortError'));
+              });
+            }
+          });
+          delay *= 2;
+          continue;
+        }
+        throw new Error(errMsg);
       }
-    })
-  });
 
-  if (!response.ok) {
-    const errJson = await response.json().catch(() => ({}));
-    const errMsg = errJson.error ? errJson.error.message : `HTTP status ${response.status}`;
-    throw new Error(errMsg);
-  }
+      const json = await response.json();
+      if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts[0]) {
+        return json.candidates[0].content.parts[0].text;
+      }
+      throw new Error("Empty response received from Gemini API");
 
-  const json = await response.json();
-  if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts[0]) {
-    return json.candidates[0].content.parts[0].text;
+    } catch (e) {
+      const isNetworkError = e.name === 'TypeError' || e.message?.includes('network') || e.message?.includes('failed to fetch');
+      if (isNetworkError && attempt <= maxRetries) {
+        if (aiAbortController && aiAbortController.signal.aborted) {
+          throw e;
+        }
+        console.warn(`Network error during Gemini API call: ${e.message}. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`);
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(resolve, delay);
+          if (aiAbortController) {
+            aiAbortController.signal.addEventListener('abort', () => {
+              clearTimeout(timeout);
+              reject(new DOMException('Aborted', 'AbortError'));
+            });
+          }
+        });
+        delay *= 2;
+        continue;
+      }
+      throw e;
+    }
   }
-  
-  throw new Error("Empty response received from Gemini API");
 }
 
 async function requestChromeAi(latestMessage) {
-  if (typeof window.ai === 'undefined' || typeof window.ai.languageModel === 'undefined') {
-    throw new Error("Chrome Prompt API is not supported in this browser.");
+  const chromeAi = getChromeAiAPI();
+  if (!chromeAi) {
+    throw new Error(lang === 'de' 
+      ? "Chrome Prompt API wird in diesem Browser nicht unterstützt." 
+      : "Chrome Prompt API is not supported in this browser.");
   }
   
-  const dbContext = compileAiContext();
+  const dbContext = compileAiContext('chrome');
   
   // Build a single prompt for Chrome Nano
   let prompt = `${AI_SYSTEM_PROMPT}\n\n${dbContext}\n\nCONVERSATION HISTORY:\n`;
@@ -837,13 +1002,49 @@ async function requestChromeAi(latestMessage) {
   });
   prompt += `Assistant:`;
   
-  const session = await window.ai.languageModel.create({
-    temperature: 0.7
+  let capabilities = {};
+  try {
+    capabilities = await chromeAi.api.capabilities();
+  } catch (e) {
+    console.warn("Could not check capabilities:", e);
+  }
+
+  const isDe = (lang === 'de');
+
+  const session = await chromeAi.api.create({
+    temperature: 0.7,
+    monitor(m) {
+      m.addEventListener("downloadprogress", (e) => {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        const progressMsg = isDe 
+          ? `Lade lokales KI-Modell herunter: ${pct}%...` 
+          : `Downloading local AI model: ${pct}%...`;
+        console.log(progressMsg);
+        
+        const typingEl = document.getElementById('aiTypingIndicatorRow');
+        if (typingEl) {
+          typingEl.innerHTML = `<div style="font-size:12px; color:var(--muted); font-style:italic; padding:8px 12px;">${progressMsg}</div>`;
+        }
+      });
+    }
   });
   
-  const response = await session.prompt(prompt);
-  session.destroy();
-  return response;
+  try {
+    const response = await session.prompt(prompt, {
+      signal: aiAbortController ? aiAbortController.signal : undefined
+    });
+    return response;
+  } finally {
+    try {
+      if (typeof session.destroy === 'function') {
+        session.destroy();
+      } else if (typeof session.close === 'function') {
+        session.close();
+      }
+    } catch(e) {
+      console.warn("Error closing session:", e);
+    }
+  }
 }
 
 /* Onboarding Logic */
@@ -855,8 +1056,9 @@ function checkShowOnboarding() {
   
   if (!onboardScreen) return;
 
+  const chromeAi = getChromeAiAPI();
   const isGeminiMissingKey = (aiProvider === 'gemini' && !aiApiKey);
-  const isChromeUnsupported = (aiProvider === 'chrome' && (typeof window.ai === 'undefined' || typeof window.ai.languageModel === 'undefined'));
+  const isChromeUnsupported = (aiProvider === 'chrome' && !chromeAi);
 
   if (isGeminiMissingKey || isChromeUnsupported) {
     // Show onboarding
@@ -926,8 +1128,9 @@ async function renderOnboardChromeStatus() {
   if (!box) return;
   
   const isDe = (lang === 'de');
+  const chromeAi = getChromeAiAPI();
   
-  if (typeof window.ai === 'undefined' || typeof window.ai.languageModel === 'undefined') {
+  if (!chromeAi) {
     box.innerHTML = `
       <div style="color:var(--accent2); font-size:12px; line-height:1.4; margin-bottom:8px;">
         ${isDe 
@@ -939,7 +1142,7 @@ async function renderOnboardChromeStatus() {
   }
   
   try {
-    const capabilities = await window.ai.languageModel.capabilities();
+    const capabilities = await chromeAi.api.capabilities();
     const available = capabilities.available;
     
     let statusText = '';

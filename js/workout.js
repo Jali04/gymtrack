@@ -10,6 +10,7 @@ let timerInterval       = null;
 let swInterval = null;
 let swElapsed  = 0;
 let swRunning  = false;
+let swStartTs  = null;
 
 function _fmtSwSec(s) {
   s = Math.max(0, Math.round(s));
@@ -359,31 +360,83 @@ function swToggle() {
     clearInterval(swInterval);
     swInterval = null;
     swRunning  = false;
+    swStartTs  = null;
     const btn = document.getElementById('swToggleBtn');
     if (btn) { btn.textContent = '▶'; btn.style.background = 'var(--accent)'; btn.style.color = '#000'; }
     if (swElapsed > 0) { const lb = document.getElementById('swLogBtn'); if (lb) lb.style.display = ''; }
+    _saveSwState();
   } else {
-    const startTs = Date.now() - swElapsed * 1000;
-    swInterval = setInterval(() => { swElapsed = Math.floor((Date.now() - startTs) / 1000); _swUpdateDisplay(); }, 1000);
+    swStartTs = Date.now() - swElapsed * 1000;
+    swInterval = setInterval(() => { swElapsed = Math.floor((Date.now() - swStartTs) / 1000); _swUpdateDisplay(); }, 1000);
     swRunning = true;
     const btn = document.getElementById('swToggleBtn');
     if (btn) { btn.textContent = '⏸'; btn.style.background = 'var(--accent2)'; btn.style.color = '#fff'; }
     const lb = document.getElementById('swLogBtn'); if (lb) lb.style.display = 'none';
+    _saveSwState();
   }
   haptic('light');
 }
 
 function swReset() {
-  clearInterval(swInterval); swInterval = null; swRunning = false; swElapsed = 0;
+  clearInterval(swInterval); swInterval = null; swRunning = false; swElapsed = 0; swStartTs = null;
   _swUpdateDisplay();
   const btn = document.getElementById('swToggleBtn');
   if (btn) { btn.textContent = '▶'; btn.style.background = 'var(--accent)'; btn.style.color = '#000'; }
   const lb = document.getElementById('swLogBtn'); if (lb) lb.style.display = 'none';
+  _saveSwState();
   haptic('light');
 }
 
 function _swUpdateDisplay() {
   const el = document.getElementById('swDisplay'); if (el) el.textContent = _fmtSwSec(swElapsed);
+}
+
+function _saveSwState() {
+  localStorage.setItem('dscpln_sw_state', JSON.stringify({
+    swElapsed,
+    swRunning,
+    swStartTs
+  }));
+}
+
+function _restoreSwState() {
+  try {
+    const saved = localStorage.getItem('dscpln_sw_state');
+    if (saved) {
+      const state = JSON.parse(saved);
+      swRunning = !!state.swRunning;
+      swStartTs = state.swStartTs ? parseInt(state.swStartTs) : null;
+      
+      if (swRunning && swStartTs) {
+        swElapsed = Math.floor((Date.now() - swStartTs) / 1000);
+        if (swInterval) clearInterval(swInterval);
+        swInterval = setInterval(() => { 
+          swElapsed = Math.floor((Date.now() - swStartTs) / 1000); 
+          _swUpdateDisplay(); 
+        }, 1000);
+        
+        const btn = document.getElementById('swToggleBtn');
+        if (btn) { btn.textContent = '⏸'; btn.style.background = 'var(--accent2)'; btn.style.color = '#fff'; }
+        const lb = document.getElementById('swLogBtn'); if (lb) lb.style.display = 'none';
+      } else {
+        swElapsed = state.swElapsed || 0;
+        if (swInterval) {
+          clearInterval(swInterval);
+          swInterval = null;
+        }
+        const btn = document.getElementById('swToggleBtn');
+        if (btn) { btn.textContent = '▶'; btn.style.background = 'var(--accent)'; btn.style.color = '#000'; }
+        const lb = document.getElementById('swLogBtn'); 
+        if (lb) {
+          if (swElapsed > 0) lb.style.display = '';
+          else lb.style.display = 'none';
+        }
+      }
+      _swUpdateDisplay();
+    }
+  } catch (e) {
+    console.error('Error restoring stopwatch state', e);
+  }
 }
 
 function openLogTimerModal() {
@@ -987,18 +1040,25 @@ window.updateGlobalExNote = function(exId, val) {
 
 // When returning from background: re-sync + prominent alert if timer already done
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && restTimerEndAt) {
-    restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
-    if (restTimerSec <= 0) {
-      clearInterval(restTimerInterval);
-      restTimerInterval = null;
-      restTimerEndAt    = 0;
-      const overlay = document.getElementById('restTimerOverlay');
-      if (overlay) overlay.style.display = 'none';
-      if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
-      showToast('✓ ' + t('restDone'));
-    } else {
-      _updateRestDisplay();
+  if (!document.hidden) {
+    if (restTimerEndAt) {
+      restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+      if (restTimerSec <= 0) {
+        clearInterval(restTimerInterval);
+        restTimerInterval = null;
+        restTimerEndAt    = 0;
+        const overlay = document.getElementById('restTimerOverlay');
+        if (overlay) overlay.style.display = 'none';
+        if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
+        showToast('✓ ' + t('restDone'));
+      } else {
+        _updateRestDisplay();
+      }
+    }
+    
+    // Restore and recalculate stopwatch elapsed time
+    if (typeof _restoreSwState === 'function') {
+      _restoreSwState();
     }
   }
 });
@@ -1145,4 +1205,7 @@ function skipTemplateUpdate() {
   _pendingTemplateUpdate = null;
   closeModal('tmplUpdateModal');
 }
+
+// Restore stopwatch state on initial script load
+_restoreSwState();
 
