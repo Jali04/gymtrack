@@ -23,6 +23,32 @@ function showPage(id, btn) {
 function renderGymLab() {
   renderTemplates();
   renderExercises();
+  if (typeof renderPrograms === 'function') renderPrograms();
+  const savedTab = localStorage.getItem('gymtrack_gymlab_tab') || 'all';
+  switchGymLabTab(savedTab);
+}
+
+function switchGymLabTab(tab) {
+  document.querySelectorAll('.gymlab-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  
+  const prog = document.getElementById('gymlab-programs-wrapper');
+  const tmpl = document.getElementById('gymlab-templates-wrapper');
+  const ex   = document.getElementById('gymlab-exercises-wrapper');
+  
+  if (tab === 'all') {
+    if (prog) prog.style.display = 'block';
+    if (tmpl) tmpl.style.display = 'block';
+    if (ex) ex.style.display = 'block';
+  } else {
+    if (prog) prog.style.display = tab === 'programs' ? 'block' : 'none';
+    if (tmpl) tmpl.style.display = tab === 'templates' ? 'block' : 'none';
+    if (ex) ex.style.display = tab === 'exercises' ? 'block' : 'none';
+  }
+  
+  if (typeof initRipples === 'function') initRipples();
+  localStorage.setItem('gymtrack_gymlab_tab', tab);
 }
 
 /* ---- Touch swipe navigation ---- */

@@ -9,7 +9,7 @@
 <meta name="version" content="4.4">
 <title>DSCPLN</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=4.4">
+<link rel="stylesheet" href="css/styles.css?v=4.7">
 </head>
 <body>
 
@@ -91,26 +91,41 @@
 
 <!-- GymLab (Vorlagen + Übungen + Programme) -->
 <div class="page" id="page-gymlab">
-  <!-- Programs -->
-  <div class="gymlab-section-header">
-    <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
-    <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
+  <div class="gymlab-tabs">
+    <button class="gymlab-tab active" data-tab="all" onclick="switchGymLabTab('all')" id="tabGymLabAll">Alles</button>
+    <button class="gymlab-tab" data-tab="programs" onclick="switchGymLabTab('programs')" id="tabGymLabPrograms">Programme</button>
+    <button class="gymlab-tab" data-tab="templates" onclick="switchGymLabTab('templates')" id="tabGymLabTemplates">Vorlagen</button>
+    <button class="gymlab-tab" data-tab="exercises" onclick="switchGymLabTab('exercises')" id="tabGymLabExercises">Übungen</button>
   </div>
-  <div id="programsList"></div>
-  <div class="divider"></div>
+
+  <!-- Programs -->
+  <div id="gymlab-programs-wrapper">
+    <div class="gymlab-section-header">
+      <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
+      <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
+    </div>
+    <div id="programsList"></div>
+    <div class="divider"></div>
+  </div>
 
   <!-- Templates -->
-  <div class="gymlab-section-header">
-    <div class="section-title" style="margin:0;" id="ttlTemplates">Vorlagen</div>
-    <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+</button>
+  <div id="gymlab-templates-wrapper">
+    <div class="gymlab-section-header">
+      <div class="section-title" style="margin:0;" id="ttlTemplates">Vorlagen</div>
+      <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+</button>
+    </div>
+    <div id="templatesList"></div>
+    <div class="divider"></div>
   </div>
-  <div id="templatesList"></div>
-  <div class="divider"></div>
-  <div class="gymlab-section-header">
-    <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
-    <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
+
+  <!-- Exercises -->
+  <div id="gymlab-exercises-wrapper">
+    <div class="gymlab-section-header">
+      <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
+      <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
+    </div>
+    <div id="exercisesList"></div>
   </div>
-  <div id="exercisesList"></div>
 </div>
 
 <!-- Calendar -->
@@ -1000,26 +1015,26 @@ function _postSwMsg(msg) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-<script src="js/db.js?v=4.4"></script>
-<script src="js/i18n.js?v=4.4"></script>
-<script src="js/modals.js?v=4.4"></script>
-<script src="js/nav.js?v=4.4"></script>
-<script src="js/workout.js?v=4.4"></script>
-<script src="js/exercises.js?v=4.4"></script>
-<script src="js/history.js?v=4.4"></script>
-<script src="js/stats.js?v=4.4"></script>
-<script src="js/templates.js?v=4.4"></script>
-<script src="js/calendar.js?v=4.4"></script>
-<script src="js/editWorkout.js?v=4.4"></script>
-<script src="js/timer.js?v=4.4"></script>
-<script src="js/ui.js?v=4.4"></script>
-<script src="js/splash.js?v=4.4"></script>
-<script src="js/progress.js?v=4.4"></script>
-<script src="js/programs.js?v=4.5"></script>
-<script src="js/supplements.js?v=4.6"></script>
-<script src="js/tools.js?v=4.5"></script>
-<script src="js/app.js?v=4.6"></script>
-<script src="js/aiCoach.js?v=1.0"></script>
+<script src="js/db.js?v=4.7"></script>
+<script src="js/i18n.js?v=4.7"></script>
+<script src="js/modals.js?v=4.7"></script>
+<script src="js/nav.js?v=4.7"></script>
+<script src="js/workout.js?v=4.7"></script>
+<script src="js/exercises.js?v=4.7"></script>
+<script src="js/history.js?v=4.7"></script>
+<script src="js/stats.js?v=4.7"></script>
+<script src="js/templates.js?v=4.7"></script>
+<script src="js/calendar.js?v=4.7"></script>
+<script src="js/editWorkout.js?v=4.7"></script>
+<script src="js/timer.js?v=4.7"></script>
+<script src="js/ui.js?v=4.7"></script>
+<script src="js/splash.js?v=4.7"></script>
+<script src="js/progress.js?v=4.7"></script>
+<script src="js/programs.js?v=4.7"></script>
+<script src="js/supplements.js?v=4.7"></script>
+<script src="js/tools.js?v=4.7"></script>
+<script src="js/app.js?v=4.7"></script>
+<script src="js/aiCoach.js?v=4.7"></script>
 
 </body>
 </html>

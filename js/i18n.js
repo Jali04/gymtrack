@@ -4,7 +4,7 @@
 
 const TR = {
   de: {
-    navTraining: 'Training', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Kalender',
+    navTraining: 'Training', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Kalender', allLabel: 'Alles',
     startTraining: 'Training starten', newWorkout: '+ Neues Training', lastWorkouts: 'Verlauf',
     gymLab: 'GymLab', myTemplates: 'Vorlagen', myExercisesShort: 'Übungen',
     fromTemplate: '📋 Aus Vorlage starten', noWorkoutYet: 'Noch kein Training aufgezeichnet',
@@ -125,7 +125,7 @@ const TR = {
     tmplUpdateConfirm: 'Ausgewählte übernehmen', tmplUpdateSkip: 'Überspringen'
   },
   en: {
-    navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar',
+    navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar', allLabel: 'All',
     startTraining: 'Start Workout', newWorkout: '+ New Workout', lastWorkouts: 'History',
     gymLab: 'GymLab', myTemplates: 'Templates', myExercisesShort: 'Exercises',
     fromTemplate: '📋 Start from Template', noWorkoutYet: 'No workouts recorded yet',
@@ -292,6 +292,10 @@ function applyTranslations() {
   s('btnFinishWorkout', 'done'); s('btnAddExercise', 'addExercise'); s('btnCancelWorkout', 'cancelWorkout');
 
   // GymLab
+  s('tabGymLabAll', 'allLabel');
+  s('tabGymLabPrograms', 'ttlPrograms');
+  s('tabGymLabTemplates', 'templates');
+  s('tabGymLabExercises', 'myExercisesShort');
   s('ttlTemplates', 'myTemplates'); s('ttlExercises', 'myExercisesShort');
   s('templateModalTitle', (typeof editingTemplateId !== 'undefined' && editingTemplateId) ? 'tmplEditTitle' : 'tmplNewTitle');
   s('lblTmplName', 'tmplName'); sp('tmplName', 'tmplNamePlaceholder');
