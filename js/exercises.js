@@ -75,17 +75,35 @@ function saveExercise() {
     newId = uid();
     db.exercises.push({ id: newId, name, category, notes });
   }
-  const wasOpenedFromPicker = window._openedFromPicker;
+  const context = window._openedFromPickerContext || (window._openedFromPicker ? 'workout' : null);
+  window._openedFromPickerContext = null;
+  window._openedFromPicker = false;
 
   save();
   closeModal('addExerciseModal');
   renderExercises();
   showToast(t('save') + ' ✓');
 
-  if (wasOpenedFromPicker && newId) {
-    window._openedFromPicker = false;
-    addExerciseToWorkout(newId);
+  if (newId) {
+    if (context === 'workout') {
+      addExerciseToWorkout(newId);
+    } else if (context === 'template') {
+      if (typeof tmplExercises !== 'undefined' && !tmplExercises.includes(newId)) {
+        tmplExercises.push(newId);
+        renderTmplExerciseList();
+      }
+    }
   }
+}
+
+function openAddExerciseFromPicker() {
+  window._openedFromPickerContext = 'workout';
+  openAddExercise();
+}
+
+function openAddExerciseFromTmplPicker() {
+  window._openedFromPickerContext = 'template';
+  openAddExercise();
 }
 
 function deleteExercise() {

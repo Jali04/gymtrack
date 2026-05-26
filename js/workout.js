@@ -578,11 +578,6 @@ function quickAddExercise() {
   nameInput.value = '';
 }
 
-function openAddExerciseFromPicker() {
-  window._openedFromPicker = true;
-  openAddExercise();
-}
-
 function addExerciseToWorkout(exId) {
   // HIIT-assign mode
   if (window._pickerMode === 'hiit') {

@@ -100,7 +100,7 @@ function toggleTheme() {
 })();
 
 /* ---- Init (called from app.js after DOM ready) ---- */
-function initUI() {
+function initUIEffects() {
   initRipples();
 
   // Re-apply ripples whenever a modal opens (new buttons rendered)

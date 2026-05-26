@@ -21,6 +21,7 @@ function initUI() {
   }
   if (typeof renderAchievements === 'function') renderAchievements();
   if (typeof updateSuppNavBadge === 'function') updateSuppNavBadge();
+  if (typeof initUIEffects === 'function') initUIEffects();
 }
 
 // Boot

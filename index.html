@@ -26,16 +26,12 @@
 <!-- ===== HEADER ===== -->
 <div class="header">
   <h1>DSCPLN</h1>
-  <div style="display:flex;align-items:center;gap:10px;">
+  <div style="display:flex;align-items:center;gap:8px;">
     <span class="header-date" id="headerDate"></span>
-    <button onclick="toggleTheme()" id="themeBtn"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:13px;cursor:pointer;">☀️</button>
-    <button onclick="toggleLang()" id="langBtn"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">EN</button>
-    <button onclick="openAiCoach()" title="AI Coach" id="aiCoachBtn"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;margin-right:2px;">🤖</button>
-    <button onclick="openExportModal()" title="Backup & Einstellungen"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">⚙️</button>
+    <button onclick="toggleTheme()" id="themeBtn" class="header-btn" title="Design wechseln">☀️</button>
+    <button onclick="toggleLang()" id="langBtn" class="header-btn" style="font-size:12px;font-weight:600;">EN</button>
+    <button onclick="openAiCoach()" title="AI Coach" id="aiCoachBtn" class="header-btn">🤖</button>
+    <button onclick="openExportModal()" title="Backup & Einstellungen" class="header-btn">⚙️</button>
   </div>
 </div>
 
@@ -209,7 +205,7 @@
       <div class="close-btn" onclick="closeSubModal('exercisePickerModal')">✕</div>
     </div>
     <div id="exercisePickerList"></div>
-    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('exercisePickerModal'); openAddExercise();" id="btnNestedAddEx">+ Neue Übung erstellen</button>
+    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('exercisePickerModal'); openAddExerciseFromPicker();" id="btnNestedAddEx">+ Neue Übung erstellen</button>
   </div>
 </div>
 
@@ -317,7 +313,7 @@
     </div>
     <div id="tmplPickerSelectedCount" style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px;min-height:20px;"></div>
     <div id="tmplExPickerList"></div>
-    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('tmplExPickerModal'); openAddExercise();" id="btnNestedTmplAddEx">+ Neue Übung erstellen</button>
+    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('tmplExPickerModal'); openAddExerciseFromTmplPicker();" id="btnNestedTmplAddEx">+ Neue Übung erstellen</button>
     <div style="margin-top:16px;">
       <button class="btn btn-primary" id="btnConfirmTmplEx" onclick="confirmTmplExSelection()">Hinzufügen</button>
     </div>
