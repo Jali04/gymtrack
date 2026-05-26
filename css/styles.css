@@ -52,10 +52,10 @@ body.light-mode .modal { box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.1); }
 body.light-mode .progress-tag.same { background: rgba(0,0,0,0.05); }
 
 /* Theme Icon Visibility Rules */
-.theme-icon-moon { display: none; }
-.theme-icon-sun { display: block; }
-body.light-mode .theme-icon-sun { display: none; }
-body.light-mode .theme-icon-moon { display: block; }
+.header-icon.theme-icon-moon { display: none; }
+.header-icon.theme-icon-sun { display: block; }
+body.light-mode .header-icon.theme-icon-sun { display: none; }
+body.light-mode .header-icon.theme-icon-moon { display: block; }
 
 /* ---- SPLASH SCREEN ---- */
 #splashScreen {
