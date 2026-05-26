@@ -1,1060 +1,1231 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DSCPLN">
-<meta name="version" content="4.4">
-<title>DSCPLN</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=4.7">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DSCPLN">
+  <meta name="version" content="4.5">
+  <title>DSCPLN</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=4.7">
 </head>
+
 <body>
 
-<!-- ===== SPLASH ===== -->
-<div id="splashScreen">
-  <div class="splash-inner">
-    <div class="splash-logo">DSCPLN</div>
-    <div class="splash-divider"></div>
-    <div class="splash-quote" id="splashQuote"></div>
-    <button class="splash-btn" onclick="enterApp()">ENTER</button>
-  </div>
-</div>
-
-<!-- ===== HEADER ===== -->
-<div class="header">
-  <h1>DSCPLN</h1>
-  <div style="display:flex;align-items:center;gap:8px;">
-    <span class="header-date" id="headerDate"></span>
-    <button onclick="toggleTheme()" id="themeBtn" class="header-btn" title="Design wechseln">
-      <svg class="header-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-      <svg class="header-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-    </button>
-    <button onclick="toggleLang()" id="langBtn" class="header-btn">EN</button>
-    <button onclick="openAiCoach()" title="AI Coach" id="aiCoachBtn" class="header-btn">
-      <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>
-    </button>
-    <button onclick="openExportModal()" title="Backup & Einstellungen" class="header-btn">
-      <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-    </button>
-  </div>
-</div>
-
-<!-- ===== PAGES ===== -->
-
-<!-- Training / Log -->
-<div class="page active" id="page-log">
-  <div class="section-title" id="ttlStartTraining">Training starten</div>
-  <div id="quickStart">
-    <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;" onclick="startNextProgramDay()">
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Aktuelles Programm</div>
-      <div style="font-weight:700;font-size:18px;color:var(--accent);margin-bottom:4px;" id="activeProgramName">Push Pull Legs</div>
-      <div style="font-size:13px;color:var(--text);" id="activeProgramNext">Nächstes: Tag 1 (Push)</div>
+  <!-- ===== SPLASH ===== -->
+  <div id="splashScreen">
+    <div class="splash-inner">
+      <div class="splash-logo">DSCPLN</div>
+      <div class="splash-divider"></div>
+      <div class="splash-quote" id="splashQuote"></div>
+      <button class="splash-btn" onclick="enterApp()">ENTER</button>
     </div>
-    
-    <div id="streakBanner" style="display:none;text-align:center;margin-bottom:10px;"></div>
-    <div id="weekStatusWidget" style="margin-bottom:10px;"></div>
-    <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
-    <div id="quickStartTemplates" style="display:none;"></div>
-    <!-- Rest Timer Config -->
-    <div class="rest-config-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div class="rest-config-title" id="lblRestConfig">Satztpause</div>
-          <div class="rest-config-sub" id="lblRestSub">Countdown nach jedem Satz</div>
+  </div>
+
+  <!-- ===== HEADER ===== -->
+  <div class="header">
+    <h1>DSCPLN</h1>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="header-date" id="headerDate"></span>
+      <button onclick="toggleTheme()" id="themeBtn" class="header-btn" title="Design wechseln">
+        <svg class="header-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="header-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+      <button onclick="toggleLang()" id="langBtn" class="header-btn">EN</button>
+      <button onclick="openAiCoach()" title="AI Coach" id="aiCoachBtn" class="header-btn">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" />
+        </svg>
+      </button>
+      <button onclick="openExportModal()" title="Backup & Einstellungen" class="header-btn">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== PAGES ===== -->
+
+  <!-- Training / Log -->
+  <div class="page active" id="page-log">
+    <div class="section-title" id="ttlStartTraining">Training starten</div>
+    <div id="quickStart">
+      <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;"
+        onclick="startNextProgramDay()">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Aktuelles Programm
         </div>
+        <div style="font-weight:700;font-size:18px;color:var(--accent);margin-bottom:4px;" id="activeProgramName">Push
+          Pull Legs</div>
+        <div style="font-size:13px;color:var(--text);" id="activeProgramNext">Nächstes: Tag 1 (Push)</div>
+      </div>
+
+      <div id="streakBanner" style="display:none;text-align:center;margin-bottom:10px;"></div>
+      <div id="weekStatusWidget" style="margin-bottom:10px;"></div>
+      <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
+      <div id="quickStartTemplates" style="display:none;"></div>
+      <!-- Rest Timer Config -->
+      <div class="rest-config-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="rest-config-title" id="lblRestConfig">Satztpause</div>
+            <div class="rest-config-sub" id="lblRestSub">Countdown nach jedem Satz</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="restToggle" onchange="restTimerToggle(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div id="restDurationRow" class="rest-duration-row">
+          <button class="rest-adj-btn" onclick="restTimerAdj(-15)">−</button>
+          <span id="restDurationDisplay" class="rest-duration-display">1:30</span>
+          <button class="rest-adj-btn" onclick="restTimerAdj(+15)">+</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-title" style="font-size:18px;" id="ttlLastWorkouts">Verlauf</div>
+      <div id="recentWorkouts"></div>
+    </div>
+    <div id="activeWorkout" style="display:none;">
+      <div class="workout-header">
+        <div>
+          <div id="activeWorkoutLabel" style="font-size:13px;color:var(--muted);">Aktives Training</div>
+          <div class="timer-display" id="timerDisplay">00:00</div>
+        </div>
+        <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;"
+          onclick="finishWorkout()">Fertig ✓</button>
+      </div>
+      <div id="workoutExercises"></div>
+      <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
+      <button id="btnWorkoutHiit" class="btn btn-secondary" onclick="openHiitTimer()" style="margin-top:8px;">⚡ HIIT /
+        Cardio Timer</button>
+      <button id="btnWorkoutTools" class="btn btn-secondary" onclick="openToolsModal()" style="margin-top:8px;">🛠
+        Rechner & Tools</button>
+      <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:16px;">Training
+        abbrechen</button>
+    </div>
+  </div>
+
+  <!-- GymLab (Vorlagen + Übungen + Programme) -->
+  <div class="page" id="page-gymlab">
+    <div class="gymlab-tabs">
+      <button class="gymlab-tab active" data-tab="all" onclick="switchGymLabTab('all')" id="tabGymLabAll">Alles</button>
+      <button class="gymlab-tab" data-tab="programs" onclick="switchGymLabTab('programs')"
+        id="tabGymLabPrograms">Programme</button>
+      <button class="gymlab-tab" data-tab="templates" onclick="switchGymLabTab('templates')"
+        id="tabGymLabTemplates">Vorlagen</button>
+      <button class="gymlab-tab" data-tab="exercises" onclick="switchGymLabTab('exercises')"
+        id="tabGymLabExercises">Übungen</button>
+    </div>
+
+    <!-- Programs -->
+    <div id="gymlab-programs-wrapper">
+      <div class="gymlab-section-header">
+        <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
+        <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
+      </div>
+      <div id="programsList"></div>
+      <div class="divider"></div>
+    </div>
+
+    <!-- Templates -->
+    <div id="gymlab-templates-wrapper">
+      <div class="gymlab-section-header">
+        <div class="section-title" style="margin:0;" id="ttlTemplates">Vorlagen</div>
+        <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+</button>
+      </div>
+      <div id="templatesList"></div>
+      <div class="divider"></div>
+    </div>
+
+    <!-- Exercises -->
+    <div id="gymlab-exercises-wrapper">
+      <div class="gymlab-section-header">
+        <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
+        <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
+      </div>
+      <div id="exercisesList"></div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="page" id="page-calendar">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calPrevMonth()">‹</button>
+      <div class="cal-month" id="calMonthLabel"></div>
+      <button class="cal-nav" onclick="calNextMonth()">›</button>
+    </div>
+    <div class="cal-streak" id="calStreak"></div>
+    <div class="cal-grid" id="calDayLabels"></div>
+    <div style="height:8px;"></div>
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="divider" style="margin-top:20px;"></div>
+    <div class="section-title" id="ttlMonthRecap" style="font-size:16px;">Monats-Recap</div>
+    <div id="monthlyRecap" style="margin-bottom:16px;"></div>
+
+    <div class="divider"></div>
+    <div class="section-title" id="ttlStats">Statistiken</div>
+    <div class="stats-grid" id="statsGrid" style="margin-bottom:16px;"></div>
+  </div>
+
+  <!-- Supps -->
+  <div class="page" id="page-supps">
+    <div class="supp-content"></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="page" id="page-progress">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="section-title" id="ttlProgress" style="margin:0;">Fortschritt</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openModal('weightProgressModal')"
+          id="btnWeightMod">Gewicht</button>
+        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="requestPicsAccess()"
+          id="btnPicsMod">Fotos 🔒</button>
+      </div>
+    </div>
+
+    <div id="exerciseProgressTracker" style="display:flex;flex-direction:column;gap:12px;">
+      <!-- Accordions injected here -->
+    </div>
+  </div>
+
+  <!-- ===== NAV ===== -->
+  <nav class="nav">
+    <button class="nav-btn active" data-page="log" onclick="showPage('log',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Training
+    </button>
+    <button class="nav-btn" data-page="gymlab" onclick="showPage('gymlab',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+      </svg>
+      GymLab
+    </button>
+    <button class="nav-btn" data-page="calendar" onclick="showPage('calendar',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+      Kalender
+    </button>
+    <button class="nav-btn" data-page="supps" onclick="showPage('supps',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path
+          d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-6 4.5h9m-9 3h6" />
+      </svg>
+      Supps
+    </button>
+    <button class="nav-btn" data-page="progress" onclick="showPage('progress',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 12h4l3-9 5 18 3-9h5" />
+      </svg>
+      Fortschritt
+    </button>
+  </nav>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- Start Options -->
+  <div class="modal-overlay" id="startOptionsModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="ttlStartOptions">Training starten</div>
+        <div class="close-btn" onclick="closeModal('startOptionsModal')">✕</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <button class="btn btn-primary" onclick="closeModal('startOptionsModal');openNewWorkout()"
+          id="btnStartEmpty">Leeres Training</button>
+        <button class="btn btn-secondary"
+          onclick="closeModal('startOptionsModal');showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))"
+          id="btnStartTemplate">Aus Vorlage</button>
+        <button class="btn btn-secondary" id="btnStartProgOpt" style="display:none;"
+          onclick="closeModal('startOptionsModal');startNextProgramDay()">Gemäß Programm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exercise Picker -->
+  <div class="modal-overlay" id="exercisePickerModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="ttlChooseExercise">Übung wählen</div>
+        <div class="close-btn" onclick="closeSubModal('exercisePickerModal')">✕</div>
+      </div>
+      <div id="exercisePickerList"></div>
+      <button class="btn btn-secondary" style="margin-top:12px;"
+        onclick="closeSubModal('exercisePickerModal'); openAddExerciseFromPicker();" id="btnNestedAddEx">+ Neue Übung
+        erstellen</button>
+    </div>
+  </div>
+
+  <!-- Add / Edit Exercise -->
+  <div class="modal-overlay" id="addExerciseModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="addExerciseTitle">Neue Übung</div>
+        <div class="close-btn" onclick="closeModal('addExerciseModal')">✕</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblExName">Name</label>
+        <input class="form-input" id="exName" placeholder="z.B. Bankdrücken">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblExCategory">Kategorie</label>
+        <select class="form-input" id="exCategory" onchange="updateCategoryHint()">
+          <option value="Brust">Brust</option>
+          <option value="Rücken">Rücken</option>
+          <option value="Schultern">Schultern</option>
+          <option value="Arme">Arme</option>
+          <option value="Beine">Beine</option>
+          <option value="Core">Core</option>
+          <option value="Cardio">Cardio</option>
+          <option value="Dehnen">Dehnen</option>
+        </select>
+      </div>
+      <div id="categoryHint"
+        style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblExNotes">Notizen</label>
+        <textarea class="form-input" id="exNotes" placeholder="z.B. Schulterblätter zusammenziehen..."
+          style="resize:none;height:80px;line-height:1.5;"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveExercise()" id="btnSaveExercise">Speichern</button>
+      <button class="btn btn-danger" id="deleteExBtn" style="display:none;" onclick="deleteExercise()">Übung
+        löschen</button>
+      <button class="btn btn-secondary" onclick="closeModal('addExerciseModal')"
+        id="btnCancelExercise">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Log Sets (adapts to category type) -->
+  <div class="modal-overlay" id="logSetsModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div class="modal-title" id="logSetsTitle"></div>
+        <div class="close-btn" onclick="closeSubModal('logSetsModal')">✕</div>
+      </div>
+      <div id="lastPerformance" style="margin-bottom:16px;"></div>
+      <div class="set-col-labels" id="setColLabels">
+        <div></div>
+        <div class="set-col-label" id="colLabelType">Typ</div>
+        <div class="set-col-label" id="colLabel1">kg</div>
+        <div class="set-col-label" id="colLabel2">Wdh</div>
+        <div class="set-col-label" id="colLabelRpe">RPE</div>
+        <div></div>
+      </div>
+      <div class="sets-container" id="setsContainer"></div>
+      <button class="btn btn-secondary btn-sm" id="btnAddRow" onclick="addSetRow()">+ Satz</button>
+      <div style="margin-top:16px;">
+        <label class="form-label" id="lblSessionNote">Anmerkung (optional)</label>
+        <textarea class="form-input" id="sessionNote" placeholder="z.B. Schulter hat gezwickt..."
+          style="resize:none;height:70px;line-height:1.5;margin-bottom:12px;"></textarea>
+        <button class="btn btn-primary" id="btnSaveSets" onclick="saveSets()">Sätze speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Modal -->
+  <div class="modal-overlay" id="templateModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="templateModalTitle">Vorlage erstellen</div>
+        <div class="close-btn" onclick="closeModal('templateModal')">✕</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblTmplName">Name</label>
+        <input class="form-input" id="tmplName" placeholder="z.B. Push Day">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblTmplType">Typ</label>
+        <select class="form-input" id="tmplType">
+          <option value="training">Training-Day</option>
+          <option value="rest">Active-Rest-Day</option>
+          <option value="couch">Couch-Potato-Day</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblTmplEx">Übungen</label>
+        <div id="tmplExerciseList" style="margin-bottom:8px;"></div>
+        <button class="btn btn-secondary btn-sm" id="btnAddExToTemplate" onclick="openTmplExPicker()">+ Übung
+          hinzufügen</button>
+      </div>
+      <button class="btn btn-primary" style="margin-top:8px;" onclick="saveTemplate()"
+        id="btnSaveTemplate">Speichern</button>
+      <button class="btn btn-danger" id="deleteTmplBtn" style="display:none;" onclick="deleteTemplate()">Vorlage
+        löschen</button>
+      <button class="btn btn-secondary" onclick="closeModal('templateModal')" id="btnCancelTemplate">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Template Exercise Picker -->
+  <div class="modal-overlay" id="tmplExPickerModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="modal-title" id="ttlTmplExPicker">Übungen auswählen</div>
+        <div class="close-btn" onclick="closeTmplExPicker()">✕</div>
+      </div>
+      <div id="tmplPickerSelectedCount"
+        style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px;min-height:20px;"></div>
+      <div id="tmplExPickerList"></div>
+      <button class="btn btn-secondary" style="margin-top:12px;"
+        onclick="closeSubModal('tmplExPickerModal'); openAddExerciseFromTmplPicker();" id="btnNestedTmplAddEx">+ Neue
+        Übung erstellen</button>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btnConfirmTmplEx" onclick="confirmTmplExSelection()">Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Past Workout -->
+  <div class="modal-overlay" id="editWorkoutModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div class="modal-title" id="editWorkoutTitle"></div>
+        <div class="close-btn" onclick="closeEditWorkout()">✕</div>
+      </div>
+      <div id="editWorkoutExercises"></div>
+      <button class="btn btn-secondary" id="btnEditWorkoutAddEx" style="margin-top:12px;"
+        onclick="openExercisePickerForEdit()">+ Übung hinzufügen</button>
+      <button class="btn btn-primary" id="btnSaveEditWorkout" style="margin-top:10px;" onclick="saveEditWorkout()">✓
+        Änderungen speichern</button>
+    </div>
+  </div>
+
+  <!-- Calendar Day Detail -->
+  <div class="modal-overlay" id="calDayModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div class="modal-title" id="calDayTitle"></div>
+        <div class="close-btn" onclick="closeModal('calDayModal')">✕</div>
+      </div>
+      <div id="calDayContent"></div>
+    </div>
+  </div>
+
+  <!-- Export / Import Hub -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="ttlExport">Backup & Restore</div>
+        <div class="close-btn" onclick="closeModal('exportModal')">✕</div>
+      </div>
+      <!-- hidden textarea used by copyExport() fallback only -->
+      <textarea id="exportText" readonly
+        style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
+      <!-- Export section -->
+      <div
+        style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;"
+        id="lblExportSection">Exportieren</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <button class="btn btn-primary" id="btnExportFile" onclick="exportAsFile()">🗜️ Als Datei sichern</button>
+        <button class="btn btn-primary" id="btnShareBackup" onclick="shareToNotes()">📤 Teilen / AirDrop</button>
+      </div>
+      <!-- Notes export -->
+      <button class="btn btn-secondary" id="btnExportNotes" onclick="exportToNotesReadable()"
+        style="margin-bottom:16px;">📝 Verlauf zu Notizen exportieren</button>
+      <!-- Import section -->
+      <div
+        style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;"
+        id="lblImportSection">Importieren</div>
+      <button class="btn btn-secondary" id="btnOpenImport" onclick="closeModal('exportModal');openImportModal();">📥
+        Daten importieren</button>
+      <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('exportModal')"
+        style="margin-top:8px;">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Timer (HIIT + Stoppuhr) -->
+  <div class="modal-overlay" id="hiitModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="modal-title" id="ttlHiitTimer">Timer</div>
+        <div class="close-btn" onclick="closeHiitTimer()">✕</div>
+      </div>
+      <!-- Mode tabs -->
+      <div class="hiit-mode-tabs">
+        <button class="hiit-mode-tab active" id="timerModeHiit" onclick="switchTimerMode('hiit')">HIIT</button>
+        <button class="hiit-mode-tab" id="timerModeSw" onclick="switchTimerMode('sw')">Stoppuhr</button>
+      </div>
+      <!-- HIIT Section -->
+      <div id="hiitSection">
+        <div class="hiit-tabs" style="margin-top:12px;">
+          <button class="hiit-tab active" data-mode="tabata" onclick="hiitSelectMode('tabata')">Tabata</button>
+          <button class="hiit-tab" data-mode="emom" onclick="hiitSelectMode('emom')">EMOM</button>
+          <button class="hiit-tab" data-mode="amrap" onclick="hiitSelectMode('amrap')">AMRAP</button>
+          <button class="hiit-tab" data-mode="rope" onclick="hiitSelectMode('rope')">🪢 Seil</button>
+          <button class="hiit-tab" data-mode="custom" onclick="hiitSelectMode('custom')"
+            id="hiitTabCustom">Custom</button>
+        </div>
+        <div id="hiitDisplay" style="margin:16px 0;"></div>
+        <div id="hiitConfig"></div>
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary hiit-ctrl-btn" id="hiitToggleBtn" onclick="hiitToggle()">▶ Start</button>
+          <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitSkip()"
+            title="Skip">⏭</button>
+          <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitReset()"
+            title="Reset">↺</button>
+        </div>
+      </div>
+      <!-- Stopwatch Section -->
+      <div id="swSection" style="display:none;">
+        <div style="text-align:center;padding:36px 0 28px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:72px;color:var(--text);line-height:1;"
+            id="swDisplay">00:00</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="swToggle()" id="swToggleBtn"
+            style="flex:1;background:var(--accent);border:none;border-radius:12px;height:52px;color:#000;font-size:20px;cursor:pointer;">▶</button>
+          <button onclick="swReset()"
+            style="background:transparent;border:1px solid var(--border);border-radius:12px;width:52px;height:52px;color:var(--muted);font-size:22px;cursor:pointer;">↺</button>
+        </div>
+        <button id="swLogBtn" onclick="openLogTimerModal()" class="btn btn-secondary"
+          style="display:none;margin-top:10px;">✓ Buchen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIIT → Workout Log -->
+  <div class="modal-overlay" id="hiitLogModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title">⚡ Session speichern</div>
+        <div class="close-btn" onclick="closeModal('hiitLogModal')">✕</div>
+      </div>
+      <div id="hiitLogSummary"></div>
+      <div id="hiitLogContent"></div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:10px;" onclick="closeModal('hiitLogModal')"
+        id="btnHiitSkip">Überspringen</button>
+    </div>
+  </div>
+
+  <!-- Template / Program Share -->
+  <div class="modal-overlay" id="tmplShareModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="modal-title" id="ttlTmplShare">Teilen</div>
+        <div class="close-btn" onclick="closeModal('tmplShareModal')">✕</div>
+      </div>
+      <div id="tmplShareName" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>
+      <p id="tmplShareDesc" style="font-size:13px;color:var(--muted);margin-bottom:20px;"></p>
+      <!-- hidden code textarea used by fallback copy only -->
+      <textarea id="tmplShareCode" readonly
+        style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
+      <button class="btn btn-primary" onclick="shareTemplateNative()" id="btnShareTmplNative" style="font-size:16px;">📤
+        Teilen / AirDrop</button>
+      <div id="tmplShareCopyConfirm"
+        style="display:none;text-align:center;color:var(--accent);font-size:14px;margin-top:10px;font-weight:600;">✓
+        Kopiert!</div>
+      <button class="btn btn-secondary" onclick="closeModal('tmplShareModal')"
+        style="margin-top:8px;">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Log Timer to Exercise -->
+  <div class="modal-overlay" id="logTimerModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="modal-title" id="ttlLogTimer">Zeit buchen</div>
+        <div class="close-btn" onclick="closeModal('logTimerModal')">✕</div>
+      </div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:16px;" id="logTimerTimeRow">Gemessene Zeit: <span
+          id="logTimerTimeDisplay"
+          style="color:var(--accent);font-weight:700;font-family:'Bebas Neue',sans-serif;font-size:22px;"></span></div>
+      <div id="logTimerContent"></div>
+    </div>
+  </div>
+
+  <!-- Import -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="modal-title" id="ttlImport">Daten importieren</div>
+        <div class="close-btn" onclick="closeModal('importModal')">✕</div>
+      </div>
+      <p id="txtImportDesc" style="font-size:14px;color:var(--muted);margin-bottom:4px;"></p>
+      <p id="txtImportWarn" style="font-size:12px;color:var(--accent2);margin-bottom:12px;"></p>
+      <!-- File import -->
+      <label id="lblImportFile"
+        style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;margin-bottom:12px;">
+        <span style="font-size:20px;">📂</span>
+        <div>
+          <div id="txtImportFileBtn" style="font-weight:600;font-size:14px;">Datei importieren (.gymdata / .gz)</div>
+          <div id="txtImportFileHint" style="font-size:12px;color:var(--muted);">Vom anderen Handy exportierte Datei
+            öffnen</div>
+        </div>
+        <input type="file" id="importFileInput" accept=".gymdata,.gymdata.gz,.gz,.json" style="display:none;"
+          onchange="importFromFile(event)">
+      </label>
+      <!-- Code import -->
+      <textarea id="importText" placeholder="Export-Code hier einfügen..."
+        style="width:100%;height:100px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:none;outline:none;"></textarea>
+      <button class="btn btn-primary" style="margin-top:12px;" id="btnDoImport" onclick="doImport()">✓
+        Importieren</button>
+      <button class="btn btn-secondary" id="btnCancelImport" onclick="closeModal('importModal')">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Rest Timer Overlay -->
+  <div id="restTimerOverlay" style="display:none;">
+    <svg width="60" height="60" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="26" fill="none" stroke="var(--surface2)" stroke-width="5" />
+      <circle id="restTimerArc" cx="30" cy="30" r="26" fill="none" stroke="var(--accent)" stroke-width="5"
+        stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="0" transform="rotate(-90 30 30)"
+        style="transition:stroke-dashoffset 0.9s linear;" />
+    </svg>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;" id="restTimerLabel">
+        Pause</div>
+      <div id="restTimerCount"
+        style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">90</div>
+    </div>
+    <button onclick="skipRestTimer()" id="btnSkipRest"
+      style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Überspringen</button>
+  </div>
+
+  <!-- Custom PIN Numpad Modal -->
+  <div class="modal-overlay" id="pinModal">
+    <div class="modal" style="padding:28px 20px 24px;">
+      <div class="modal-handle"></div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;"
+          id="pinModalSubtitle">Fotos entsperren</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text);" id="pinModalTitle">PIN
+          eingeben</div>
+      </div>
+      <!-- Digit dots -->
+      <div style="display:flex;justify-content:center;gap:16px;margin-bottom:32px;" id="pinDots">
+        <div class="pin-dot" id="pinDot0"></div>
+        <div class="pin-dot" id="pinDot1"></div>
+        <div class="pin-dot" id="pinDot2"></div>
+        <div class="pin-dot" id="pinDot3"></div>
+      </div>
+      <!-- Numpad -->
+      <div class="pin-grid">
+        <button class="pin-btn" onclick="pinInput('1')">1</button>
+        <button class="pin-btn" onclick="pinInput('2')">2</button>
+        <button class="pin-btn" onclick="pinInput('3')">3</button>
+        <button class="pin-btn" onclick="pinInput('4')">4</button>
+        <button class="pin-btn" onclick="pinInput('5')">5</button>
+        <button class="pin-btn" onclick="pinInput('6')">6</button>
+        <button class="pin-btn" onclick="pinInput('7')">7</button>
+        <button class="pin-btn" onclick="pinInput('8')">8</button>
+        <button class="pin-btn" onclick="pinInput('9')">9</button>
+        <button class="pin-btn"
+          style="background:transparent;border-color:transparent;color:var(--muted);font-size:16px;font-family:'DM Sans',sans-serif;"
+          onclick="closePinModal()">Abbr.</button>
+        <button class="pin-btn" onclick="pinInput('0')">0</button>
+        <button class="pin-btn" style="font-family:'DM Sans',sans-serif;font-size:20px;color:var(--muted);"
+          onclick="pinDelete()">⌫</button>
+      </div>
+      <div id="pinError"
+        style="text-align:center;color:var(--accent2);font-size:13px;font-weight:600;margin-top:16px;min-height:20px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- PIN Config Options Modal -->
+  <div class="modal-overlay" id="pinConfigModal">
+    <div class="modal" style="padding:20px;">
+      <div class="modal-handle"></div>
+      <div class="modal-title" style="margin-bottom:16px;">🔒 Foto-PIN</div>
+      <button class="btn btn-secondary" style="margin-bottom:10px;"
+        onclick="closeModal('pinConfigModal');openPinModal('change_verify',null);">PIN ändern</button>
+      <button class="btn btn-danger"
+        onclick="closeModal('pinConfigModal');openPinModal('remove_verify',null);">PIN-Schutz entfernen</button>
+      <button class="btn btn-secondary" style="margin-top:10px;"
+        onclick="closeModal('pinConfigModal')">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Add Measurement Modal -->
+  <div class="modal-overlay" id="measurementModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="ttlMeasure">Messung hinzufügen</div>
+        <div class="close-btn" onclick="closeModal('measurementModal')">✕</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblMeasureWeight">Körpergewicht (kg)</label>
+        <input type="number" class="form-input" id="measureWeight" placeholder="z.B. 80.5" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblMeasureBf">Körperfettanteil (%) - optional</label>
+        <input type="number" class="form-input" id="measureBf" placeholder="z.B. 15" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblMeasureNote">Notiz</label>
+        <input type="text" class="form-input" id="measureNote" placeholder="Morgens, nüchtern...">
+      </div>
+      <button class="btn btn-primary" onclick="saveMeasurement()">Speichern</button>
+    </div>
+  </div>
+
+  <!-- View Picture Modal -->
+  <div class="modal-overlay" id="viewPicModal">
+    <div class="modal" style="padding:10px;padding-bottom:20px;">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="btn btn-danger btn-sm" style="margin-top:0;margin-right:8px;width:auto;"
+          onclick="deleteCurrentPic()">Löschen</button>
+        <div class="close-btn" onclick="closeModal('viewPicModal')">✕</div>
+      </div>
+      <img id="viewPicImg" style="width:100%;border-radius:10px;object-fit:contain;max-height:70vh;">
+      <div id="viewPicDate" style="text-align:center;margin-top:10px;font-weight:600;color:var(--accent);"></div>
+    </div>
+  </div>
+
+  <!-- Program Modal -->
+  <div class="modal-overlay" id="programModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="programModalTitle">Programm erstellen</div>
+        <div class="close-btn" onclick="closeModal('programModal')">✕</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblProgName">Programm Name</label>
+        <input class="form-input" id="progName" placeholder="z.B. 4-Wochen Powerlifting">
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label class="form-label" style="margin:0;" id="lblProgDays">Wochenplan</label>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openCreateTemplate()"
+            id="btnNestedAddTmpl">+ Vorlage erstellen</button>
+        </div>
+      </div>
+
+      <div id="progDaysList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        <!-- Day rows inserted here -->
+      </div>
+
+      <button class="btn btn-primary" onclick="saveProgram()" id="btnSaveProgram">Speichern</button>
+      <button class="btn btn-danger" id="deleteProgBtn" style="display:none;margin-top:8px;"
+        onclick="deleteProgram()">Programm löschen</button>
+    </div>
+  </div>
+
+  <!-- Tools Modal -->
+  <div class="modal-overlay" id="toolsModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="ttlTools">Rechner & Tools</div>
+        <div class="close-btn" onclick="closeModal('toolsModal')">✕</div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+          </svg>
+          <span id="lbl1RmDesc">1RM Rechner (Epley)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div>
+            <label class="form-label">Gewicht (kg)</label>
+            <input type="number" class="form-input" id="tool1RmWeight" placeholder="z.B. 100" oninput="calculate1Rm()"
+              inputmode="decimal">
+          </div>
+          <div>
+            <label class="form-label">Wiederholungen</label>
+            <input type="number" class="form-input" id="tool1RmReps" placeholder="z.B. 5" oninput="calculate1Rm()"
+              inputmode="numeric">
+          </div>
+        </div>
+        <div style="background:var(--bg);padding:14px;border-radius:10px;text-align:center;">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Geschätztes 1RM
+          </div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--accent);" id="tool1RmResult">— kg
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v20" />
+            <path d="M2 12h20" />
+          </svg>
+          <span id="lblPlateDesc">Scheiben-Rechner</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div>
+            <label class="form-label">Zielgewicht (kg)</label>
+            <input type="number" class="form-input" id="toolPlateTarget" placeholder="z.B. 110"
+              oninput="calculatePlates()" inputmode="decimal">
+          </div>
+          <div>
+            <label class="form-label">Stangengewicht (kg)</label>
+            <input type="number" class="form-input" id="toolPlateBar" value="20" oninput="calculatePlates()"
+              inputmode="decimal">
+          </div>
+        </div>
+        <div style="background:var(--bg);padding:14px;border-radius:10px;">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;text-align:center;">
+            Pro Seite erforderlich</div>
+          <div id="toolPlateResult" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:28px;">
+            <span style="color:var(--muted);font-size:13px;">Geben Sie ein Zielgewicht ein</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weight Progress Modal -->
+  <div class="modal-overlay" id="weightProgressModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="modal-title">Gewicht & KFA Verlauf</div>
+        <div class="close-btn" onclick="closeModal('weightProgressModal')">✕</div>
+      </div>
+      <button class="btn btn-primary" style="margin-bottom:16px;" onclick="openAddMeasurementModal()">+ Neuer
+        Eintrag</button>
+      <div style="margin-bottom:12px;" id="progressChart"></div>
+      <div id="progressList" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- Pics Progress Modal -->
+  <div class="modal-overlay" id="picsProgressModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="modal-title">Progress Pics</div>
+        <div style="display:flex;gap:8px;">
+          <div class="close-btn" onclick="configurePicPin()" style="background:var(--surface2);"
+            title="Foto PIN einrichten">🔒</div>
+          <div class="close-btn" onclick="closeModal('picsProgressModal')">✕</div>
+        </div>
+      </div>
+      <label class="btn btn-primary"
+        style="margin-bottom:16px;cursor:pointer;display:block;text-align:center;padding:12px;color:#000;">
+        + Neues Foto
+        <input type="file" id="progressPicUpload" accept="image/*" style="display:none;"
+          onchange="handlePicUpload(event)">
+      </label>
+      <div id="progressGallery"
+        style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:50vh;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- Exercise Progress Graph Modal -->
+  <div class="modal-overlay" id="exGraphModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="exGraphTitle">Übung-Analyse</div>
+        <div class="close-btn" onclick="closeModal('exGraphModal')">✕</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">Max. Gewicht über Zeit</div>
+      <div style="margin-bottom:12px;" id="exGraphChart"></div>
+    </div>
+  </div>
+
+
+  <!-- Supplement Modal -->
+  <div class="modal-overlay" id="supplementModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="suppModalTitle">Supplement</div>
+        <div class="close-btn" onclick="closeModal('supplementModal')">✕</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Name <span class="info-icon"
+            onclick="showInfo('Name', 'Der Name deines Supplements, z.B. Kreatin, Whey Protein, Magnesium.')">ℹ️</span></label>
+        <input class="form-input" id="suppName" placeholder="z.B. Kreatin">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label" id="lblSuppForm">Form <span class="info-icon"
+              onclick="showInfo('Form', 'In welcher Form liegt das Supplement vor? Pulver, Kapseln, etc.')">ℹ️</span></label>
+          <select class="form-input" id="suppForm" onchange="_onSuppFormChange()">
+            <option value="capsule">Kapsel</option>
+            <option value="powder">Pulver</option>
+            <option value="liquid">Flüssig</option>
+            <option value="tablet">Tablette</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="lblSuppTime">Tageszeit <span class="info-icon"
+              onclick="showInfo('Tageszeit', 'Wann nimmst du dieses Supplement am besten ein? Das dient nur zur Sortierung.')">ℹ️</span></label>
+          <select class="form-input" id="suppTimeOfDay">
+            <option value="morgens">☀️ Morgens</option>
+            <option value="mittags">🌤️ Mittags</option>
+            <option value="abends">🌙 Abends</option>
+            <option value="vor_training">💪 Vor Training</option>
+            <option value="nach_training">🏋️ Nach Training</option>
+            <option value="egal">⏰ Jederzeit</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label" id="lblSuppDosage">Menge <span class="info-icon"
+              onclick="showInfo('Menge (Dosierung)', 'Wie viel nimmst du? Gib hier einfach die Zahl ein, oder was du möchtest (z.B. 5 oder 1.5).')">ℹ️</span></label>
+          <input type="text" class="form-input" id="suppDosage" placeholder="z.B. 5">
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="lblSuppUnit">Einheit <span class="info-icon"
+              onclick="showInfo('Einheit', 'Was ist die Maßeinheit? z.B. Gramm (g), Kapseln, Scoops, etc.')">ℹ️</span></label>
+          <input class="form-input" id="suppUnit" placeholder="g / mg / Kapseln">
+        </div>
+      </div>
+      <div class="form-group" id="suppScoopRow" style="display:none;">
+        <label class="form-label" id="lblSuppScoop">Löffelmaß <span class="info-icon"
+            onclick="showInfo('Löffelmaß', 'Optional: Wie viel Gramm entspricht ein Messlöffel? (Hilfreich bei Pulver)')">ℹ️</span></label>
+        <input class="form-input" id="suppScoopSize" placeholder="z.B. 1 Messlöffel = 5g">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblSuppFreq">Frequenz <span class="info-icon"
+            onclick="showInfo('Frequenz', 'Wie oft nimmst du dieses Supplement? Du kannst bestimmte Wochentage festlegen, so wie beim Training.')">ℹ️</span></label>
+        <select class="form-input" id="suppFrequency" onchange="_onSuppFreqChange()">
+          <option value="weekdays">Bestimmte Wochentage</option>
+          <option value="daily">Täglich</option>
+          <option value="every_x_days">Alle X Tage</option>
+        </select>
+      </div>
+      <div class="form-group" id="suppFreqValueRow" style="display:none;">
+        <label class="form-label">Alle wie viele Tage?</label>
+        <input type="number" class="form-input" id="suppFreqValue" value="2" min="2" max="30" inputmode="numeric">
+      </div>
+      <div class="form-group" id="suppFreqDaysRow">
+        <label class="form-label">Wochentage <span class="info-icon"
+            onclick="showInfo('Wochentage', 'Tippe die Tage an, an denen du das Supplement nehmen willst.')">ℹ️</span></label>
+        <div id="suppFreqDaysContainer" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblSuppSupply">Vorrat <span class="info-icon"
+            onclick="showInfo('Vorrat (Packungsgröße)', 'Wie viel ist in der Packung? Wir ziehen jede Einnahme davon ab und warnen dich, wenn es leer wird. (z.B. 90 Kapseln)')">ℹ️</span></label>
+        <input type="number" class="form-input" id="suppSupplySize" placeholder="z.B. 90" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notizen</label>
+        <textarea class="form-input" id="suppNotes" placeholder="z.B. Mit Mahlzeit einnehmen..."
+          style="resize:none;height:60px;line-height:1.5;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblSuppColor">Farbe</label>
+        <div id="suppColorPicker" style="display:flex;gap:8px;"></div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+        <label class="form-label" style="margin:0;" id="lblSuppActive">Aktiv</label>
         <label class="toggle">
-          <input type="checkbox" id="restToggle" onchange="restTimerToggle(this.checked)">
+          <input type="checkbox" id="suppActive" checked>
           <span class="toggle-slider"></span>
         </label>
       </div>
-      <div id="restDurationRow" class="rest-duration-row">
-        <button class="rest-adj-btn" onclick="restTimerAdj(-15)">−</button>
-        <span id="restDurationDisplay" class="rest-duration-display">1:30</span>
-        <button class="rest-adj-btn" onclick="restTimerAdj(+15)">+</button>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div class="section-title" style="font-size:18px;" id="ttlLastWorkouts">Verlauf</div>
-    <div id="recentWorkouts"></div>
-  </div>
-  <div id="activeWorkout" style="display:none;">
-    <div class="workout-header">
-      <div>
-        <div id="activeWorkoutLabel" style="font-size:13px;color:var(--muted);">Aktives Training</div>
-        <div class="timer-display" id="timerDisplay">00:00</div>
-      </div>
-      <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="finishWorkout()">Fertig ✓</button>
-    </div>
-    <div id="workoutExercises"></div>
-    <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
-    <button id="btnWorkoutHiit" class="btn btn-secondary" onclick="openHiitTimer()" style="margin-top:8px;">⚡ HIIT / Cardio Timer</button>
-    <button id="btnWorkoutTools" class="btn btn-secondary" onclick="openToolsModal()" style="margin-top:8px;">🛠 Rechner & Tools</button>
-    <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:16px;">Training abbrechen</button>
-  </div>
-</div>
-
-<!-- GymLab (Vorlagen + Übungen + Programme) -->
-<div class="page" id="page-gymlab">
-  <div class="gymlab-tabs">
-    <button class="gymlab-tab active" data-tab="all" onclick="switchGymLabTab('all')" id="tabGymLabAll">Alles</button>
-    <button class="gymlab-tab" data-tab="programs" onclick="switchGymLabTab('programs')" id="tabGymLabPrograms">Programme</button>
-    <button class="gymlab-tab" data-tab="templates" onclick="switchGymLabTab('templates')" id="tabGymLabTemplates">Vorlagen</button>
-    <button class="gymlab-tab" data-tab="exercises" onclick="switchGymLabTab('exercises')" id="tabGymLabExercises">Übungen</button>
-  </div>
-
-  <!-- Programs -->
-  <div id="gymlab-programs-wrapper">
-    <div class="gymlab-section-header">
-      <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
-      <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
-    </div>
-    <div id="programsList"></div>
-    <div class="divider"></div>
-  </div>
-
-  <!-- Templates -->
-  <div id="gymlab-templates-wrapper">
-    <div class="gymlab-section-header">
-      <div class="section-title" style="margin:0;" id="ttlTemplates">Vorlagen</div>
-      <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+</button>
-    </div>
-    <div id="templatesList"></div>
-    <div class="divider"></div>
-  </div>
-
-  <!-- Exercises -->
-  <div id="gymlab-exercises-wrapper">
-    <div class="gymlab-section-header">
-      <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
-      <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
-    </div>
-    <div id="exercisesList"></div>
-  </div>
-</div>
-
-<!-- Calendar -->
-<div class="page" id="page-calendar">
-  <div class="cal-header">
-    <button class="cal-nav" onclick="calPrevMonth()">‹</button>
-    <div class="cal-month" id="calMonthLabel"></div>
-    <button class="cal-nav" onclick="calNextMonth()">›</button>
-  </div>
-  <div class="cal-streak" id="calStreak"></div>
-  <div class="cal-grid" id="calDayLabels"></div>
-  <div style="height:8px;"></div>
-  <div class="cal-grid" id="calGrid"></div>
-  
-  <div class="divider" style="margin-top:20px;"></div>
-  <div class="section-title" id="ttlMonthRecap" style="font-size:16px;">Monats-Recap</div>
-  <div id="monthlyRecap" style="margin-bottom:16px;"></div>
-
-  <div class="divider"></div>
-  <div class="section-title" id="ttlStats">Statistiken</div>
-  <div class="stats-grid" id="statsGrid" style="margin-bottom:16px;"></div>
-</div>
-
-<!-- Supps -->
-<div class="page" id="page-supps">
-  <div class="supp-content"></div>
-</div>
-
-<!-- Progress -->
-<div class="page" id="page-progress">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div class="section-title" id="ttlProgress" style="margin:0;">Fortschritt</div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openModal('weightProgressModal')" id="btnWeightMod">Gewicht</button>
-      <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="requestPicsAccess()" id="btnPicsMod">Fotos 🔒</button>
+      <button class="btn btn-primary" onclick="saveSupplement()">Speichern</button>
+      <button class="btn btn-danger" id="deleteSuppBtn" style="display:none;" onclick="deleteSupplement()">Supplement
+        löschen</button>
+      <button class="btn btn-secondary" onclick="closeModal('supplementModal')">Abbrechen</button>
     </div>
   </div>
 
-  <div id="exerciseProgressTracker" style="display:flex;flex-direction:column;gap:12px;">
-    <!-- Accordions injected here -->
-  </div>
-</div>
-
-<!-- ===== NAV ===== -->
-<nav class="nav">
-  <button class="nav-btn active" data-page="log" onclick="showPage('log',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-    Training
-  </button>
-  <button class="nav-btn" data-page="gymlab" onclick="showPage('gymlab',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-    GymLab
-  </button>
-  <button class="nav-btn" data-page="calendar" onclick="showPage('calendar',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    Kalender
-  </button>
-  <button class="nav-btn" data-page="supps" onclick="showPage('supps',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-6 4.5h9m-9 3h6"/></svg>
-    Supps
-  </button>
-  <button class="nav-btn" data-page="progress" onclick="showPage('progress',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
-    Fortschritt
-  </button>
-</nav>
-
-<!-- ===== MODALS ===== -->
-
-<!-- Start Options -->
-<div class="modal-overlay" id="startOptionsModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="ttlStartOptions">Training starten</div>
-      <div class="close-btn" onclick="closeModal('startOptionsModal')">✕</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <button class="btn btn-primary" onclick="closeModal('startOptionsModal');openNewWorkout()" id="btnStartEmpty">Leeres Training</button>
-      <button class="btn btn-secondary" onclick="closeModal('startOptionsModal');showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))" id="btnStartTemplate">Aus Vorlage</button>
-      <button class="btn btn-secondary" id="btnStartProgOpt" style="display:none;" onclick="closeModal('startOptionsModal');startNextProgramDay()">Gemäß Programm</button>
+  <!-- Generic Info Modal -->
+  <div class="modal-overlay" id="infoModal">
+    <div class="modal" style="padding:20px;">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="infoModalTitle" style="margin-bottom:12px;">Info</div>
+      <div id="infoModalText" style="font-size:14px;color:var(--text);line-height:1.5;margin-bottom:20px;"></div>
+      <button class="btn btn-primary" onclick="closeModal('infoModal')">Verstanden</button>
     </div>
   </div>
-</div>
 
-<!-- Exercise Picker -->
-<div class="modal-overlay" id="exercisePickerModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="ttlChooseExercise">Übung wählen</div>
-      <div class="close-btn" onclick="closeSubModal('exercisePickerModal')">✕</div>
-    </div>
-    <div id="exercisePickerList"></div>
-    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('exercisePickerModal'); openAddExerciseFromPicker();" id="btnNestedAddEx">+ Neue Übung erstellen</button>
-  </div>
-</div>
-
-<!-- Add / Edit Exercise -->
-<div class="modal-overlay" id="addExerciseModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="addExerciseTitle">Neue Übung</div>
-      <div class="close-btn" onclick="closeModal('addExerciseModal')">✕</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblExName">Name</label>
-      <input class="form-input" id="exName" placeholder="z.B. Bankdrücken">
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblExCategory">Kategorie</label>
-      <select class="form-input" id="exCategory" onchange="updateCategoryHint()">
-        <option value="Brust">Brust</option>
-        <option value="Rücken">Rücken</option>
-        <option value="Schultern">Schultern</option>
-        <option value="Arme">Arme</option>
-        <option value="Beine">Beine</option>
-        <option value="Core">Core</option>
-        <option value="Cardio">Cardio</option>
-        <option value="Dehnen">Dehnen</option>
-      </select>
-    </div>
-    <div id="categoryHint" style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;"></div>
-    <div class="form-group">
-      <label class="form-label" id="lblExNotes">Notizen</label>
-      <textarea class="form-input" id="exNotes" placeholder="z.B. Schulterblätter zusammenziehen..." style="resize:none;height:80px;line-height:1.5;"></textarea>
-    </div>
-    <button class="btn btn-primary" onclick="saveExercise()" id="btnSaveExercise">Speichern</button>
-    <button class="btn btn-danger" id="deleteExBtn" style="display:none;" onclick="deleteExercise()">Übung löschen</button>
-    <button class="btn btn-secondary" onclick="closeModal('addExerciseModal')" id="btnCancelExercise">Abbrechen</button>
-  </div>
-</div>
-
-<!-- Log Sets (adapts to category type) -->
-<div class="modal-overlay" id="logSetsModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-      <div class="modal-title" id="logSetsTitle"></div>
-      <div class="close-btn" onclick="closeSubModal('logSetsModal')">✕</div>
-    </div>
-    <div id="lastPerformance" style="margin-bottom:16px;"></div>
-    <div class="set-col-labels" id="setColLabels">
-      <div></div>
-      <div class="set-col-label" id="colLabelType">Typ</div>
-      <div class="set-col-label" id="colLabel1">kg</div>
-      <div class="set-col-label" id="colLabel2">Wdh</div>
-      <div class="set-col-label" id="colLabelRpe">RPE</div>
-      <div></div>
-    </div>
-    <div class="sets-container" id="setsContainer"></div>
-    <button class="btn btn-secondary btn-sm" id="btnAddRow" onclick="addSetRow()">+ Satz</button>
-    <div style="margin-top:16px;">
-      <label class="form-label" id="lblSessionNote">Anmerkung (optional)</label>
-      <textarea class="form-input" id="sessionNote" placeholder="z.B. Schulter hat gezwickt..." style="resize:none;height:70px;line-height:1.5;margin-bottom:12px;"></textarea>
-      <button class="btn btn-primary" id="btnSaveSets" onclick="saveSets()">Sätze speichern</button>
+  <!-- Template Update Dialog -->
+  <div class="modal-overlay" id="tmplUpdateModal">
+    <div class="modal" style="padding:20px;">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="tmplUpdateTitle">Vorlage aktualisieren?</div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:16px;" id="tmplUpdateDesc">Du hast neue Übungen
+        hinzugefügt. Sollen sie dauerhaft in der Vorlage gespeichert werden?</p>
+      <div id="tmplUpdateExList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+      <button class="btn btn-primary" id="btnTmplUpdateConfirm" onclick="confirmTemplateUpdate()">Ausgewählte
+        übernehmen</button>
+      <button class="btn btn-secondary" onclick="skipTemplateUpdate()">Überspringen</button>
     </div>
   </div>
-</div>
 
-<!-- Template Modal -->
-<div class="modal-overlay" id="templateModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="templateModalTitle">Vorlage erstellen</div>
-      <div class="close-btn" onclick="closeModal('templateModal')">✕</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblTmplName">Name</label>
-      <input class="form-input" id="tmplName" placeholder="z.B. Push Day">
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblTmplType">Typ</label>
-      <select class="form-input" id="tmplType">
-        <option value="training">Training-Day</option>
-        <option value="rest">Active-Rest-Day</option>
-        <option value="couch">Couch-Potato-Day</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblTmplEx">Übungen</label>
-      <div id="tmplExerciseList" style="margin-bottom:8px;"></div>
-      <button class="btn btn-secondary btn-sm" id="btnAddExToTemplate" onclick="openTmplExPicker()">+ Übung hinzufügen</button>
-    </div>
-    <button class="btn btn-primary" style="margin-top:8px;" onclick="saveTemplate()" id="btnSaveTemplate">Speichern</button>
-    <button class="btn btn-danger" id="deleteTmplBtn" style="display:none;" onclick="deleteTemplate()">Vorlage löschen</button>
-    <button class="btn btn-secondary" onclick="closeModal('templateModal')" id="btnCancelTemplate">Abbrechen</button>
-  </div>
-</div>
+  <!-- AI Coach Modal -->
+  <div class="modal-overlay" id="aiCoachModal">
+    <div class="modal ai-modal">
+      <div class="modal-handle"></div>
+      <div class="ai-chat-container">
 
-<!-- Template Exercise Picker -->
-<div class="modal-overlay" id="tmplExPickerModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title" id="ttlTmplExPicker">Übungen auswählen</div>
-      <div class="close-btn" onclick="closeTmplExPicker()">✕</div>
-    </div>
-    <div id="tmplPickerSelectedCount" style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px;min-height:20px;"></div>
-    <div id="tmplExPickerList"></div>
-    <button class="btn btn-secondary" style="margin-top:12px;" onclick="closeSubModal('tmplExPickerModal'); openAddExerciseFromTmplPicker();" id="btnNestedTmplAddEx">+ Neue Übung erstellen</button>
-    <div style="margin-top:16px;">
-      <button class="btn btn-primary" id="btnConfirmTmplEx" onclick="confirmTmplExSelection()">Hinzufügen</button>
-    </div>
-  </div>
-</div>
-
-<!-- Edit Past Workout -->
-<div class="modal-overlay" id="editWorkoutModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-      <div class="modal-title" id="editWorkoutTitle"></div>
-      <div class="close-btn" onclick="closeEditWorkout()">✕</div>
-    </div>
-    <div id="editWorkoutExercises"></div>
-    <button class="btn btn-secondary" id="btnEditWorkoutAddEx" style="margin-top:12px;" onclick="openExercisePickerForEdit()">+ Übung hinzufügen</button>
-    <button class="btn btn-primary" id="btnSaveEditWorkout" style="margin-top:10px;" onclick="saveEditWorkout()">✓ Änderungen speichern</button>
-  </div>
-</div>
-
-<!-- Calendar Day Detail -->
-<div class="modal-overlay" id="calDayModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div class="modal-title" id="calDayTitle"></div>
-      <div class="close-btn" onclick="closeModal('calDayModal')">✕</div>
-    </div>
-    <div id="calDayContent"></div>
-  </div>
-</div>
-
-<!-- Export / Import Hub -->
-<div class="modal-overlay" id="exportModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="ttlExport">Backup & Restore</div>
-      <div class="close-btn" onclick="closeModal('exportModal')">✕</div>
-    </div>
-    <!-- hidden textarea used by copyExport() fallback only -->
-    <textarea id="exportText" readonly style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
-    <!-- Export section -->
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;" id="lblExportSection">Exportieren</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      <button class="btn btn-primary" id="btnExportFile" onclick="exportAsFile()">🗜️ Als Datei sichern</button>
-      <button class="btn btn-primary" id="btnShareBackup" onclick="shareToNotes()">📤 Teilen / AirDrop</button>
-    </div>
-    <!-- Notes export -->
-    <button class="btn btn-secondary" id="btnExportNotes" onclick="exportToNotesReadable()" style="margin-bottom:16px;">📝 Verlauf zu Notizen exportieren</button>
-    <!-- Import section -->
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;" id="lblImportSection">Importieren</div>
-    <button class="btn btn-secondary" id="btnOpenImport" onclick="closeModal('exportModal');openImportModal();">📥 Daten importieren</button>
-    <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('exportModal')" style="margin-top:8px;">Schließen</button>
-  </div>
-</div>
-
-<!-- Timer (HIIT + Stoppuhr) -->
-<div class="modal-overlay" id="hiitModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div class="modal-title" id="ttlHiitTimer">Timer</div>
-      <div class="close-btn" onclick="closeHiitTimer()">✕</div>
-    </div>
-    <!-- Mode tabs -->
-    <div class="hiit-mode-tabs">
-      <button class="hiit-mode-tab active" id="timerModeHiit" onclick="switchTimerMode('hiit')">HIIT</button>
-      <button class="hiit-mode-tab" id="timerModeSw" onclick="switchTimerMode('sw')">Stoppuhr</button>
-    </div>
-    <!-- HIIT Section -->
-    <div id="hiitSection">
-      <div class="hiit-tabs" style="margin-top:12px;">
-        <button class="hiit-tab active" data-mode="tabata" onclick="hiitSelectMode('tabata')">Tabata</button>
-        <button class="hiit-tab" data-mode="emom" onclick="hiitSelectMode('emom')">EMOM</button>
-        <button class="hiit-tab" data-mode="amrap" onclick="hiitSelectMode('amrap')">AMRAP</button>
-        <button class="hiit-tab" data-mode="rope" onclick="hiitSelectMode('rope')">🪢 Seil</button>
-        <button class="hiit-tab" data-mode="custom" onclick="hiitSelectMode('custom')" id="hiitTabCustom">Custom</button>
-      </div>
-      <div id="hiitDisplay" style="margin:16px 0;"></div>
-      <div id="hiitConfig"></div>
-      <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;margin-top:16px;">
-        <button class="btn btn-primary hiit-ctrl-btn" id="hiitToggleBtn" onclick="hiitToggle()">▶ Start</button>
-        <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitSkip()" title="Skip">⏭</button>
-        <button class="btn btn-secondary" style="width:auto;padding:14px 16px;" onclick="hiitReset()" title="Reset">↺</button>
-      </div>
-    </div>
-    <!-- Stopwatch Section -->
-    <div id="swSection" style="display:none;">
-      <div style="text-align:center;padding:36px 0 28px;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:72px;color:var(--text);line-height:1;" id="swDisplay">00:00</div>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button onclick="swToggle()" id="swToggleBtn" style="flex:1;background:var(--accent);border:none;border-radius:12px;height:52px;color:#000;font-size:20px;cursor:pointer;">▶</button>
-        <button onclick="swReset()" style="background:transparent;border:1px solid var(--border);border-radius:12px;width:52px;height:52px;color:var(--muted);font-size:22px;cursor:pointer;">↺</button>
-      </div>
-      <button id="swLogBtn" onclick="openLogTimerModal()" class="btn btn-secondary" style="display:none;margin-top:10px;">✓ Buchen</button>
-    </div>
-  </div>
-</div>
-
-<!-- HIIT → Workout Log -->
-<div class="modal-overlay" id="hiitLogModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title">⚡ Session speichern</div>
-      <div class="close-btn" onclick="closeModal('hiitLogModal')">✕</div>
-    </div>
-    <div id="hiitLogSummary"></div>
-    <div id="hiitLogContent"></div>
-    <button class="btn btn-secondary" style="width:100%;margin-top:10px;" onclick="closeModal('hiitLogModal')" id="btnHiitSkip">Überspringen</button>
-  </div>
-</div>
-
-<!-- Template / Program Share -->
-<div class="modal-overlay" id="tmplShareModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title" id="ttlTmplShare">Teilen</div>
-      <div class="close-btn" onclick="closeModal('tmplShareModal')">✕</div>
-    </div>
-    <div id="tmplShareName" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>
-    <p id="tmplShareDesc" style="font-size:13px;color:var(--muted);margin-bottom:20px;"></p>
-    <!-- hidden code textarea used by fallback copy only -->
-    <textarea id="tmplShareCode" readonly style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
-    <button class="btn btn-primary" onclick="shareTemplateNative()" id="btnShareTmplNative" style="font-size:16px;">📤 Teilen / AirDrop</button>
-    <div id="tmplShareCopyConfirm" style="display:none;text-align:center;color:var(--accent);font-size:14px;margin-top:10px;font-weight:600;">✓ Kopiert!</div>
-    <button class="btn btn-secondary" onclick="closeModal('tmplShareModal')" style="margin-top:8px;">Schließen</button>
-  </div>
-</div>
-
-<!-- Log Timer to Exercise -->
-<div class="modal-overlay" id="logTimerModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title" id="ttlLogTimer">Zeit buchen</div>
-      <div class="close-btn" onclick="closeModal('logTimerModal')">✕</div>
-    </div>
-    <div style="font-size:14px;color:var(--muted);margin-bottom:16px;" id="logTimerTimeRow">Gemessene Zeit: <span id="logTimerTimeDisplay" style="color:var(--accent);font-weight:700;font-family:'Bebas Neue',sans-serif;font-size:22px;"></span></div>
-    <div id="logTimerContent"></div>
-  </div>
-</div>
-
-<!-- Import -->
-<div class="modal-overlay" id="importModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div class="modal-title" id="ttlImport">Daten importieren</div>
-      <div class="close-btn" onclick="closeModal('importModal')">✕</div>
-    </div>
-    <p id="txtImportDesc" style="font-size:14px;color:var(--muted);margin-bottom:4px;"></p>
-    <p id="txtImportWarn" style="font-size:12px;color:var(--accent2);margin-bottom:12px;"></p>
-    <!-- File import -->
-    <label id="lblImportFile" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;margin-bottom:12px;">
-      <span style="font-size:20px;">📂</span>
-      <div>
-        <div id="txtImportFileBtn" style="font-weight:600;font-size:14px;">Datei importieren (.gymdata / .gz)</div>
-        <div id="txtImportFileHint" style="font-size:12px;color:var(--muted);">Vom anderen Handy exportierte Datei öffnen</div>
-      </div>
-      <input type="file" id="importFileInput" accept=".gymdata,.gymdata.gz,.gz,.json" style="display:none;" onchange="importFromFile(event)">
-    </label>
-    <!-- Code import -->
-    <textarea id="importText" placeholder="Export-Code hier einfügen..." style="width:100%;height:100px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:12px;font-family:monospace;resize:none;outline:none;"></textarea>
-    <button class="btn btn-primary" style="margin-top:12px;" id="btnDoImport" onclick="doImport()">✓ Importieren</button>
-    <button class="btn btn-secondary" id="btnCancelImport" onclick="closeModal('importModal')">Abbrechen</button>
-  </div>
-</div>
-
-<!-- Rest Timer Overlay -->
-<div id="restTimerOverlay" style="display:none;">
-  <svg width="60" height="60" viewBox="0 0 60 60">
-    <circle cx="30" cy="30" r="26" fill="none" stroke="var(--surface2)" stroke-width="5"/>
-    <circle id="restTimerArc" cx="30" cy="30" r="26" fill="none" stroke="var(--accent)" stroke-width="5"
-      stroke-linecap="round"
-      stroke-dasharray="163.4"
-      stroke-dashoffset="0"
-      transform="rotate(-90 30 30)"
-      style="transition:stroke-dashoffset 0.9s linear;"/>
-  </svg>
-  <div>
-    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;" id="restTimerLabel">Pause</div>
-    <div id="restTimerCount" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">90</div>
-  </div>
-  <button onclick="skipRestTimer()" id="btnSkipRest" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Überspringen</button>
-</div>
-
-<!-- Custom PIN Numpad Modal -->
-<div class="modal-overlay" id="pinModal">
-  <div class="modal" style="padding:28px 20px 24px;">
-    <div class="modal-handle"></div>
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;" id="pinModalSubtitle">Fotos entsperren</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text);" id="pinModalTitle">PIN eingeben</div>
-    </div>
-    <!-- Digit dots -->
-    <div style="display:flex;justify-content:center;gap:16px;margin-bottom:32px;" id="pinDots">
-      <div class="pin-dot" id="pinDot0"></div>
-      <div class="pin-dot" id="pinDot1"></div>
-      <div class="pin-dot" id="pinDot2"></div>
-      <div class="pin-dot" id="pinDot3"></div>
-    </div>
-    <!-- Numpad -->
-    <div class="pin-grid">
-      <button class="pin-btn" onclick="pinInput('1')">1</button>
-      <button class="pin-btn" onclick="pinInput('2')">2</button>
-      <button class="pin-btn" onclick="pinInput('3')">3</button>
-      <button class="pin-btn" onclick="pinInput('4')">4</button>
-      <button class="pin-btn" onclick="pinInput('5')">5</button>
-      <button class="pin-btn" onclick="pinInput('6')">6</button>
-      <button class="pin-btn" onclick="pinInput('7')">7</button>
-      <button class="pin-btn" onclick="pinInput('8')">8</button>
-      <button class="pin-btn" onclick="pinInput('9')">9</button>
-      <button class="pin-btn" style="background:transparent;border-color:transparent;color:var(--muted);font-size:16px;font-family:'DM Sans',sans-serif;" onclick="closePinModal()">Abbr.</button>
-      <button class="pin-btn" onclick="pinInput('0')">0</button>
-      <button class="pin-btn" style="font-family:'DM Sans',sans-serif;font-size:20px;color:var(--muted);" onclick="pinDelete()">⌫</button>
-    </div>
-    <div id="pinError" style="text-align:center;color:var(--accent2);font-size:13px;font-weight:600;margin-top:16px;min-height:20px;"></div>
-  </div>
-</div>
-
-<!-- PIN Config Options Modal -->
-<div class="modal-overlay" id="pinConfigModal">
-  <div class="modal" style="padding:20px;">
-    <div class="modal-handle"></div>
-    <div class="modal-title" style="margin-bottom:16px;">🔒 Foto-PIN</div>
-    <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="closeModal('pinConfigModal');openPinModal('change_verify',null);">PIN ändern</button>
-    <button class="btn btn-danger" onclick="closeModal('pinConfigModal');openPinModal('remove_verify',null);">PIN-Schutz entfernen</button>
-    <button class="btn btn-secondary" style="margin-top:10px;" onclick="closeModal('pinConfigModal')">Abbrechen</button>
-  </div>
-</div>
-
-<!-- Add Measurement Modal -->
-<div class="modal-overlay" id="measurementModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="ttlMeasure">Messung hinzufügen</div>
-      <div class="close-btn" onclick="closeModal('measurementModal')">✕</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblMeasureWeight">Körpergewicht (kg)</label>
-      <input type="number" class="form-input" id="measureWeight" placeholder="z.B. 80.5" inputmode="decimal">
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblMeasureBf">Körperfettanteil (%) - optional</label>
-      <input type="number" class="form-input" id="measureBf" placeholder="z.B. 15" inputmode="decimal">
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblMeasureNote">Notiz</label>
-      <input type="text" class="form-input" id="measureNote" placeholder="Morgens, nüchtern...">
-    </div>
-    <button class="btn btn-primary" onclick="saveMeasurement()">Speichern</button>
-  </div>
-</div>
-
-<!-- View Picture Modal -->
-<div class="modal-overlay" id="viewPicModal">
-  <div class="modal" style="padding:10px;padding-bottom:20px;">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-      <button class="btn btn-danger btn-sm" style="margin-top:0;margin-right:8px;width:auto;" onclick="deleteCurrentPic()">Löschen</button>
-      <div class="close-btn" onclick="closeModal('viewPicModal')">✕</div>
-    </div>
-    <img id="viewPicImg" style="width:100%;border-radius:10px;object-fit:contain;max-height:70vh;">
-    <div id="viewPicDate" style="text-align:center;margin-top:10px;font-weight:600;color:var(--accent);"></div>
-  </div>
-</div>
-
-<!-- Program Modal -->
-<div class="modal-overlay" id="programModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="programModalTitle">Programm erstellen</div>
-      <div class="close-btn" onclick="closeModal('programModal')">✕</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblProgName">Programm Name</label>
-      <input class="form-input" id="progName" placeholder="z.B. 4-Wochen Powerlifting">
-    </div>
-    
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <label class="form-label" style="margin:0;" id="lblProgDays">Wochenplan</label>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openCreateTemplate()" id="btnNestedAddTmpl">+ Vorlage erstellen</button>
-      </div>
-    </div>
-    
-    <div id="progDaysList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-      <!-- Day rows inserted here -->
-    </div>
-    
-    <button class="btn btn-primary" onclick="saveProgram()" id="btnSaveProgram">Speichern</button>
-    <button class="btn btn-danger" id="deleteProgBtn" style="display:none;margin-top:8px;" onclick="deleteProgram()">Programm löschen</button>
-  </div>
-</div>
-
-<!-- Tools Modal -->
-<div class="modal-overlay" id="toolsModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="ttlTools">Rechner & Tools</div>
-      <div class="close-btn" onclick="closeModal('toolsModal')">✕</div>
-    </div>
-    <div class="card" style="margin-bottom:16px;">
-      <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-        <span id="lbl1RmDesc">1RM Rechner (Epley)</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-        <div>
-          <label class="form-label">Gewicht (kg)</label>
-          <input type="number" class="form-input" id="tool1RmWeight" placeholder="z.B. 100" oninput="calculate1Rm()" inputmode="decimal">
-        </div>
-        <div>
-          <label class="form-label">Wiederholungen</label>
-          <input type="number" class="form-input" id="tool1RmReps" placeholder="z.B. 5" oninput="calculate1Rm()" inputmode="numeric">
-        </div>
-      </div>
-      <div style="background:var(--bg);padding:14px;border-radius:10px;text-align:center;">
-        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Geschätztes 1RM</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--accent);" id="tool1RmResult">— kg</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>
-        <span id="lblPlateDesc">Scheiben-Rechner</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-        <div>
-          <label class="form-label">Zielgewicht (kg)</label>
-          <input type="number" class="form-input" id="toolPlateTarget" placeholder="z.B. 110" oninput="calculatePlates()" inputmode="decimal">
-        </div>
-        <div>
-          <label class="form-label">Stangengewicht (kg)</label>
-          <input type="number" class="form-input" id="toolPlateBar" value="20" oninput="calculatePlates()" inputmode="decimal">
-        </div>
-      </div>
-      <div style="background:var(--bg);padding:14px;border-radius:10px;">
-        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;text-align:center;">Pro Seite erforderlich</div>
-        <div id="toolPlateResult" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:28px;">
-          <span style="color:var(--muted);font-size:13px;">Geben Sie ein Zielgewicht ein</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Weight Progress Modal -->
-<div class="modal-overlay" id="weightProgressModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div class="modal-title">Gewicht & KFA Verlauf</div>
-      <div class="close-btn" onclick="closeModal('weightProgressModal')">✕</div>
-    </div>
-    <button class="btn btn-primary" style="margin-bottom:16px;" onclick="openAddMeasurementModal()">+ Neuer Eintrag</button>
-    <div style="margin-bottom:12px;" id="progressChart"></div>
-    <div id="progressList" style="max-height:200px;overflow-y:auto;"></div>
-  </div>
-</div>
-
-<!-- Pics Progress Modal -->
-<div class="modal-overlay" id="picsProgressModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div class="modal-title">Progress Pics</div>
-      <div style="display:flex;gap:8px;">
-        <div class="close-btn" onclick="configurePicPin()" style="background:var(--surface2);" title="Foto PIN einrichten">🔒</div>
-        <div class="close-btn" onclick="closeModal('picsProgressModal')">✕</div>
-      </div>
-    </div>
-    <label class="btn btn-primary" style="margin-bottom:16px;cursor:pointer;display:block;text-align:center;padding:12px;color:#000;">
-      + Neues Foto
-      <input type="file" id="progressPicUpload" accept="image/*" style="display:none;" onchange="handlePicUpload(event)">
-    </label>
-    <div id="progressGallery" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:50vh;overflow-y:auto;"></div>
-  </div>
-</div>
-
-<!-- Exercise Progress Graph Modal -->
-<div class="modal-overlay" id="exGraphModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="exGraphTitle">Übung-Analyse</div>
-      <div class="close-btn" onclick="closeModal('exGraphModal')">✕</div>
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">Max. Gewicht über Zeit</div>
-    <div style="margin-bottom:12px;" id="exGraphChart"></div>
-  </div>
-</div>
-
-
-<!-- Supplement Modal -->
-<div class="modal-overlay" id="supplementModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title" id="suppModalTitle">Supplement</div>
-      <div class="close-btn" onclick="closeModal('supplementModal')">✕</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Name <span class="info-icon" onclick="showInfo('Name', 'Der Name deines Supplements, z.B. Kreatin, Whey Protein, Magnesium.')">ℹ️</span></label>
-      <input class="form-input" id="suppName" placeholder="z.B. Kreatin">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group">
-        <label class="form-label" id="lblSuppForm">Form <span class="info-icon" onclick="showInfo('Form', 'In welcher Form liegt das Supplement vor? Pulver, Kapseln, etc.')">ℹ️</span></label>
-        <select class="form-input" id="suppForm" onchange="_onSuppFormChange()">
-          <option value="capsule">Kapsel</option>
-          <option value="powder">Pulver</option>
-          <option value="liquid">Flüssig</option>
-          <option value="tablet">Tablette</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label" id="lblSuppTime">Tageszeit <span class="info-icon" onclick="showInfo('Tageszeit', 'Wann nimmst du dieses Supplement am besten ein? Das dient nur zur Sortierung.')">ℹ️</span></label>
-        <select class="form-input" id="suppTimeOfDay">
-          <option value="morgens">☀️ Morgens</option>
-          <option value="mittags">🌤️ Mittags</option>
-          <option value="abends">🌙 Abends</option>
-          <option value="vor_training">💪 Vor Training</option>
-          <option value="nach_training">🏋️ Nach Training</option>
-          <option value="egal">⏰ Jederzeit</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group">
-        <label class="form-label" id="lblSuppDosage">Menge <span class="info-icon" onclick="showInfo('Menge (Dosierung)', 'Wie viel nimmst du? Gib hier einfach die Zahl ein, oder was du möchtest (z.B. 5 oder 1.5).')">ℹ️</span></label>
-        <input type="text" class="form-input" id="suppDosage" placeholder="z.B. 5">
-      </div>
-      <div class="form-group">
-        <label class="form-label" id="lblSuppUnit">Einheit <span class="info-icon" onclick="showInfo('Einheit', 'Was ist die Maßeinheit? z.B. Gramm (g), Kapseln, Scoops, etc.')">ℹ️</span></label>
-        <input class="form-input" id="suppUnit" placeholder="g / mg / Kapseln">
-      </div>
-    </div>
-    <div class="form-group" id="suppScoopRow" style="display:none;">
-      <label class="form-label" id="lblSuppScoop">Löffelmaß <span class="info-icon" onclick="showInfo('Löffelmaß', 'Optional: Wie viel Gramm entspricht ein Messlöffel? (Hilfreich bei Pulver)')">ℹ️</span></label>
-      <input class="form-input" id="suppScoopSize" placeholder="z.B. 1 Messlöffel = 5g">
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblSuppFreq">Frequenz <span class="info-icon" onclick="showInfo('Frequenz', 'Wie oft nimmst du dieses Supplement? Du kannst bestimmte Wochentage festlegen, so wie beim Training.')">ℹ️</span></label>
-      <select class="form-input" id="suppFrequency" onchange="_onSuppFreqChange()">
-        <option value="weekdays">Bestimmte Wochentage</option>
-        <option value="daily">Täglich</option>
-        <option value="every_x_days">Alle X Tage</option>
-      </select>
-    </div>
-    <div class="form-group" id="suppFreqValueRow" style="display:none;">
-      <label class="form-label">Alle wie viele Tage?</label>
-      <input type="number" class="form-input" id="suppFreqValue" value="2" min="2" max="30" inputmode="numeric">
-    </div>
-    <div class="form-group" id="suppFreqDaysRow">
-      <label class="form-label">Wochentage <span class="info-icon" onclick="showInfo('Wochentage', 'Tippe die Tage an, an denen du das Supplement nehmen willst.')">ℹ️</span></label>
-      <div id="suppFreqDaysContainer" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblSuppSupply">Vorrat <span class="info-icon" onclick="showInfo('Vorrat (Packungsgröße)', 'Wie viel ist in der Packung? Wir ziehen jede Einnahme davon ab und warnen dich, wenn es leer wird. (z.B. 90 Kapseln)')">ℹ️</span></label>
-      <input type="number" class="form-input" id="suppSupplySize" placeholder="z.B. 90" inputmode="decimal">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notizen</label>
-      <textarea class="form-input" id="suppNotes" placeholder="z.B. Mit Mahlzeit einnehmen..." style="resize:none;height:60px;line-height:1.5;"></textarea>
-    </div>
-    <div class="form-group">
-      <label class="form-label" id="lblSuppColor">Farbe</label>
-      <div id="suppColorPicker" style="display:flex;gap:8px;"></div>
-    </div>
-    <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
-      <label class="form-label" style="margin:0;" id="lblSuppActive">Aktiv</label>
-      <label class="toggle">
-        <input type="checkbox" id="suppActive" checked>
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <button class="btn btn-primary" onclick="saveSupplement()">Speichern</button>
-    <button class="btn btn-danger" id="deleteSuppBtn" style="display:none;" onclick="deleteSupplement()">Supplement löschen</button>
-    <button class="btn btn-secondary" onclick="closeModal('supplementModal')">Abbrechen</button>
-  </div>
-</div>
-
-<!-- Generic Info Modal -->
-<div class="modal-overlay" id="infoModal">
-  <div class="modal" style="padding:20px;">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="infoModalTitle" style="margin-bottom:12px;">Info</div>
-    <div id="infoModalText" style="font-size:14px;color:var(--text);line-height:1.5;margin-bottom:20px;"></div>
-    <button class="btn btn-primary" onclick="closeModal('infoModal')">Verstanden</button>
-  </div>
-</div>
-
-<!-- Template Update Dialog -->
-<div class="modal-overlay" id="tmplUpdateModal">
-  <div class="modal" style="padding:20px;">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="tmplUpdateTitle">Vorlage aktualisieren?</div>
-    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;" id="tmplUpdateDesc">Du hast neue Übungen hinzugefügt. Sollen sie dauerhaft in der Vorlage gespeichert werden?</p>
-    <div id="tmplUpdateExList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
-    <button class="btn btn-primary" id="btnTmplUpdateConfirm" onclick="confirmTemplateUpdate()">Ausgewählte übernehmen</button>
-    <button class="btn btn-secondary" onclick="skipTemplateUpdate()">Überspringen</button>
-  </div>
-</div>
-
-<!-- AI Coach Modal -->
-<div class="modal-overlay" id="aiCoachModal">
-  <div class="modal ai-modal">
-    <div class="modal-handle"></div>
-    <div class="ai-chat-container">
-      
-      <!-- AI Header -->
-      <div class="ai-chat-header">
-        <!-- Left: History Toggle -->
-        <button class="ai-icon-btn" onclick="toggleAiHistory()" title="Chatverlauf">
-          💬
-        </button>
-        
-        <!-- Center: Title & Model Pill -->
-        <div class="ai-header-center" onclick="toggleAiSettings()" title="API Einstellungen öffnen">
-          <span class="ai-header-title-text" id="lblAiCoachTitle">AI Coach</span>
-          <span class="ai-active-model-badge" id="lblAiActiveModelBadge">Gemini 3.5 Flash</span>
-        </div>
-        
-        <!-- Right: New Chat & Close -->
-        <div style="display:flex; gap:8px; align-items:center;">
-          <button class="ai-icon-btn" onclick="startNewChat()" title="Neuer Chat">
-            ➕
+        <!-- AI Header -->
+        <div class="ai-chat-header">
+          <!-- Left: History Toggle -->
+          <button class="ai-icon-btn" onclick="toggleAiHistory()" title="Chatverlauf">
+            💬
           </button>
-          <div class="close-btn" onclick="closeModal('aiCoachModal')" style="margin-left:4px;">✕</div>
+
+          <!-- Center: Title & Model Pill -->
+          <div class="ai-header-center" onclick="toggleAiSettings()" title="API Einstellungen öffnen">
+            <span class="ai-header-title-text" id="lblAiCoachTitle">AI Coach</span>
+            <span class="ai-active-model-badge" id="lblAiActiveModelBadge">Gemini 3.5 Flash</span>
+          </div>
+
+          <!-- Right: New Chat & Close -->
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="ai-icon-btn" onclick="startNewChat()" title="Neuer Chat">
+              ➕
+            </button>
+            <div class="close-btn" onclick="closeModal('aiCoachModal')" style="margin-left:4px;">✕</div>
+          </div>
         </div>
-      </div>
-      
-      <!-- Settings Panel -->
-      <div class="ai-settings-panel" id="aiSettingsPanel">
-        <div class="ai-settings-title" id="lblAiSettingsTitle">API EINSTELLUNGEN</div>
-        
-        <div class="form-group">
-          <label class="form-label" id="lblAiProvider">Provider / Quelle</label>
-          <select class="form-input" id="aiProviderSelect" onchange="onAiProviderChange()">
-            <option value="gemini">Google Gemini API (100% Gratis)</option>
-            <option value="chrome">Chrome Local AI (On-Device, Gratis)</option>
-          </select>
-        </div>
-        
-        <div id="aiGeminiConfig">
+
+        <!-- Settings Panel -->
+        <div class="ai-settings-panel" id="aiSettingsPanel">
+          <div class="ai-settings-title" id="lblAiSettingsTitle">API EINSTELLUNGEN</div>
+
           <div class="form-group">
-            <label class="form-label" id="lblAiModel">Modell</label>
-            <select class="form-input" id="aiModelSelect" onchange="onAiModelChange()">
-              <option value="gemini-3.5-flash">Gemini 3.5 Flash (Standard, Schnell)</option>
-              <option value="gemini-3-pro">Gemini 3 Pro (Intelligent, Gründlich)</option>
-              <option value="custom">Custom Modellname (selbst eingeben)</option>
+            <label class="form-label" id="lblAiProvider">Provider / Quelle</label>
+            <select class="form-input" id="aiProviderSelect" onchange="onAiProviderChange()">
+              <option value="gemini">Google Gemini API (100% Gratis)</option>
+              <option value="chrome">Chrome Local AI (On-Device, Gratis)</option>
             </select>
           </div>
-          
-          <div class="form-group" id="aiCustomModelRow" style="display:none;">
-            <label class="form-label" id="lblAiCustomModel">Custom Modellname</label>
-            <input type="text" class="form-input" id="aiCustomModelInput" placeholder="z.B. gemini-3.5-pro">
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">
-              Gemini API Key 
-              <span style="float:right;"><a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent);text-decoration:underline;font-size:11px;" id="lnkGetApiKey">Kostenlosen Key holen ↗</a></span>
-            </label>
-            <input type="password" class="form-input" id="aiApiKeyInput" placeholder="AI Studio API-Key einfügen...">
-            <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4;" id="txtAiKeyHint">Der API-Key wird nur lokal in deinem Browser gesichert. Der Standard-Developer-Tarif bei Google is absolut gratis und erfordert keine Kreditkarte.</div>
-          </div>
-        </div>
-        
-        <div id="aiChromeConfig" style="display:none;">
-          <div style="font-size:12.5px;color:var(--muted);line-height:1.4;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);" id="txtAiChromeHint">
-            Nutzt die lokale Gemini Nano KI deines Webbrowsers. Komplett offline, kostenlos und ohne Key. 
-            <br><br>
-            <strong>Status:</strong> <span id="aiChromeStatus" style="color:var(--accent2);font-weight:700;">Überprüfe Kompatibilität...</span>
-          </div>
-        </div>
-        
-        <button class="btn btn-primary" onclick="saveAiSettings()" style="margin-top:10px;" id="btnSaveAiSettings">Speichern & Schließen</button>
-      </div>
 
-      <!-- History Panel -->
-      <div class="ai-history-panel" id="aiHistoryPanel">
-        <div class="ai-history-header">
-          <div class="ai-settings-title" id="lblAiHistoryTitle">CHATVERLAUF</div>
-          <button class="btn btn-primary btn-sm" onclick="startNewChat()" id="btnNewChat" style="padding:4px 8px;font-size:12px;">+ Neuer Chat</button>
-        </div>
-        <div class="ai-history-list" id="aiHistoryList">
-          <!-- Chat list items injected dynamically -->
-        </div>
-      </div>
+          <div id="aiGeminiConfig">
+            <div class="form-group">
+              <label class="form-label" id="lblAiModel">Modell</label>
+              <select class="form-input" id="aiModelSelect" onchange="onAiModelChange()">
+                <option value="gemini-3.5-flash">Gemini 3.5 Flash (Standard, Schnell)</option>
+                <option value="gemini-3-pro">Gemini 3 Pro (Intelligent, Gründlich)</option>
+                <option value="custom">Custom Modellname (selbst eingeben)</option>
+              </select>
+            </div>
 
-      <!-- Onboarding Screen -->
-      <div class="ai-onboarding-screen" id="aiOnboardingScreen" style="display:none;">
-        <div class="ai-onboarding-card">
-          <div class="ai-onboarding-title" id="lblAiOnboardTitle">🤖 Willkommen beim AI Coach!</div>
-          <div class="ai-onboarding-text" id="lblAiOnboardIntro">Wähle eine der folgenden zwei kostenlosen Optionen, um deinen persönlichen Coach zu starten:</div>
-          
-          <!-- Option A: Chrome Local AI -->
-          <div class="ai-onboard-option-card" id="aiOnboardOptChrome">
-            <div class="ai-onboard-option-header">
-              <span class="ai-onboard-option-badge">Option A</span>
-              <span class="ai-onboard-option-name">Chrome Lokale KI</span>
+            <div class="form-group" id="aiCustomModelRow" style="display:none;">
+              <label class="form-label" id="lblAiCustomModel">Custom Modellname</label>
+              <input type="text" class="form-input" id="aiCustomModelInput" placeholder="z.B. gemini-3.5-pro">
             </div>
-            <div class="ai-onboard-option-desc" id="lblAiOnboardChromeDesc">Nutzt die in deinem Browser integrierte Gemini Nano KI. 100% offline, gratis und datenschutzfreundlich.</div>
-            <div id="aiOnboardChromeStatusBox" style="margin-top:10px;">
-              <!-- Status and action button injected here -->
+
+            <div class="form-group">
+              <label class="form-label">
+                Gemini API Key
+                <span style="float:right;"><a href="https://aistudio.google.com/" target="_blank"
+                    style="color:var(--accent);text-decoration:underline;font-size:11px;" id="lnkGetApiKey">Kostenlosen
+                    Key holen ↗</a></span>
+              </label>
+              <input type="password" class="form-input" id="aiApiKeyInput" placeholder="AI Studio API-Key einfügen...">
+              <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.4;" id="txtAiKeyHint">Der
+                API-Key wird nur lokal in deinem Browser gesichert. Der Standard-Developer-Tarif bei Google is absolut
+                gratis und erfordert keine Kreditkarte.</div>
             </div>
           </div>
-          
-          <!-- Option B: Gemini API Key -->
-          <div class="ai-onboard-option-card">
-            <div class="ai-onboard-option-header">
-              <span class="ai-onboard-option-badge">Option B</span>
-              <span class="ai-onboard-option-name">Google Gemini API-Key</span>
+
+          <div id="aiChromeConfig" style="display:none;">
+            <div
+              style="font-size:12.5px;color:var(--muted);line-height:1.4;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);"
+              id="txtAiChromeHint">
+              Nutzt die lokale Gemini Nano KI deines Webbrowsers. Komplett offline, kostenlos und ohne Key.
+              <br><br>
+              <strong>Status:</strong> <span id="aiChromeStatus" style="color:var(--accent2);font-weight:700;">Überprüfe
+                Kompatibilität...</span>
             </div>
-            <div class="ai-onboard-option-desc" id="lblAiOnboardGeminiDesc">Verbinde deinen eigenen kostenlosen Key. Erfordert keine Kreditkarte und bietet Zugriff auf das schlaue Gemini 3 Pro.</div>
-            
-            <div class="ai-onboard-steps">
-              <div class="ai-onboard-step">
-                <span class="ai-onboard-step-num">1</span>
-                <span><a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent);text-decoration:underline;" id="lblAiOnboardStep1">Klicke hier, um Google AI Studio zu öffnen ↗</a></span>
-              </div>
-              <div class="ai-onboard-step">
-                <span class="ai-onboard-step-num">2</span>
-                <span id="lblAiOnboardStep2">Klicke auf "Get API Key" und erstelle einen neuen Schlüssel.</span>
-              </div>
-              <div class="ai-onboard-step">
-                <span class="ai-onboard-step-num">3</span>
-                <span id="lblAiOnboardStep3">Kopiere den Schlüssel und füge ihn hier ein:</span>
-              </div>
-            </div>
-            
-            <input type="password" class="form-input" id="aiOnboardKeyInput" placeholder="API-Key einfügen..." style="margin-top:10px;margin-bottom:12px;">
-            <button class="btn btn-primary" onclick="saveAiOnboardKey()" id="btnSaveAiOnboard">Schlüssel speichern & starten</button>
           </div>
-          
+
+          <button class="btn btn-primary" onclick="saveAiSettings()" style="margin-top:10px;"
+            id="btnSaveAiSettings">Speichern & Schließen</button>
         </div>
+
+        <!-- History Panel -->
+        <div class="ai-history-panel" id="aiHistoryPanel">
+          <div class="ai-history-header">
+            <div class="ai-settings-title" id="lblAiHistoryTitle">CHATVERLAUF</div>
+            <button class="btn btn-primary btn-sm" onclick="startNewChat()" id="btnNewChat"
+              style="padding:4px 8px;font-size:12px;">+ Neuer Chat</button>
+          </div>
+          <div class="ai-history-list" id="aiHistoryList">
+            <!-- Chat list items injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Onboarding Screen -->
+        <div class="ai-onboarding-screen" id="aiOnboardingScreen" style="display:none;">
+          <div class="ai-onboarding-card">
+            <div class="ai-onboarding-title" id="lblAiOnboardTitle">🤖 Willkommen beim AI Coach!</div>
+            <div class="ai-onboarding-text" id="lblAiOnboardIntro">Wähle eine der folgenden zwei kostenlosen Optionen,
+              um deinen persönlichen Coach zu starten:</div>
+
+            <!-- Option A: Chrome Local AI -->
+            <div class="ai-onboard-option-card" id="aiOnboardOptChrome">
+              <div class="ai-onboard-option-header">
+                <span class="ai-onboard-option-badge">Option A</span>
+                <span class="ai-onboard-option-name">Chrome Lokale KI</span>
+              </div>
+              <div class="ai-onboard-option-desc" id="lblAiOnboardChromeDesc">Nutzt die in deinem Browser integrierte
+                Gemini Nano KI. 100% offline, gratis und datenschutzfreundlich.</div>
+              <div id="aiOnboardChromeStatusBox" style="margin-top:10px;">
+                <!-- Status and action button injected here -->
+              </div>
+            </div>
+
+            <!-- Option B: Gemini API Key -->
+            <div class="ai-onboard-option-card">
+              <div class="ai-onboard-option-header">
+                <span class="ai-onboard-option-badge">Option B</span>
+                <span class="ai-onboard-option-name">Google Gemini API-Key</span>
+              </div>
+              <div class="ai-onboard-option-desc" id="lblAiOnboardGeminiDesc">Verbinde deinen eigenen kostenlosen Key.
+                Erfordert keine Kreditkarte und bietet Zugriff auf das schlaue Gemini 3 Pro.</div>
+
+              <div class="ai-onboard-steps">
+                <div class="ai-onboard-step">
+                  <span class="ai-onboard-step-num">1</span>
+                  <span><a href="https://aistudio.google.com/" target="_blank"
+                      style="color:var(--accent);text-decoration:underline;" id="lblAiOnboardStep1">Klicke hier, um
+                      Google AI Studio zu öffnen ↗</a></span>
+                </div>
+                <div class="ai-onboard-step">
+                  <span class="ai-onboard-step-num">2</span>
+                  <span id="lblAiOnboardStep2">Klicke auf "Get API Key" und erstelle einen neuen Schlüssel.</span>
+                </div>
+                <div class="ai-onboard-step">
+                  <span class="ai-onboard-step-num">3</span>
+                  <span id="lblAiOnboardStep3">Kopiere den Schlüssel und füge ihn hier ein:</span>
+                </div>
+              </div>
+
+              <input type="password" class="form-input" id="aiOnboardKeyInput" placeholder="API-Key einfügen..."
+                style="margin-top:10px;margin-bottom:12px;">
+              <button class="btn btn-primary" onclick="saveAiOnboardKey()" id="btnSaveAiOnboard">Schlüssel speichern &
+                starten</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Chat Feed -->
+        <div class="ai-chat-feed" id="aiChatFeed">
+          <!-- Messages loaded dynamically -->
+        </div>
+
+        <!-- Suggestion prompts -->
+        <div class="ai-suggestions-row" id="aiSuggestionsRow">
+          <button class="ai-suggestion-chip" onclick="triggerAiPreset('analyse')">📊 <span id="chipAnalyse">Analyse mein
+              Training</span></button>
+          <button class="ai-suggestion-chip" onclick="triggerAiPreset('nutrition')">🍎 <span
+              id="chipNutrition">Ernährungsplan</span></button>
+          <button class="ai-suggestion-chip" onclick="triggerAiPreset('supps')">💊 <span
+              id="chipSupps">Supplement-Check</span></button>
+          <button class="ai-suggestion-chip" onclick="triggerAiPreset('plan')">💪 <span id="chipPlan">Plan
+              erstellen</span></button>
+        </div>
+
+        <!-- Chat Input Area -->
+        <div class="ai-chat-input-row">
+          <input type="text" class="ai-chat-input" id="aiChatInput" placeholder="Frag deinen Coach..."
+            onkeydown="if(event.key==='Enter') sendAiMessage()" autocomplete="off">
+          <button class="ai-send-btn" id="aiSendBtn" onclick="sendAiMessage()">▶</button>
+        </div>
+
       </div>
-      
-      <!-- Chat Feed -->
-      <div class="ai-chat-feed" id="aiChatFeed">
-        <!-- Messages loaded dynamically -->
-      </div>
-      
-      <!-- Suggestion prompts -->
-      <div class="ai-suggestions-row" id="aiSuggestionsRow">
-        <button class="ai-suggestion-chip" onclick="triggerAiPreset('analyse')">📊 <span id="chipAnalyse">Analyse mein Training</span></button>
-        <button class="ai-suggestion-chip" onclick="triggerAiPreset('nutrition')">🍎 <span id="chipNutrition">Ernährungsplan</span></button>
-        <button class="ai-suggestion-chip" onclick="triggerAiPreset('supps')">💊 <span id="chipSupps">Supplement-Check</span></button>
-        <button class="ai-suggestion-chip" onclick="triggerAiPreset('plan')">💪 <span id="chipPlan">Plan erstellen</span></button>
-      </div>
-      
-      <!-- Chat Input Area -->
-      <div class="ai-chat-input-row">
-        <input type="text" class="ai-chat-input" id="aiChatInput" placeholder="Frag deinen Coach..." onkeydown="if(event.key==='Enter') sendAiMessage()" autocomplete="off">
-        <button class="ai-send-btn" id="aiSendBtn" onclick="sendAiMessage()">▶</button>
-      </div>
-      
     </div>
   </div>
-</div>
 
-<!-- ===== SCRIPTS (order matters) ===== -->
-<script>
-// Register Service Worker for background rest-timer notifications
-let _swReg = null;
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(reg => {
-      _swReg = reg;
-      // Proactively check for service worker updates
-      reg.update();
-    })
-    .catch(() => {});
+  <!-- ===== SCRIPTS (order matters) ===== -->
+  <script>
+    // Register Service Worker for background rest-timer notifications
+    let _swReg = null;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => {
+          _swReg = reg;
+          // Proactively check for service worker updates
+          reg.update();
+        })
+        .catch(() => { });
 
-  // Force page reload when a new service worker takes over (claiming clients)
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
+      // Force page reload when a new service worker takes over (claiming clients)
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
     }
-  });
-}
-function _postSwMsg(msg) {
-  // Prefer active SW from registration, fall back to controller
-  const target = (_swReg && _swReg.active) || navigator.serviceWorker.controller;
-  if (target) target.postMessage(msg);
-}
-</script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-<script src="js/db.js?v=4.7"></script>
-<script src="js/i18n.js?v=4.7"></script>
-<script src="js/modals.js?v=4.7"></script>
-<script src="js/nav.js?v=4.7"></script>
-<script src="js/workout.js?v=4.7"></script>
-<script src="js/exercises.js?v=4.7"></script>
-<script src="js/history.js?v=4.7"></script>
-<script src="js/stats.js?v=4.7"></script>
-<script src="js/templates.js?v=4.7"></script>
-<script src="js/calendar.js?v=4.7"></script>
-<script src="js/editWorkout.js?v=4.7"></script>
-<script src="js/timer.js?v=4.7"></script>
-<script src="js/ui.js?v=4.7"></script>
-<script src="js/splash.js?v=4.7"></script>
-<script src="js/progress.js?v=4.7"></script>
-<script src="js/programs.js?v=4.7"></script>
-<script src="js/supplements.js?v=4.7"></script>
-<script src="js/tools.js?v=4.7"></script>
-<script src="js/app.js?v=4.7"></script>
-<script src="js/aiCoach.js?v=4.7"></script>
+    function _postSwMsg(msg) {
+      // Prefer active SW from registration, fall back to controller
+      const target = (_swReg && _swReg.active) || navigator.serviceWorker.controller;
+      if (target) target.postMessage(msg);
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <script src="js/db.js?v=4.7"></script>
+  <script src="js/i18n.js?v=4.7"></script>
+  <script src="js/modals.js?v=4.7"></script>
+  <script src="js/nav.js?v=4.7"></script>
+  <script src="js/workout.js?v=4.7"></script>
+  <script src="js/exercises.js?v=4.7"></script>
+  <script src="js/history.js?v=4.7"></script>
+  <script src="js/stats.js?v=4.7"></script>
+  <script src="js/templates.js?v=4.7"></script>
+  <script src="js/calendar.js?v=4.7"></script>
+  <script src="js/editWorkout.js?v=4.7"></script>
+  <script src="js/timer.js?v=4.7"></script>
+  <script src="js/ui.js?v=4.7"></script>
+  <script src="js/splash.js?v=4.7"></script>
+  <script src="js/progress.js?v=4.7"></script>
+  <script src="js/programs.js?v=4.7"></script>
+  <script src="js/supplements.js?v=4.7"></script>
+  <script src="js/tools.js?v=4.7"></script>
+  <script src="js/app.js?v=4.7"></script>
+  <script src="js/aiCoach.js?v=4.7"></script>
 
 </body>
+
 </html>
