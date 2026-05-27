@@ -122,7 +122,9 @@ const TR = {
     // Template persistence
     saveToTemplate: '📌 Zur Vorlage', savedToTemplate: '✓ In Vorlage gespeichert',
     tmplUpdateTitle: 'Vorlage aktualisieren?', tmplUpdateDesc: 'Du hast neue Übungen hinzugefügt. Sollen sie dauerhaft in der Vorlage gespeichert werden?',
-    tmplUpdateConfirm: 'Ausgewählte übernehmen', tmplUpdateSkip: 'Überspringen'
+    tmplUpdateConfirm: 'Ausgewählte übernehmen', tmplUpdateSkip: 'Überspringen',
+    lblCopyrightTitle: '© Urheberrechtsschutz',
+    lblCopyrightText: 'Diese App, ihr Design, der Quellcode sowie alle Inhalte sind geistiges Eigentum des Urhebers. Jede unbefugte Vervielfältigung, Verbreitung, Modifikation oder das Kopieren (auch auszugsweise) ist strengstens untersagt. Alle Rechte vorbehalten.'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar', allLabel: 'All',
@@ -243,7 +245,9 @@ const TR = {
     // Template persistence
     saveToTemplate: '📌 Save to Template', savedToTemplate: '✓ Saved to Template',
     tmplUpdateTitle: 'Update Template?', tmplUpdateDesc: 'You added new exercises. Save them permanently to the template?',
-    tmplUpdateConfirm: 'Save Selected', tmplUpdateSkip: 'Skip'
+    tmplUpdateConfirm: 'Save Selected', tmplUpdateSkip: 'Skip',
+    lblCopyrightTitle: '© Copyright Protection',
+    lblCopyrightText: 'This app, its design, source code, and all content are the intellectual property of the author. Any unauthorized duplication, distribution, modification, or copying (even in part) is strictly prohibited. All rights reserved.'
   }
 };
 
@@ -342,6 +346,7 @@ function applyTranslations() {
   s('ttlImport', 'importTitle'); s('txtImportDesc', 'importDesc'); s('txtImportWarn', 'importWarn');
   sp('importText', 'importPlaceholder'); s('btnDoImport', 'doImport'); s('btnCancelImport', 'cancel');
   s('ttlChooseExercise', 'chooseExercise');
+  s('lblCopyrightTitle', 'lblCopyrightTitle'); s('lblCopyrightText', 'lblCopyrightText');
 
   // HIIT Timer
   s('ttlHiitTimer', 'hiitTimer');
