@@ -1045,6 +1045,16 @@
             </select>
           </div>
 
+          <div class="form-group">
+            <label class="form-label" id="lblAiPersona">Coach-Charakter (Persona)</label>
+            <select class="form-input" id="aiPersonaSelect">
+              <option value="standard">Standard (Motivierend & Professionell)</option>
+              <option value="drill">Drill Sergeant (Hart & Direkt)</option>
+              <option value="zen">Zen Coach (Achtsam & Ganzheitlich)</option>
+              <option value="nerd">Science Nerd (Wissenschaftlich & Analytisch)</option>
+            </select>
+          </div>
+
           <div id="aiGeminiConfig">
             <div class="form-group">
               <label class="form-label" id="lblAiModel">Modell</label>
@@ -1171,6 +1181,7 @@
               id="chipSupps">Supplement-Check</span></button>
           <button class="ai-suggestion-chip" onclick="triggerAiPreset('plan')">💪 <span id="chipPlan">Plan
               erstellen</span></button>
+          <button class="ai-suggestion-chip" onclick="triggerAiPreset('summary')">📅 <span id="chipSummary">Wochenrückblick</span></button>
         </div>
 
         <!-- Chat Input Area -->

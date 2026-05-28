@@ -90,6 +90,19 @@ CRITICAL PROTOCOLS:
 4. SAFETY: Always encourage safe execution, warm-ups, and consulting a physician for medical conditions. Keep recommendations realistic.
 `;
 
+const PERSONA_PROMPTS = {
+  standard: "You are the default 'AI Coach'. Maintain a supportive, motivating, structured, and professional tone.",
+  drill: "You are the 'Drill Sergeant' persona. Your tone is extremely direct, high-intensity, and aggressive. No excuses, push the user to their limits, use bold language, and emphasize hard work.",
+  zen: "You are the 'Zen Coach' persona. Your tone is mindful, calm, and patient. Focus on listening to the body, sleep, stress management, recovery, and consistency over pure intensity.",
+  nerd: "You are the 'Science Nerd' persona. Your tone is highly scientific, analytical, and evidence-based. Reference studies, talk about biomechanics, volume load (sets x reps x weight), hypertrophic stimulus, metabolic stress, and detailed macro ratios."
+};
+
+function getSystemPrompt() {
+  const persona = localStorage.getItem('gym_ai_persona') || 'standard';
+  const personaPrompt = PERSONA_PROMPTS[persona] || PERSONA_PROMPTS.standard;
+  return `${AI_SYSTEM_PROMPT}\n\nCOACHING PERSONA PROTOCOL:\n${personaPrompt}`;
+}
+
 // Initialize UI translations & Settings on script load
 document.addEventListener('DOMContentLoaded', () => {
   initAiCoachSettings();
@@ -104,6 +117,16 @@ function applyAiTranslations() {
   const sp = (id, de, en) => { const el = document.getElementById(id); if (el) el.placeholder = isDe ? de : en; };
 
   s('lblAiCoachTitle', 'AI Coach', 'AI Coach');
+  s('lblAiPersona', 'Coach-Charakter (Persona)', 'Coach Persona');
+  s('chipSummary', 'Wochenrückblick', 'Weekly Summary');
+  
+  const personaSel = document.getElementById('aiPersonaSelect');
+  if (personaSel) {
+    personaSel.options[0].text = isDe ? 'Standard (Motivierend & Professionell)' : 'Standard (Motivational & Professional)';
+    personaSel.options[1].text = isDe ? 'Drill Sergeant (Hart & Direkt)' : 'Drill Sergeant (Hard & Direct)';
+    personaSel.options[2].text = isDe ? 'Zen Coach (Achtsam & Ganzheitlich)' : 'Zen Coach (Mindful & Calm)';
+    personaSel.options[3].text = isDe ? 'Science Nerd (Wissenschaftlich & Analytisch)' : 'Science Nerd (Scientific & Analytical)';
+  }
   s('lblAiNewChatBtn', 'Neu', 'New');
   s('lblAiHistoryBtn', 'Verlauf', 'History');
   s('lblAiSettingsBtn', 'Einstellungen', 'Settings');
@@ -175,6 +198,11 @@ function initAiCoachSettings() {
   if (keyInput) keyInput.value = aiApiKey;
   if (custInput) custInput.value = aiCustomModel;
 
+  const personaSel = document.getElementById('aiPersonaSelect');
+  if (personaSel) {
+    personaSel.value = localStorage.getItem('gym_ai_persona') || 'standard';
+  }
+
   onAiProviderChange();
   onAiModelChange();
 }
@@ -225,6 +253,11 @@ function saveAiSettings() {
   localStorage.setItem('gym_ai_model', aiModel);
   localStorage.setItem('gym_ai_custom_model', aiCustomModel);
   localStorage.setItem('gym_ai_key', aiApiKey);
+
+  const personaSel = document.getElementById('aiPersonaSelect');
+  if (personaSel) {
+    localStorage.setItem('gym_ai_persona', personaSel.value);
+  }
 
   toggleAiSettings();
   checkShowOnboarding();
@@ -324,6 +357,60 @@ async function checkChromeAiStatus() {
   }
 }
 
+function detectPlateaus() {
+  if (!db.workouts || db.workouts.length < 3) return null;
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  
+  const exerciseHistory = {};
+  
+  const sortedWorkouts = [...db.workouts]
+    .filter(w => (w.startTime || w.date) >= thirtyDaysAgo)
+    .sort((a, b) => (a.startTime || a.date) - (b.startTime || b.date));
+    
+  sortedWorkouts.forEach(w => {
+    if (!w.exercises) return;
+    w.exercises.forEach(we => {
+      const ex = we.isCustom ? { category: we.customCategory } : getEx(we.exId);
+      if (!ex || getCatType(ex.category) !== 'strength') return;
+      
+      const exId = we.exId || `custom_${we.customName}`;
+      const name = we.isCustom ? we.customName : ex.name;
+      
+      let maxWeight = 0;
+      (we.sets || []).forEach(s => {
+        if (s.type !== 'W' && s.weight > maxWeight) {
+          maxWeight = s.weight;
+        }
+      });
+      
+      if (maxWeight > 0) {
+        if (!exerciseHistory[exId]) {
+          exerciseHistory[exId] = { name: name, history: [] };
+        }
+        exerciseHistory[exId].history.push(maxWeight);
+      }
+    });
+  });
+  
+  const plateaus = [];
+  for (const id in exerciseHistory) {
+    const data = exerciseHistory[id];
+    if (data.history.length >= 3) {
+      const first = data.history[0];
+      const last = data.history[data.history.length - 1];
+      const maxInHistory = Math.max(...data.history);
+      
+      if (last <= first) {
+        plateaus.push(`- ${data.name}: Seit 30 Tagen kein Fortschritt (Start: ${first}kg, Aktuell: ${last}kg)`);
+      } else if (last < maxInHistory) {
+        plateaus.push(`- ${data.name}: Kraftrückgang im letzten Monat (Peak: ${maxInHistory}kg, Aktuell: ${last}kg)`);
+      }
+    }
+  }
+  
+  return plateaus.length > 0 ? plateaus.join('\n') : null;
+}
+
 // Context serialisation
 function compileAiContext(provider = aiProvider) {
   const isLocal = (provider === 'chrome');
@@ -335,6 +422,13 @@ function compileAiContext(provider = aiProvider) {
   let context = `AKTUELLER BENUTZERSTATUS & DATENBANK-KONTEXT:\n`;
   context += `Aktuelle Sprache: ${lang === 'de' ? 'Deutsch' : 'English'}\n`;
   context += `Datum heute: ${new Date().toLocaleDateString()}\n`;
+
+  const plateauInfo = detectPlateaus();
+  if (plateauInfo) {
+    context += `MÖGLICHE PLATEAUS / KRAFTRÜCKGÄNGE (Analysiert über die letzten 30 Tage):\n`;
+    context += `${plateauInfo}\n`;
+    context += `-> Bitte weise den Nutzer proaktiv darauf hin und schlage ggf. eine Deload-Woche (Regenerationswoche) vor.\n\n`;
+  }
 
   if (db.weekStatus && db.weekStatus.mode) {
     const modeLabels = {
@@ -787,6 +881,19 @@ function triggerAiPreset(type) {
         ? 'Ich habe momentan kein aktives Trainingsprogramm. Erstelle einen strukturierten Wochenplan für mich mit konkreten Übungen zum Importieren.'
         : 'I currently don\'t have an active training program. Create a structured weekly plan for me with concrete exercises that I can import.';
     }
+  } else if (type === 'summary') {
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const thisWeeksWorkouts = (db.workouts || []).filter(w => (w.startTime || w.date) >= sevenDaysAgo);
+    
+    if (thisWeeksWorkouts.length > 0) {
+      msg = isDe
+        ? `Gib mir einen detaillierten Wochenrückblick für die letzten 7 Tage. Ich habe in dieser Zeit ${thisWeeksWorkouts.length} Workouts absolviert. Analysiere mein Volumen, meine Kraftwerte und gib mir Empfehlungen für die nächste Woche.`
+        : `Give me a detailed weekly review for the last 7 days. I completed ${thisWeeksWorkouts.length} workouts in this period. Analyze my volume, strength metrics, and give me recommendations for next week.`;
+    } else {
+      msg = isDe
+        ? 'Ich habe in den letzten 7 Tagen kein Training absolviert. Hilf mir, für die kommende Woche einen realistischen Trainingsplan aufzustellen, um wieder reinzukommen.'
+        : 'I haven\'t completed any workouts in the last 7 days. Help me set up a realistic training plan for the coming week to get back into the routine.';
+    }
   }
 
   if (msg) {
@@ -925,7 +1032,7 @@ async function requestGeminiAi(latestMessage) {
         body: JSON.stringify({
           contents: contents,
           systemInstruction: {
-            parts: [{ text: AI_SYSTEM_PROMPT }]
+            parts: [{ text: getSystemPrompt() }]
           },
           generationConfig: {
             temperature: 0.7,
@@ -996,7 +1103,7 @@ async function requestChromeAi(latestMessage) {
   const dbContext = compileAiContext('chrome');
   
   // Build a single prompt for Chrome Nano
-  let prompt = `${AI_SYSTEM_PROMPT}\n\n${dbContext}\n\nCONVERSATION HISTORY:\n`;
+  let prompt = `${getSystemPrompt()}\n\n${dbContext}\n\nCONVERSATION HISTORY:\n`;
   aiChatHistory.forEach(h => {
     prompt += `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.text}\n`;
   });
