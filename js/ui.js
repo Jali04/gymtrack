@@ -25,6 +25,21 @@ function initRipples() {
 
 /* ---- Haptic Feedback ---- */
 function haptic(type) {
+  // If running in Capacitor and Haptics plugin is available, use it!
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+    try {
+      const haptics = window.Capacitor.Plugins.Haptics;
+      if (type === 'light') haptics.impact({ style: 'LIGHT' });
+      else if (type === 'medium') haptics.impact({ style: 'MEDIUM' });
+      else if (type === 'success') haptics.notification({ type: 'SUCCESS' });
+      else if (type === 'error') haptics.notification({ type: 'ERROR' });
+      return;
+    } catch (e) {
+      console.warn("Capacitor Haptics failed:", e);
+    }
+  }
+
+  // Fallback to HTML5 Vibrate API
   if (!navigator.vibrate) return;
   const patterns = {
     light:   [8],

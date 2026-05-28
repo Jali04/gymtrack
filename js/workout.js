@@ -1023,6 +1023,7 @@ function startRestTimer() {
       restTimerEndAt    = 0;
       overlay.style.display = 'none';
       if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
+      haptic('success');
       showToast('✓ ' + t('restDone'));
       return;
     }
@@ -1050,6 +1051,7 @@ document.addEventListener('visibilitychange', () => {
         const overlay = document.getElementById('restTimerOverlay');
         if (overlay) overlay.style.display = 'none';
         if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
+        haptic('success');
         showToast('✓ ' + t('restDone'));
       } else {
         _updateRestDisplay();
