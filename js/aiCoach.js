@@ -118,6 +118,7 @@ function applyAiTranslations() {
 
   s('lblAiCoachTitle', 'AI Coach', 'AI Coach');
   s('lblAiPersona', 'Coach-Charakter (Persona)', 'Coach Persona');
+  s('btnTestHaptic', '📳 Haptik testen', '📳 Test Haptics');
   s('chipSummary', 'Wochenrückblick', 'Weekly Summary');
   
   const personaSel = document.getElementById('aiPersonaSelect');
