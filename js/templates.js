@@ -18,6 +18,31 @@ function renderTemplates(searchQuery = '') {
       tmpl.name.toLowerCase().includes(q) ||
       tmpl.exerciseIds.some(exId => getExName(exId).toLowerCase().includes(q))
     );
+
+    // Sort by relevance
+    const getRelevanceScore = (name, query) => {
+      const n = name.toLowerCase();
+      const qy = query.toLowerCase();
+      if (n === qy) return 100;
+      if (n.startsWith(qy)) return 80;
+      const words = n.split(/[\s_-]+/);
+      if (words.some(w => w.startsWith(qy))) return 60;
+      if (n.includes(qy)) return 40;
+      return 0;
+    };
+
+    filteredTemplates.sort((a, b) => {
+      const scoreA = getRelevanceScore(a.name, q);
+      const scoreB = getRelevanceScore(b.name, q);
+      if (scoreA !== scoreB) return scoreB - scoreA;
+      
+      // Secondary: exercise match relevance
+      const aHasExStart = a.exerciseIds.some(exId => getExName(exId).toLowerCase().startsWith(q));
+      const bHasExStart = b.exerciseIds.some(exId => getExName(exId).toLowerCase().startsWith(q));
+      if (aHasExStart !== bHasExStart) return bHasExStart ? 1 : -1;
+      
+      return 0;
+    });
   }
   
   if (filteredTemplates.length === 0) {

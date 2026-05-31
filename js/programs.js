@@ -23,6 +23,35 @@ function renderPrograms(searchQuery = '') {
       }
       return false;
     });
+
+    const getRelevanceScore = (name, query) => {
+      const n = name.toLowerCase();
+      const qy = query.toLowerCase();
+      if (n === qy) return 100;
+      if (n.startsWith(qy)) return 80;
+      const words = n.split(/[\s_-]+/);
+      if (words.some(w => w.startsWith(qy))) return 60;
+      if (n.includes(qy)) return 40;
+      return 0;
+    };
+
+    filteredPrograms.sort((a, b) => {
+      const scoreA = getRelevanceScore(a.name, q);
+      const scoreB = getRelevanceScore(b.name, q);
+      if (scoreA !== scoreB) return scoreB - scoreA;
+
+      const aHasTmplStart = a.schedule ? Object.values(a.schedule).some(tplId => {
+        const tpl = db.templates.find(x => x.id === tplId);
+        return tpl && tpl.name.toLowerCase().startsWith(q);
+      }) : false;
+      const bHasTmplStart = b.schedule ? Object.values(b.schedule).some(tplId => {
+        const tpl = db.templates.find(x => x.id === tplId);
+        return tpl && tpl.name.toLowerCase().startsWith(q);
+      }) : false;
+      if (aHasTmplStart !== bHasTmplStart) return bHasTmplStart ? 1 : -1;
+
+      return 0;
+    });
   }
   
   if (filteredPrograms.length === 0) {

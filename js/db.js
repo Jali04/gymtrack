@@ -15,6 +15,9 @@ function getCatClass(type) {
 }
 
 let db = JSON.parse(localStorage.getItem('gymdb') || '{"exercises":[],"workouts":[],"currentWorkout":null}');
+if (!db.exercises) db.exercises = [];
+if (!db.workouts) db.workouts = [];
+if (typeof db.currentWorkout === 'undefined') db.currentWorkout = null;
 if (!db.templates) db.templates = [];
 if (!db.measurements) db.measurements = [];
 if (!db.progressPics) db.progressPics = [];

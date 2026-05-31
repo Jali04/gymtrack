@@ -44,7 +44,7 @@ function renderLog() {
 
   const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
   const recent  = document.getElementById('recentWorkouts');
-  const ws      = [...db.workouts].reverse();
+  const ws      = [...(db.workouts || [])].reverse();
 
   if (ws.length === 0) {
     recent.innerHTML = `<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">${t('noWorkoutYet')}</div></div>`;
@@ -56,22 +56,25 @@ function renderLog() {
   const hiddenWs = ws.slice(limit);
 
   const workoutMapper = w => {
-    const d         = new Date(w.date || w.startTime).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
-    const totalSets = w.exercises.reduce((a, e) => a + e.sets.length, 0);
+    if (!w) return '';
+    const d         = new Date(w.date || w.startTime || Date.now()).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const exercises = w.exercises || [];
+    const totalSets = exercises.reduce((a, e) => a + ((e && e.sets) ? e.sets.length : 0), 0);
     let durationHtml = '';
     if (w.endTime && w.startTime) {
       const mins = Math.round((w.endTime - w.startTime) / 60000);
       durationHtml = `<span class="tag" style="background:rgba(255,255,255,0.05);color:var(--muted);border-color:var(--border);">⏱ ${mins} min</span>`;
     }
 
-    const exHtml = w.exercises.map(e => {
+    const exHtml = exercises.map(e => {
+      if (!e) return '';
       const ex       = getEx(e.exId);
       const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
       const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
       const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
       const catClass = getCatClass(type);
 
-      let setsHtml = _renderSetBadges(e.sets, type);
+      let setsHtml = _renderSetBadges(e.sets || [], type);
       const hiitBadges = (e.hiitSets || []).map(_hiitBadge).join('');
       const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
       return `<div style="margin-bottom:10px;">
@@ -190,12 +193,12 @@ function renderActiveWorkout() {
   if (btnCancel)   btnCancel.textContent   = t('cancelWorkout');
   if (activeLabel) activeLabel.textContent = t('activeWorkout');
 
-  if (!cw || cw.exercises.length === 0) {
+  if (!cw || !cw.exercises || cw.exercises.length === 0) {
     container.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('enterExercise')}</div></div>`;
     return;
   }
 
-  container.innerHTML = cw.exercises.map((e, i) => {
+  container.innerHTML = (cw.exercises || []).map((e, i) => {
       const ex       = getEx(e.exId);
       const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
       const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');

@@ -13,6 +13,23 @@ function renderExercises(searchQuery = '', categoryFilter = 'all') {
   
   if (q) {
     filteredExercises = filteredExercises.filter(e => e.name.toLowerCase().includes(q));
+
+    const getRelevanceScore = (name, query) => {
+      const n = name.toLowerCase();
+      const qy = query.toLowerCase();
+      if (n === qy) return 100;
+      if (n.startsWith(qy)) return 80;
+      const words = n.split(/[\s_-]+/);
+      if (words.some(w => w.startsWith(qy))) return 60;
+      if (n.includes(qy)) return 40;
+      return 0;
+    };
+
+    filteredExercises.sort((a, b) => {
+      const scoreA = getRelevanceScore(a.name, q);
+      const scoreB = getRelevanceScore(b.name, q);
+      return scoreB - scoreA;
+    });
   }
   if (categoryFilter !== 'all') {
     filteredExercises = filteredExercises.filter(e => e.category === categoryFilter);
