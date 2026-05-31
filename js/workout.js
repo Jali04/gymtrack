@@ -42,91 +42,47 @@ function renderLog() {
   _renderStreakBanner();
   if (typeof renderWeekStatusBanner === 'function') renderWeekStatusBanner();
 
-  const locale  = lang === 'de' ? 'de-DE' : 'en-GB';
-  const recent  = document.getElementById('recentWorkouts');
-  const ws      = [...(db.workouts || [])].reverse();
-
-  if (ws.length === 0) {
-    recent.innerHTML = `<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">${t('noWorkoutYet')}</div></div>`;
-    return;
-  }
-
-  const limit = 5;
-  const visibleWs = ws.slice(0, limit);
-  const hiddenWs = ws.slice(limit);
-
-  const workoutMapper = w => {
-    if (!w) return '';
-    const d         = new Date(w.date || w.startTime || Date.now()).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
-    const exercises = w.exercises || [];
-    const totalSets = exercises.reduce((a, e) => a + ((e && e.sets) ? e.sets.length : 0), 0);
-    let durationHtml = '';
-    if (w.endTime && w.startTime) {
-      const mins = Math.round((w.endTime - w.startTime) / 60000);
-      durationHtml = `<span class="tag" style="background:rgba(255,255,255,0.05);color:var(--muted);border-color:var(--border);">⏱ ${mins} min</span>`;
-    }
-
-    const exHtml = exercises.map(e => {
-      if (!e) return '';
-      const ex       = getEx(e.exId);
-      const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
-      const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
-      const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
-      const catClass = getCatClass(type);
-
-      let setsHtml = _renderSetBadges(e.sets || [], type);
-      const hiitBadges = (e.hiitSets || []).map(_hiitBadge).join('');
-      const timerBadge = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
-      return `<div style="margin-bottom:10px;">
-        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">${name}<span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span>${e.supersetGroup ? '<span style="background:rgba(200,241,53,0.15);border:1px solid rgba(200,241,53,0.4);border-radius:5px;font-size:10px;padding:1px 5px;color:var(--accent);font-weight:700;margin-left:5px;">SS</span>' : ''}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${hiitBadges}${timerBadge}</div>
-        ${e.note ? `<div style="margin-top:5px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    return `<div class="history-entry">
-      <div class="history-entry-header">
-        <div>
-          <div class="history-exercise-name">${d}</div>
-          <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">
-            <span class="tag">${totalSets} ${t('sets')}</span>
-            ${durationHtml}
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:flex-start;">
-          <button style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="openEditWorkout('${w.id}')">✏️</button>
-          <button class="close-btn" onclick="deleteLogWorkout('${w.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);">🗑</button>
-        </div>
-      </div>
-      <div style="margin-top:12px;">${exHtml}</div>
-    </div>`;
-  };
-
-  let html = visibleWs.map(workoutMapper).join('');
-
-  if (hiddenWs.length > 0) {
-    html += `
-      <div id="hiddenWorkouts" style="display:none; margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 12px;">
-        ${hiddenWs.map(workoutMapper).join('')}
-      </div>
-      <button class="btn btn-secondary" id="btnShowAllWorkouts" style="margin-top:12px;width:100%;" onclick="showAllWorkouts()">
-        + ${hiddenWs.length} ${lang === 'de' ? 'weitere Trainings anzeigen' : 'more workouts'}
-      </button>
-    `;
-  }
-
-  recent.innerHTML = html;
+  _updateQuickMetrics();
+  _renderCoachTip();
 }
 
-window.showAllWorkouts = function() {
-  const hidden = document.getElementById('hiddenWorkouts');
-  const btn = document.getElementById('btnShowAllWorkouts');
-  if (hidden && btn) {
-    hidden.style.display = 'block';
-    btn.style.display = 'none';
-    if (typeof haptic === 'function') haptic('light');
-  }
-};
+const COACH_TIPS = [
+  "Trink ausreichend Wasser! Muskeln bestehen zu ca. 75% aus Wasser. Eine Dehydration senkt deine Kraftleistung rapide.",
+  "Nutze Supersätze (SS) im GymLab, um Zeit zu sparen und deinen Puls hochzuhalten.",
+  "Regeneration ist der Schlüssel! Muskeln wachsen in den Ruhephasen, nicht während des Trainings.",
+  "Achte auf progressive Überlastung: Versuche dich kontinuierlich in Gewicht oder Wiederholungen zu steigern.",
+  "Die richtige Technik geht vor Gewicht. Vermeide Schwung holen, um Gelenke zu schonen und Muskeln optimal zu treffen.",
+  "Eine proteinreiche Mahlzeit nach dem Training unterstützt den Muskelaufbau und beschleunigt die Regeneration.",
+  "Schlaf ist dein bester Booster: 7–8 Stunden erholsamer Schlaf maximieren den Muskelaufbau und die Fettverbrennung.",
+  "Creatin ist eines der am besten erforschten Supplements für Kraftzuwachs. Täglich 3-5g reichen aus.",
+  "Wärme dich vor schweren Arbeitssätzen gut auf. 5-10 min Cardio und spezifisches Aufwärmen schützen vor Verletzungen.",
+  "Tracke dein Gewicht regelmäßig im Fortschritts-Tab, um Trends bei deinem KFA und Muskelaufbau zu erkennen."
+];
+
+function _renderCoachTip() {
+  const el = document.getElementById('coachTipText');
+  if (!el) return;
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / 86400000);
+  const tip = COACH_TIPS[dayOfYear % COACH_TIPS.length];
+  el.textContent = tip;
+}
+
+function _updateQuickMetrics() {
+  const elTrophies = document.getElementById('lblMetricTrophies');
+  const elStreak = document.getElementById('lblMetricStreak');
+  const elWorkouts7d = document.getElementById('lblMetricWorkouts7d');
+  if (!elTrophies || !elStreak || !elWorkouts7d) return;
+
+  elTrophies.textContent = typeof calcTrophies === 'function' ? calcTrophies() : 0;
+  elStreak.textContent = typeof calcStreak === 'function' ? calcStreak() : 0;
+
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const count = (db.workouts || []).filter(w => {
+    const d = w.date || w.startTime;
+    return d && d >= sevenDaysAgo;
+  }).length;
+  elWorkouts7d.textContent = count;
+}
 
 function _renderQuickStartTemplates() {
   const container = document.getElementById('quickStartTemplates');
@@ -157,6 +113,8 @@ function deleteLogWorkout(id) {
   db.workouts = db.workouts.filter(w => w.id !== id);
   save();
   renderLog();
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof renderStats === 'function') renderStats();
   haptic('light');
 }
 

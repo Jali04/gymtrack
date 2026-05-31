@@ -252,8 +252,14 @@ function openCalDay(year, month, day) {
       </div>`;
     }).join('');
 
-    return `<div class="cal-detail-workout">
-      <div class="cal-time-badge">🕐 ${startTime} – ${endTime} &nbsp;·&nbsp; ${durStr}</div>
+    return `<div class="cal-detail-workout" style="margin-bottom:16px; border: 1px solid var(--border); padding: 12px; border-radius: 12px; background: var(--card);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
+        <div class="cal-time-badge" style="margin:0;">🕐 ${startTime} – ${endTime} &nbsp;·&nbsp; ${durStr}</div>
+        <div style="display:flex;gap:6px;">
+          <button style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="closeModal('calDayModal');openEditWorkout('${w.id}')">✏️</button>
+          <button class="close-btn" onclick="closeModal('calDayModal');deleteLogWorkout('${w.id}')" style="color:var(--accent2);border-color:rgba(255,77,77,0.3);margin-left:0px;padding:4px 8px;font-size:12px;">🗑</button>
+        </div>
+      </div>
       ${exHtml}
     </div>`;
   }).join('');

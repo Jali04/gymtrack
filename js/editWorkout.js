@@ -97,6 +97,8 @@ function saveEditWorkout() {
   save();
   closeModal('editWorkoutModal');
   renderLog(); renderHistory(); renderStats();
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof renderStats === 'function') renderStats();
   editingWorkoutId = null; editingWorkoutCopy = null;
   showToast(t('saveChanges') + ' ✓');
 }

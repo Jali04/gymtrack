@@ -110,21 +110,24 @@ const TOUR_STEPS = {
     progress: [
       {
         page: 'progress',
-        target: '#btnWeightMod',
-        title: 'Schritt 1 von 3: Körperwerte verfolgen',
-        text: 'Trage regelmäßig dein Gewicht und Körperfettanteil ein. DSCPLN generiert automatisch einen Verlaufsgraphen für dich.'
+        target: '#tabProgCalendar',
+        title: 'Schritt 1 von 3: Trainingskalender',
+        text: 'Hier siehst du deine Trainingstage. Die farbigen Punkte unter den Daten zeigen dir, ob du Kraft, Cardio oder Stretching trainiert hast. Tippe auf einen Tag, um Workouts anzusehen, zu bearbeiten oder zu löschen.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('calendar-stats'); }
       },
       {
         page: 'progress',
-        target: '#btnPicsMod',
-        title: 'Schritt 2 von 3: Fortschritts-Fotos',
-        text: 'Speichere Bilder deiner optischen Transformation. Alle Fotos werden sicher lokal verschlüsselt und sind nur per 4-stelliger PIN einsehbar.'
+        target: '#tabProgBody',
+        title: 'Schritt 2 von 3: Körperwerte & Fotos',
+        text: 'Trage dein Gewicht ein und betrachte deinen Verlaufsgraphen. Hier kannst du auch deine Fortschrittsfotos PIN-gesichert verwalten.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('body-photos'); }
       },
       {
         page: 'progress',
-        target: '#exerciseProgressTracker',
+        target: '#tabProgExercises',
         title: 'Schritt 3 von 3: Kraftsteigerung',
-        text: 'Hier unten siehst du die Leistungssteigerung deines geschätzten Maximalgewichts (1RM) für jede einzelne Übung.'
+        text: 'Hier siehst du die Leistungssteigerung deines geschätzten Maximalgewichts (1RM) für jede einzelne Übung.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('exercise-charts'); }
       }
     ]
   },
@@ -234,21 +237,24 @@ const TOUR_STEPS = {
     progress: [
       {
         page: 'progress',
-        target: '#btnWeightMod',
-        title: 'Step 1 of 3: Weight & Body Fat',
-        text: 'Log body weight and fat %. The app will automatically build charts demonstrating weight trends over time.'
+        target: '#tabProgCalendar',
+        title: 'Step 1 of 3: Training Calendar',
+        text: 'View your training days. The colored dots show whether you trained strength, cardio, or stretching. Tap a day to view, edit, or delete workouts.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('calendar-stats'); }
       },
       {
         page: 'progress',
-        target: '#btnPicsMod',
-        title: 'Step 2 of 3: Transform Progress Pics',
-        text: 'Save transformation pictures. Progress pictures remain secure in local sandbox memory, protected by a 4-digit PIN.'
+        target: '#tabProgBody',
+        title: 'Step 2 of 3: Body Metrics & Photos',
+        text: 'Log your weight and body fat %. View weight trends and manage your transformation photos securely with a 4-digit PIN.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('body-photos'); }
       },
       {
         page: 'progress',
-        target: '#exerciseProgressTracker',
-        title: 'Step 3 of 3: Force & Max Reps',
-        text: 'Review progressive overload stats. Line graphs display changes in your estimated One Rep Max (1RM).'
+        target: '#tabProgExercises',
+        title: 'Step 3 of 3: Progressive Overload',
+        text: 'Review progressive overload stats. Line graphs display changes in your estimated One Rep Max (1RM) for each exercise.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('exercise-charts'); }
       }
     ]
   }
@@ -309,18 +315,18 @@ const GUIDE_CONTENT = {
 // Guide Card list for Interactive Menu rendering
 const GUIDE_TOUR_ITEMS = {
   de: [
-    { id: 'log', icon: '🏋️‍♂️', title: 'Training & Verlauf', text: 'Workouts starten, Sätze loggen, Timer nutzen.' },
+    { id: 'log', icon: '🏋️‍♂️', title: 'Training & Timer', text: 'Workouts starten, Sätze loggen und Pausentimer einstellen.' },
     { id: 'gymlab', icon: '🧪', title: 'GymLab (Vorlagen)', text: 'Vorlagen & Programme über Wochen hinweg planen.' },
     { id: 'aicoach', icon: '🤖', title: 'AI Coach', text: 'Chatte mit dem Coach, um Pläne per Klick zu importieren.' },
-    { id: 'calendar', icon: '📅', title: 'Kalender & Statistiken', text: 'Trainingskalender, Streaks und monatliche Recaps.' },
+    { id: 'calendar', icon: '📅', title: 'Kalender & Verlauf', text: 'Trainingskalender, Streaks, Verlauf bearbeiten und löschen.' },
     { id: 'supps', icon: '💊', title: 'Supplements', text: 'Tägliche Einnahmen planen, loggen und Vorrat verwalten.' },
     { id: 'progress', icon: '📈', title: 'Fortschritt & Fotos', text: 'Gewichtsverlauf und PIN-gesicherte Progress-Fotos.' }
   ],
   en: [
-    { id: 'log', icon: '🏋️‍♂️', title: 'Workout & Log', text: 'Start workouts, log sets, and use the rest timer.' },
+    { id: 'log', icon: '🏋️‍♂️', title: 'Workout & Timer', text: 'Start workouts, log sets, and set the rest timer.' },
     { id: 'gymlab', icon: '🧪', title: 'GymLab (Templates)', text: 'Schedule templates and structured programs.' },
     { id: 'aicoach', icon: '🤖', title: 'AI Coach', text: 'Chat with the coach to generate importable plans.' },
-    { id: 'calendar', icon: '📅', title: 'Calendar & Stats', text: 'Streak calendars, workouts history and statistics.' },
+    { id: 'calendar', icon: '📅', title: 'Calendar & History', text: 'Streak calendars, workout history editing, and statistics.' },
     { id: 'supps', icon: '💊', title: 'Supplements', text: 'Schedule supplements intake and track stock.' },
     { id: 'progress', icon: '📈', title: 'Progress & Photos', text: 'Body weight trends and PIN-locked progress photos.' }
   ]
