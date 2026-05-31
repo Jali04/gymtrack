@@ -6,13 +6,16 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v4.17';
+const CACHE_VERSION = 'v4.18';
 const CACHE_NAME = `dscpln-static-${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/styles.css',
+  './js/config.js',
+  './js/auth.js',
+  './js/sync.js',
   './js/db.js',
   './js/i18n.js',
   './js/modals.js',
@@ -34,7 +37,8 @@ const ASSETS_TO_CACHE = [
   './js/app.js',
   './js/aiCoach.js',
   'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap',
-  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js'
+  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
 let _restNotifTimeout = null;

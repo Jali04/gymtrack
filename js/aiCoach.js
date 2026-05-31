@@ -990,8 +990,10 @@ async function requestAiResponse(userMessage) {
 }
 
 async function requestGeminiAi(latestMessage) {
-  if (!aiApiKey) {
-    throw new Error(lang === 'de' ? 'API-Key fehlt' : 'API key is missing');
+  const isProxy = (supabase && currentSession && SUPABASE_CONFIG.aiProxyUrl);
+
+  if (!isProxy && !aiApiKey) {
+    throw new Error(lang === 'de' ? 'API-Key fehlt oder nicht angemeldet.' : 'API key is missing or not logged in.');
   }
 
   // Compile current database context
@@ -1015,7 +1017,17 @@ async function requestGeminiAi(latestMessage) {
     parts: [{ text: `${dbContext}\n\nUser Question: ${latestMessage}` }]
   });
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${aiApiKey}`;
+  const url = isProxy 
+    ? SUPABASE_CONFIG.aiProxyUrl 
+    : `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${aiApiKey}`;
+  
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+
+  if (isProxy) {
+    headers['Authorization'] = `Bearer ${currentSession.access_token}`;
+  }
   
   const maxRetries = 3;
   let attempt = 0;
@@ -1027,9 +1039,7 @@ async function requestGeminiAi(latestMessage) {
       const response = await fetch(url, {
         method: 'POST',
         signal: aiAbortController ? aiAbortController.signal : undefined,
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: headers,
         body: JSON.stringify({
           contents: contents,
           systemInstruction: {
@@ -1044,10 +1054,10 @@ async function requestGeminiAi(latestMessage) {
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        const errMsg = errJson.error ? errJson.error.message : `HTTP status ${response.status}`;
+        const errMsg = errJson.error ? (typeof errJson.error === 'object' ? errJson.error.message : errJson.error) : `HTTP status ${response.status}`;
         
         if ((response.status === 429 || (response.status >= 500 && response.status < 600)) && attempt <= maxRetries) {
-          console.warn(`Gemini API returned ${response.status}. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`);
+          console.warn(`API returned ${response.status}. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`);
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(resolve, delay);
             if (aiAbortController) {
@@ -1067,7 +1077,7 @@ async function requestGeminiAi(latestMessage) {
       if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts[0]) {
         return json.candidates[0].content.parts[0].text;
       }
-      throw new Error("Empty response received from Gemini API");
+      throw new Error("Empty response received from AI API");
 
     } catch (e) {
       const isNetworkError = e.name === 'TypeError' || e.message?.includes('network') || e.message?.includes('failed to fetch');
@@ -1075,7 +1085,7 @@ async function requestGeminiAi(latestMessage) {
         if (aiAbortController && aiAbortController.signal.aborted) {
           throw e;
         }
-        console.warn(`Network error during Gemini API call: ${e.message}. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`);
+        console.warn(`Network error during API call: ${e.message}. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`);
         await new Promise((resolve, reject) => {
           const timeout = setTimeout(resolve, delay);
           if (aiAbortController) {
@@ -1165,7 +1175,8 @@ function checkShowOnboarding() {
   if (!onboardScreen) return;
 
   const chromeAi = getChromeAiAPI();
-  const isGeminiMissingKey = (aiProvider === 'gemini' && !aiApiKey);
+  const isLoggedIn = (supabase && currentSession);
+  const isGeminiMissingKey = (aiProvider === 'gemini' && !aiApiKey && !isLoggedIn);
   const isChromeUnsupported = (aiProvider === 'chrome' && !chromeAi);
 
   if (isGeminiMissingKey || isChromeUnsupported) {
@@ -1376,6 +1387,10 @@ function saveCurrentChat() {
   if (aiChats[aiActiveChatId]) {
     aiChats[aiActiveChatId].history = aiChatHistory;
     localStorage.setItem('gym_ai_chats', JSON.stringify(aiChats));
+  }
+
+  if (typeof detectAndSyncChanges === 'function') {
+    detectAndSyncChanges();
   }
 }
 

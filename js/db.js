@@ -121,6 +121,14 @@ if (runMigrations(db)) {
 function save() {
   runMigrations(db);
   localStorage.setItem('gymdb', JSON.stringify(db));
+  
+  if (typeof syncProfileUpdate === 'function') {
+    syncProfileUpdate();
+  }
+  
+  if (typeof detectAndSyncChanges === 'function') {
+    detectAndSyncChanges();
+  }
 }
 
 function uid() {
