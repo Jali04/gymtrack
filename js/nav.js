@@ -2,7 +2,7 @@
    GYMTRACK — Navigation + Swipe
    ============================================= */
 
-const PAGE_ORDER = ['log', 'gymlab', 'calendar', 'supps', 'progress'];
+const PAGE_ORDER = ['log', 'gymlab', 'supps', 'progress'];
 
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -12,23 +12,63 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
   if (id === 'log')      renderLog();
   if (id === 'gymlab')   renderGymLab();
-  if (id === 'progress') renderProgress();
+  if (id === 'progress') {
+    const activeSub = localStorage.getItem('gymtrack_progress_subtab') || 'calendar-stats';
+    switchProgressSubTab(activeSub);
+  }
   if (id === 'supps')    {
     if (window.currentSuppsDate) window.currentSuppsDate = new Date();
     if (typeof renderSupplements === 'function') renderSupplements();
   }
-  if (id === 'calendar') { renderCalendar(); renderStats(); }
+}
+
+function switchProgressSubTab(subTabId) {
+  document.querySelectorAll('.progress-subtab').forEach(btn => {
+    const isTarget = (subTabId === 'calendar-stats' && btn.id === 'tabProgCalendar') ||
+                     (subTabId === 'body-photos' && btn.id === 'tabProgBody') ||
+                     (subTabId === 'exercise-charts' && btn.id === 'tabProgExercises');
+    btn.classList.toggle('active', isTarget);
+  });
+  
+  document.querySelectorAll('.progress-subpage-content').forEach(div => {
+    div.style.display = div.id === 'prog-subpage-' + subTabId ? 'block' : 'none';
+  });
+  
+  if (subTabId === 'calendar-stats') {
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderStats === 'function') renderStats();
+  } else if (subTabId === 'body-photos') {
+    if (typeof renderMeasurements === 'function') renderMeasurements();
+    if (typeof renderProgressPics === 'function') renderProgressPics();
+  } else if (subTabId === 'exercise-charts') {
+    if (typeof renderExerciseProgressTracker === 'function') renderExerciseProgressTracker();
+  }
+  
+  localStorage.setItem('gymtrack_progress_subtab', subTabId);
 }
 
 function renderGymLab() {
+  const savedTab = localStorage.getItem('gymtrack_gymlab_tab') || 'templates';
+  
+  const searchInput = document.getElementById('gymlabSearch');
+  if (searchInput) searchInput.value = '';
+  window._gymlabSearchQuery = '';
+  window._gymlabCategoryFilter = 'all';
+  
+  // Reset active filter chip
+  document.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === 'all');
+  });
+
   renderTemplates();
   renderExercises();
   if (typeof renderPrograms === 'function') renderPrograms();
-  const savedTab = localStorage.getItem('gymtrack_gymlab_tab') || 'all';
   switchGymLabTab(savedTab);
 }
 
 function switchGymLabTab(tab) {
+  if (tab === 'all') tab = 'templates';
+  
   document.querySelectorAll('.gymlab-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
@@ -36,19 +76,46 @@ function switchGymLabTab(tab) {
   const prog = document.getElementById('gymlab-programs-wrapper');
   const tmpl = document.getElementById('gymlab-templates-wrapper');
   const ex   = document.getElementById('gymlab-exercises-wrapper');
+  const chipsWrapper = document.getElementById('gymlabCategoryChipsWrapper');
   
-  if (tab === 'all') {
-    if (prog) prog.style.display = 'block';
-    if (tmpl) tmpl.style.display = 'block';
-    if (ex) ex.style.display = 'block';
-  } else {
-    if (prog) prog.style.display = tab === 'programs' ? 'block' : 'none';
-    if (tmpl) tmpl.style.display = tab === 'templates' ? 'block' : 'none';
-    if (ex) ex.style.display = tab === 'exercises' ? 'block' : 'none';
+  if (prog) prog.style.display = tab === 'programs' ? 'block' : 'none';
+  if (tmpl) tmpl.style.display = tab === 'templates' ? 'block' : 'none';
+  if (ex) ex.style.display = tab === 'exercises' ? 'block' : 'none';
+  
+  if (chipsWrapper) {
+    chipsWrapper.style.display = tab === 'exercises' ? 'block' : 'none';
   }
   
   if (typeof initRipples === 'function') initRipples();
   localStorage.setItem('gymtrack_gymlab_tab', tab);
+}
+
+window._gymlabSearchQuery = '';
+window._gymlabCategoryFilter = 'all';
+
+function onGymLabSearchInput() {
+  const searchVal = document.getElementById('gymlabSearch').value.trim().toLowerCase();
+  window._gymlabSearchQuery = searchVal;
+  
+  const tab = localStorage.getItem('gymtrack_gymlab_tab') || 'templates';
+  if (tab === 'templates') {
+    renderTemplates(searchVal);
+  } else if (tab === 'programs') {
+    if (typeof renderPrograms === 'function') renderPrograms(searchVal);
+  } else if (tab === 'exercises') {
+    renderExercises(searchVal, window._gymlabCategoryFilter || 'all');
+  }
+}
+
+function filterGymLabExercisesByCategory(category) {
+  window._gymlabCategoryFilter = category;
+  
+  document.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === category);
+  });
+  
+  renderExercises(window._gymlabSearchQuery || '', category);
+  if (typeof haptic === 'function') haptic('light');
 }
 
 /* ---- Touch swipe navigation ---- */

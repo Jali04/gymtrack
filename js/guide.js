@@ -79,16 +79,18 @@ const TOUR_STEPS = {
     ],
     calendar: [
       {
-        page: 'calendar',
+        page: 'progress',
         target: '.cal-grid',
         title: 'Schritt 1 von 2: Trainingskalender & Streak',
-        text: 'Hier siehst du deine Trainingstage. Die farbigen Punkte unter den Daten zeigen dir, ob du Kraft, Cardio oder Stretching trainiert hast.'
+        text: 'Hier siehst du deine Trainingstage. Die farbigen Punkte unter den Daten zeigen dir, ob du Kraft, Cardio oder Stretching trainiert hast.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('calendar-stats'); }
       },
       {
-        page: 'calendar',
+        page: 'progress',
         target: '#monthlyRecap',
         title: 'Schritt 2 von 2: Monats-Zusammenfassung',
-        text: 'Weiter unten findest du dein Monats-Recap mit der Gesamtzahl der Sätze und Trainings sowie individuellen Übungs-Statistiken.'
+        text: 'Weiter unten findest du dein Monats-Recap mit der Gesamtzahl der Sätze und Trainings sowie individuellen Übungs-Statistiken.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('calendar-stats'); }
       }
     ],
     supps: [
@@ -201,16 +203,18 @@ const TOUR_STEPS = {
     ],
     calendar: [
       {
-        page: 'calendar',
+        page: 'progress',
         target: '.cal-grid',
         title: 'Step 1 of 2: Workout Calendar',
-        text: 'Review past workout days. Dot indicators represent logged training categories (Strength, Cardio, Stretch).'
+        text: 'Review past workout days. Dot indicators represent logged training categories (Strength, Cardio, Stretch).',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('calendar-stats'); }
       },
       {
-        page: 'calendar',
+        page: 'progress',
         target: '#monthlyRecap',
         title: 'Step 2 of 2: Monthly Recap & Stats',
-        text: 'Scroll down to review monthly summaries, check total reps, sets, and view detailed individual exercises stats.'
+        text: 'Scroll down to review monthly summaries, check total reps, sets, and view detailed individual exercises stats.',
+        onEnter: () => { if (typeof switchProgressSubTab === 'function') switchProgressSubTab('calendar-stats'); }
       }
     ],
     supps: [

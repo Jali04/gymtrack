@@ -6,13 +6,25 @@ let editingTemplateId = null;
 let tmplExercises     = [];
 let tmplPickerPending = [];
 
-function renderTemplates() {
+function renderTemplates(searchQuery = '') {
   const list = document.getElementById('templatesList');
-  if (!db.templates || db.templates.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">${t('noTemplatesYet')}</div></div>`;
+  if (!list) return;
+  
+  const q = searchQuery.toLowerCase().trim();
+  let filteredTemplates = db.templates || [];
+  
+  if (q) {
+    filteredTemplates = filteredTemplates.filter(tmpl => 
+      tmpl.name.toLowerCase().includes(q) ||
+      tmpl.exerciseIds.some(exId => getExName(exId).toLowerCase().includes(q))
+    );
+  }
+  
+  if (filteredTemplates.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">${t('noTemplatesYet') || 'Keine Vorlagen gefunden.'}</div></div>`;
     return;
   }
-  list.innerHTML = db.templates.map(tmpl => {
+  list.innerHTML = filteredTemplates.map(tmpl => {
     const exNames = tmpl.exerciseIds.map(id => getExName(id)).join(', ');
     const typeColors = { 'training': 'var(--accent)', 'rest': '#f5a623', 'couch': '#d0021b' };
     const typeObj = tmpl.type || 'training';

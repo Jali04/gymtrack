@@ -139,10 +139,14 @@ function deleteMeasurement(id) {
 function requestPicsAccess() {
   const pin = localStorage.getItem('gymtrack_pics_pin');
   if (!pin) {
-    openModal('picsProgressModal');
+    window._picsUnlocked = true;
+    renderProgressPics();
     return;
   }
-  openPinModal('access', () => openModal('picsProgressModal'));
+  openPinModal('access', () => {
+    window._picsUnlocked = true;
+    renderProgressPics();
+  });
 }
 
 function configurePicPin() {
@@ -255,8 +259,10 @@ async function _pinSubmit() {
     if (val === setupTemp) {
       const hashed = await hashPin(val);
       localStorage.setItem('gymtrack_pics_pin', hashed);
+      window._picsUnlocked = true;
       closeModal('pinModal');
       showToast('🔒 PIN-Schutz aktiviert');
+      renderProgressPics();
     } else {
       _pinState.mode      = 'setup';
       _pinState.setupTemp = '';
@@ -281,8 +287,10 @@ async function _pinSubmit() {
     const isValid = await verifyPin(val, storedPin);
     if (isValid) {
       localStorage.removeItem('gymtrack_pics_pin');
+      window._picsUnlocked = false;
       closeModal('pinModal');
       showToast('PIN-Schutz entfernt');
+      renderProgressPics();
     } else { _pinError('Falsche PIN'); }
   }
 }
@@ -301,26 +309,50 @@ function _pinError(msg) {
 }
 
 function renderProgressPics() {
-  const gal = document.getElementById('progressGallery');
-  gal.innerHTML = '';
+  const container = document.getElementById('photoGalleryContainer');
+  if (!container) return;
   
-  if (!db.progressPics || db.progressPics.length === 0) {
-    gal.innerHTML = `<div style="grid-column:1 / span 2;text-align:center;padding:20px;color:var(--muted);font-size:13px;">Keine Fotos</div>`;
+  const pin = localStorage.getItem('gymtrack_pics_pin');
+  
+  // If PIN is active and not unlocked in this session:
+  if (pin && !window._picsUnlocked) {
+    container.innerHTML = `
+      <div class="photo-locked-card">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">Fotos sind PIN-geschützt</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Gib deine PIN ein, um deine Transformation zu sehen.</p>
+        <button class="btn btn-primary" style="margin:0 auto;width:auto;" onclick="requestPicsAccess()">Entsperren</button>
+      </div>
+    `;
     return;
   }
   
-  let html = '';
-  db.progressPics.forEach(p => {
-    const d = new Date(p.date);
-    const dateStr = `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
-    html += `
-      <div style="position:relative;width:100%;aspect-ratio:3/4;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--surface2);" onclick="openPic('${p.id}')">
-        <img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover;">
-        <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);padding:6px;font-size:11px;text-align:center;font-weight:600;backdrop-filter:blur(4px);">${dateStr}</div>
-      </div>
-    `;
-  });
-  gal.innerHTML = html;
+  // Otherwise, render upload button + gallery grid
+  let uploadBtnHtml = `
+    <label class="btn btn-primary" style="margin-bottom:16px;cursor:pointer;display:block;text-align:center;padding:12px;color:#000;">
+      + Neues Foto
+      <input type="file" id="progressPicUpload" accept="image/*" style="display:none;" onchange="handlePicUpload(event)">
+    </label>
+  `;
+  
+  let galleryGridHtml = '';
+  if (!db.progressPics || db.progressPics.length === 0) {
+    galleryGridHtml = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Keine Fotos</div>`;
+  } else {
+    let itemsHtml = db.progressPics.map(p => {
+      const d = new Date(p.date);
+      const dateStr = `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
+      return `
+        <div style="position:relative;width:100%;aspect-ratio:3/4;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--surface2);" onclick="openPic('${p.id}')">
+          <img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover;">
+          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);padding:6px;font-size:11px;text-align:center;font-weight:600;backdrop-filter:blur(4px);">${dateStr}</div>
+        </div>
+      `;
+    }).join('');
+    galleryGridHtml = `<div id="progressGallery" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${itemsHtml}</div>`;
+  }
+  
+  container.innerHTML = uploadBtnHtml + galleryGridHtml;
 }
 
 let activePicId = null;

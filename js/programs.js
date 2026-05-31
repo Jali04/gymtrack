@@ -4,17 +4,33 @@
 
 let currentProgId = null;
 
-function renderPrograms() {
+function renderPrograms(searchQuery = '') {
   const list = document.getElementById('programsList');
   if (!list) return;
   list.innerHTML = '';
   
-  if (!db.programs || db.programs.length === 0) {
+  const q = searchQuery.toLowerCase().trim();
+  let filteredPrograms = db.programs || [];
+  
+  if (q) {
+    filteredPrograms = filteredPrograms.filter(p => {
+      if (p.name.toLowerCase().includes(q)) return true;
+      if (p.schedule) {
+        return Object.values(p.schedule).some(tplId => {
+          const tpl = db.templates.find(x => x.id === tplId);
+          return tpl && tpl.name.toLowerCase().includes(q);
+        });
+      }
+      return false;
+    });
+  }
+  
+  if (filteredPrograms.length === 0) {
     list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">${t('noEntries') || 'Keine Programme vorhanden'}</div>`;
     return;
   }
   
-  db.programs.forEach(p => {
+  filteredPrograms.forEach(p => {
     const isActive = db.activeProgram && db.activeProgram.id === p.id;
     const border = isActive ? 'border:1px solid var(--accent);' : 'border:1px solid transparent;';
     const tag = isActive ? `<span style="background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;">AKTIV</span>` : '';

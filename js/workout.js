@@ -51,7 +51,11 @@ function renderLog() {
     return;
   }
 
-  recent.innerHTML = ws.map(w => {
+  const limit = 5;
+  const visibleWs = ws.slice(0, limit);
+  const hiddenWs = ws.slice(limit);
+
+  const workoutMapper = w => {
     const d         = new Date(w.date || w.startTime).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     const totalSets = w.exercises.reduce((a, e) => a + e.sets.length, 0);
     let durationHtml = '';
@@ -93,7 +97,33 @@ function renderLog() {
       </div>
       <div style="margin-top:12px;">${exHtml}</div>
     </div>`;
-  }).join('');
+  };
+
+  let html = visibleWs.map(workoutMapper).join('');
+
+  if (hiddenWs.length > 0) {
+    html += `
+      <div id="hiddenWorkouts" style="display:none; margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 12px;">
+        ${hiddenWs.map(workoutMapper).join('')}
+      </div>
+      <button class="btn btn-secondary" id="btnShowAllWorkouts" style="margin-top:12px;width:100%;" onclick="showAllWorkouts()">
+        + ${hiddenWs.length} ${lang === 'de' ? 'weitere Trainings anzeigen' : 'more workouts'}
+      </button>
+    `;
+  }
+
+  recent.innerHTML = html;
+}
+
+window.showAllWorkouts = function() {
+  const hidden = document.getElementById('hiddenWorkouts');
+  const btn = document.getElementById('btnShowAllWorkouts');
+  if (hidden && btn) {
+    hidden.style.display = 'block';
+    btn.style.display = 'none';
+    if (typeof haptic === 'function') haptic('light');
+  }
+};
 }
 
 function _renderQuickStartTemplates() {

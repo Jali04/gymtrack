@@ -309,8 +309,11 @@ function toggleLang() {
   const id = active.id.replace('page-', '');
   const renders = {
     log: renderLog, gymlab: renderGymLab,
-    stats: renderStats, calendar: renderCalendar,
-    supps: renderSupplements
+    stats: renderStats, supps: renderSupplements,
+    progress: () => {
+      const activeSub = localStorage.getItem('gymtrack_progress_subtab') || 'calendar-stats';
+      if (typeof switchProgressSubTab === 'function') switchProgressSubTab(activeSub);
+    }
   };
   if (renders[id]) renders[id]();
   // Re-render HIIT config labels if timer modal is open

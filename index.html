@@ -128,23 +128,32 @@
   <!-- GymLab (Vorlagen + Übungen + Programme) -->
   <div class="page" id="page-gymlab">
     <div class="gymlab-tabs">
-      <button class="gymlab-tab active" data-tab="all" onclick="switchGymLabTab('all')" id="tabGymLabAll">Alles</button>
+      <button class="gymlab-tab active" data-tab="templates" onclick="switchGymLabTab('templates')"
+        id="tabGymLabTemplates">Vorlagen</button>
       <button class="gymlab-tab" data-tab="programs" onclick="switchGymLabTab('programs')"
         id="tabGymLabPrograms">Programme</button>
-      <button class="gymlab-tab" data-tab="templates" onclick="switchGymLabTab('templates')"
-        id="tabGymLabTemplates">Vorlagen</button>
       <button class="gymlab-tab" data-tab="exercises" onclick="switchGymLabTab('exercises')"
         id="tabGymLabExercises">Übungen</button>
     </div>
 
-    <!-- Programs -->
-    <div id="gymlab-programs-wrapper">
-      <div class="gymlab-section-header">
-        <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
-        <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
+    <!-- GymLab search bar -->
+    <div class="gymlab-search-container" style="margin-bottom: 12px;">
+      <input type="text" id="gymlabSearch" class="form-input" placeholder="Suchen..." oninput="onGymLabSearchInput()" autocomplete="off" style="height: 42px; font-size: 14px;">
+    </div>
+
+    <!-- GymLab exercise category chips -->
+    <div class="gymlab-category-chips-wrapper" id="gymlabCategoryChipsWrapper" style="display:none; margin-bottom: 16px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
+      <div style="display: inline-flex; gap: 8px;">
+        <button class="filter-chip active" data-cat="all" onclick="filterGymLabExercisesByCategory('all')">Alle</button>
+        <button class="filter-chip" data-cat="Brust" onclick="filterGymLabExercisesByCategory('Brust')">Brust</button>
+        <button class="filter-chip" data-cat="Rücken" onclick="filterGymLabExercisesByCategory('Rücken')">Rücken</button>
+        <button class="filter-chip" data-cat="Schultern" onclick="filterGymLabExercisesByCategory('Schultern')">Schultern</button>
+        <button class="filter-chip" data-cat="Arme" onclick="filterGymLabExercisesByCategory('Arme')">Arme</button>
+        <button class="filter-chip" data-cat="Beine" onclick="filterGymLabExercisesByCategory('Beine')">Beine</button>
+        <button class="filter-chip" data-cat="Core" onclick="filterGymLabExercisesByCategory('Core')">Core</button>
+        <button class="filter-chip" data-cat="Cardio" onclick="filterGymLabExercisesByCategory('Cardio')">Cardio</button>
+        <button class="filter-chip" data-cat="Dehnen" onclick="filterGymLabExercisesByCategory('Dehnen')">Dehnen</button>
       </div>
-      <div id="programsList"></div>
-      <div class="divider"></div>
     </div>
 
     <!-- Templates -->
@@ -157,8 +166,18 @@
       <div class="divider"></div>
     </div>
 
+    <!-- Programs -->
+    <div id="gymlab-programs-wrapper" style="display:none;">
+      <div class="gymlab-section-header">
+        <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
+        <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
+      </div>
+      <div id="programsList"></div>
+      <div class="divider"></div>
+    </div>
+
     <!-- Exercises -->
-    <div id="gymlab-exercises-wrapper">
+    <div id="gymlab-exercises-wrapper" style="display:none;">
       <div class="gymlab-section-header">
         <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
         <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
@@ -167,46 +186,70 @@
     </div>
   </div>
 
-  <!-- Calendar -->
-  <div class="page" id="page-calendar">
-    <div class="cal-header">
-      <button class="cal-nav" onclick="calPrevMonth()">‹</button>
-      <div class="cal-month" id="calMonthLabel"></div>
-      <button class="cal-nav" onclick="calNextMonth()">›</button>
-    </div>
-    <div class="cal-streak" id="calStreak"></div>
-    <div class="cal-grid" id="calDayLabels"></div>
-    <div style="height:8px;"></div>
-    <div class="cal-grid" id="calGrid"></div>
-
-    <div class="divider" style="margin-top:20px;"></div>
-    <div class="section-title" id="ttlMonthRecap" style="font-size:16px;">Monats-Recap</div>
-    <div id="monthlyRecap" style="margin-bottom:16px;"></div>
-
-    <div class="divider"></div>
-    <div class="section-title" id="ttlStats">Statistiken</div>
-    <div class="stats-grid" id="statsGrid" style="margin-bottom:16px;"></div>
-  </div>
-
   <!-- Supps -->
   <div class="page" id="page-supps">
     <div class="supp-content"></div>
   </div>
 
-  <!-- Progress -->
+  <!-- Progress & Analytics (Combined Calendar + Progress) -->
   <div class="page" id="page-progress">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="section-title" id="ttlProgress" style="margin:0;">Fortschritt</div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="openModal('weightProgressModal')"
-          id="btnWeightMod">Gewicht</button>
-        <button class="btn btn-secondary btn-sm" style="margin:0;width:auto;" onclick="requestPicsAccess()"
-          id="btnPicsMod">Fotos 🔒</button>
+    <!-- Sub-navigation tabs at the top -->
+    <div class="progress-subtabs">
+      <button class="progress-subtab active" onclick="switchProgressSubTab('calendar-stats')" id="tabProgCalendar">Kalender</button>
+      <button class="progress-subtab" onclick="switchProgressSubTab('body-photos')" id="tabProgBody">Körper & Fotos</button>
+      <button class="progress-subtab" onclick="switchProgressSubTab('exercise-charts')" id="tabProgExercises">Übungen</button>
+    </div>
+
+    <!-- SUBPAGE 1: Calendar & Stats -->
+    <div id="prog-subpage-calendar-stats" class="progress-subpage-content active">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calPrevMonth()">‹</button>
+        <div class="cal-month" id="calMonthLabel"></div>
+        <button class="cal-nav" onclick="calNextMonth()">›</button>
+      </div>
+      <div class="cal-streak" id="calStreak"></div>
+      <div class="cal-grid" id="calDayLabels"></div>
+      <div style="height:8px;"></div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div class="divider" style="margin-top:20px;"></div>
+      <div class="section-title" id="ttlMonthRecap" style="font-size:16px;">Monats-Recap</div>
+      <div id="monthlyRecap" style="margin-bottom:16px;"></div>
+
+      <div class="divider"></div>
+      <div class="section-title" id="ttlStats">Statistiken</div>
+      <div class="stats-grid" id="statsGrid" style="margin-bottom:16px;"></div>
+    </div>
+
+    <!-- SUBPAGE 2: Body Metrics & Photos (Weight progress graph, entries list, PIN progress pics) -->
+    <div id="prog-subpage-body-photos" class="progress-subpage-content" style="display:none;">
+      <!-- Weight Section -->
+      <div class="progress-section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="section-title" style="margin:0;" id="ttlWeightMetrics">Gewicht & KFA Verlauf</div>
+        <button class="btn btn-primary btn-sm" style="margin:0;width:auto;" onclick="openAddMeasurementModal()">+ Eintrag</button>
+      </div>
+      <div style="margin-bottom:16px;" id="progressChart"></div>
+      <div id="progressList" style="max-height:220px;overflow-y:auto;margin-bottom:24px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);"></div>
+
+      <div class="divider"></div>
+
+      <!-- Photos Section -->
+      <div class="progress-section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="section-title" style="margin:0;" id="ttlProgressPics">Fortschritts-Fotos</div>
+        <button class="icon-btn" onclick="configurePicPin()" style="background:var(--surface2);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text);border:1px solid var(--border);" title="Foto PIN einrichten">🔒</button>
+      </div>
+
+      <!-- Photo lock screen or content area -->
+      <div id="photoGalleryContainer">
+        <!-- Will be dynamically rendered based on PIN lock status -->
       </div>
     </div>
 
-    <div id="exerciseProgressTracker" style="display:flex;flex-direction:column;gap:12px;">
-      <!-- Accordions injected here -->
+    <!-- SUBPAGE 3: Exercise Progress Charts -->
+    <div id="prog-subpage-exercise-charts" class="progress-subpage-content" style="display:none;">
+      <div id="exerciseProgressTracker" style="display:flex;flex-direction:column;gap:12px;">
+        <!-- Accordions injected here -->
+      </div>
     </div>
   </div>
 
@@ -224,15 +267,6 @@
         <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
       </svg>
       GymLab
-    </button>
-    <button class="nav-btn" data-page="calendar" onclick="showPage('calendar',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-      Kalender
     </button>
     <button class="nav-btn" data-page="supps" onclick="showPage('supps',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
