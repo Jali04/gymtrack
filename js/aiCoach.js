@@ -1064,6 +1064,7 @@ async function requestGeminiAi(latestMessage) {
         signal: aiAbortController ? aiAbortController.signal : undefined,
         headers: headers,
         body: JSON.stringify({
+          model: aiModel,
           contents: contents,
           systemInstruction: {
             parts: [{ text: getSystemPrompt() }]

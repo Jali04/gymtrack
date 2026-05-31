@@ -39,7 +39,7 @@ serve(async (req) => {
     }
 
     // 3. Retrieve body payload (matching what the frontend sends)
-    const { contents, systemInstruction, generationConfig } = await req.json()
+    const { model, contents, systemInstruction, generationConfig } = await req.json()
 
     // 4. Retrieve Gemini API Key from secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
@@ -50,8 +50,9 @@ serve(async (req) => {
       })
     }
 
-    // 5. Call Gemini 2.0 Flash API using the server-side API Key
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`
+    // 5. Call Gemini API dynamically using the server-side API Key
+    const modelName = model || 'gemini-2.0-flash'
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`
     
     const response = await fetch(geminiUrl, {
       method: 'POST',
