@@ -32,25 +32,6 @@
     <h1>DSCPLN</h1>
     <div style="display:flex;align-items:center;gap:8px;">
       <span class="header-date" id="headerDate"></span>
-      <button onclick="toggleTheme()" id="themeBtn" class="header-btn" title="Design wechseln">
-        <svg class="header-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        </svg>
-        <svg class="header-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
-      </button>
-      <button onclick="toggleLang()" id="langBtn" class="header-btn">EN</button>
       <button onclick="openAiCoach()" title="AI Coach" id="aiCoachBtn" class="header-btn">
         <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -59,16 +40,7 @@
           <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z" />
         </svg>
       </button>
-      <button onclick="openGuideModal()" id="guideBtn" class="header-btn" title="Anleitung & Hilfe" style="position: relative;">
-        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-        <span class="guide-badge-pulse" id="guideBadgePulse" style="display:none;"></span>
-      </button>
-      <button onclick="openExportModal()" title="Backup & Einstellungen" class="header-btn">
+      <button onclick="openSettingsHub()" title="Einstellungen" class="header-btn" style="position: relative;" id="settingsBtn">
         <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
@@ -76,6 +48,7 @@
             d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
           </path>
         </svg>
+        <span class="guide-badge-pulse" id="guideBadgePulse" style="display:none;"></span>
       </button>
     </div>
   </div>
@@ -464,17 +437,51 @@
     </div>
   </div>
 
-  <!-- Export / Import Hub -->
-  <div class="modal-overlay" id="exportModal">
+  <!-- Settings & Backup Hub -->
+  <div class="modal-overlay" id="settingsHubModal">
     <div class="modal">
       <div class="modal-handle"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div class="modal-title" id="ttlExport">Backup & Restore</div>
-        <div class="close-btn" onclick="closeModal('exportModal')">✕</div>
+        <div class="modal-title" id="settingsHubTitle">Einstellungen & Backup</div>
+        <div class="close-btn" onclick="closeModal('settingsHubModal')">✕</div>
       </div>
+
+      <!-- App Settings Section -->
+      <div class="settings-group">
+        <!-- Theme Row -->
+        <div class="settings-row-item">
+          <div class="settings-row-info">
+            <div class="settings-row-label" id="lblSettingsTheme">Design wechseln</div>
+            <div class="settings-row-desc" id="lblSettingsThemeDesc">Zwischen hellem und dunklem Design wechseln</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnSettingsTheme" onclick="toggleTheme()">Design ändern</button>
+        </div>
+
+        <!-- Language Row -->
+        <div class="settings-row-item">
+          <div class="settings-row-info">
+            <div class="settings-row-label" id="lblSettingsLang">Sprache (Language)</div>
+            <div class="settings-row-desc" id="lblSettingsLangDesc">Sprache der App ändern / Change app language</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnSettingsLang" onclick="toggleLang()">English</button>
+        </div>
+
+        <!-- Guide Row -->
+        <div class="settings-row-item">
+          <div class="settings-row-info">
+            <div class="settings-row-label" id="lblSettingsTour">Hilfe & Anleitung</div>
+            <div class="settings-row-desc" id="lblSettingsTourDesc">Die interaktive App-Tour erneut starten</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnSettingsTour" onclick="closeModal('settingsHubModal'); openGuideModal('tour')" style="color:var(--accent);">Tour starten</button>
+        </div>
+      </div>
+
+      <div class="divider" style="margin: 16px 0;"></div>
+
       <!-- hidden textarea used by copyExport() fallback only -->
       <textarea id="exportText" readonly
         style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
+
       <!-- Export section -->
       <div
         style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;"
@@ -486,13 +493,14 @@
       <!-- Notes export -->
       <button class="btn btn-secondary" id="btnExportNotes" onclick="exportToNotesReadable()"
         style="margin-bottom:16px;">📝 Verlauf zu Notizen exportieren</button>
+      
       <!-- Import section -->
       <div
         style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;"
         id="lblImportSection">Importieren</div>
-      <button class="btn btn-secondary" id="btnOpenImport" onclick="closeModal('exportModal');openImportModal();">📥
+      <button class="btn btn-secondary" id="btnOpenImport" onclick="closeModal('settingsHubModal');openImportModal();">📥
         Daten importieren</button>
-      <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('exportModal')"
+      <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('settingsHubModal')"
         style="margin-top:8px;">Schließen</button>
 
       <!-- Copyright Notice -->

@@ -98,8 +98,8 @@ async function decompressPayload(code) {
 }
 
 /* ---- Export / Import ---- */
-function openExportModal() {
-  openModal('exportModal');
+function openSettingsHub() {
+  openModal('settingsHubModal');
 }
 
 function copyExport() {

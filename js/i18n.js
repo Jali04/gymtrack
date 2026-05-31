@@ -134,7 +134,18 @@ const TR = {
     guideTabTour: 'Interaktive Tour',
     guideTabFaq: 'Komplette Anleitung',
     guideShowMe: 'Zeig es mir! ➔',
-    guideHighlightToast: 'Hier findest du diesen Bereich. Schau dich in Ruhe um!'
+    guideHighlightToast: 'Hier findest du diesen Bereich. Schau dich in Ruhe um!',
+    // Settings Hub
+    settingsHubTitle: 'Einstellungen & Backup',
+    settingsThemeLabel: 'Design wechseln',
+    settingsThemeDesc: 'Zwischen hellem und dunklem Design wechseln',
+    settingsThemeBtn: 'Design ändern',
+    settingsLangLabel: 'Sprache (Language)',
+    settingsLangDesc: 'Sprache der App ändern / Change app language',
+    settingsLangBtn: 'English',
+    settingsTourLabel: 'Hilfe & Anleitung',
+    settingsTourDesc: 'Die interaktive App-Tour erneut starten',
+    settingsTourBtn: 'Tour starten'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar', allLabel: 'All',
@@ -267,7 +278,18 @@ const TR = {
     guideTabTour: 'Interactive Tour',
     guideTabFaq: 'Full Guide',
     guideShowMe: 'Show me! ➔',
-    guideHighlightToast: 'Here is this section. Take a look around!'
+    guideHighlightToast: 'Here is this section. Take a look around!',
+    // Settings Hub
+    settingsHubTitle: 'Settings & Backup',
+    settingsThemeLabel: 'Switch Design',
+    settingsThemeDesc: 'Toggle between light and dark mode',
+    settingsThemeBtn: 'Toggle Theme',
+    settingsLangLabel: 'Language (Sprache)',
+    settingsLangDesc: 'Change app language / Sprache der App ändern',
+    settingsLangBtn: 'Deutsch',
+    settingsTourLabel: 'Help & Guide',
+    settingsTourDesc: 'Restart the interactive walkthrough tour',
+    settingsTourBtn: 'Start Tour'
   }
 };
 
@@ -345,7 +367,17 @@ function applyTranslations() {
   s('btnAddRow', 'addSet'); s('btnSaveSets', 'saveSets');
   s('colLabelType', 'colType'); s('colLabelRpe', 'colRpe');
 
-  // Export / import
+  // Export / import (Settings Hub)
+  s('settingsHubTitle', 'settingsHubTitle');
+  s('lblSettingsTheme', 'settingsThemeLabel');
+  s('lblSettingsThemeDesc', 'settingsThemeDesc');
+  s('btnSettingsTheme', 'settingsThemeBtn');
+  s('lblSettingsLang', 'settingsLangLabel');
+  s('lblSettingsLangDesc', 'settingsLangDesc');
+  s('btnSettingsLang', 'settingsLangBtn');
+  s('lblSettingsTour', 'settingsTourLabel');
+  s('lblSettingsTourDesc', 'settingsTourDesc');
+  s('btnSettingsTour', 'settingsTourBtn');
   s('ttlExport', 'exportTitle'); s('txtExportDesc', 'exportDesc');
   // Tools modal
   s('ttlTools', 'ttlTools');

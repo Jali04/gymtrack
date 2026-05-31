@@ -250,6 +250,58 @@ const TOUR_STEPS = {
   }
 };
 
+// FAQ Content in German and English
+const GUIDE_CONTENT = {
+  de: {
+    faq: [
+      {
+        q: 'Wie erstelle ich einen Trainingsplan?',
+        a: 'Gehe in das <strong>GymLab</strong> und klicke auf das "+" bei "Vorlagen" für einzelne Workouts, oder bei "Programme" für einen wöchentlich rollierenden Plan. Du kannst auch den <strong>AI Coach</strong> fragen: "Erstelle mir einen Push/Pull Plan" – er generiert dir einen importierbaren Entwurf!'
+      },
+      {
+        q: 'Was bedeuten die Satz-Typen (N, W, D)?',
+        a: 'Beim Eintragen deiner Sätze kannst du den Typ umschalten:<br><strong>N (Normal)</strong>: Dein regulärer Arbeitssatz.<br><strong>W (Warmup)</strong>: Ein Aufwärmsatz, der in Statistiken gesondert markiert wird.<br><strong>D (Drop Set)</strong>: Ein Reduktionssatz, bei dem du das Gewicht sofort verringerst.'
+      },
+      {
+        q: 'Wie funktioniert der Pausentimer?',
+        a: 'Aktiviere auf dem Trainings-Bildschirm die "Satzpause" und stelle deine Wunschzeit ein (z.B. 1:30). Sobald du in einer Übung ein Häkchen bei einem Satz setzt, startet automatisch ein kreisförmiger Timer unten im Bildschirm, der per Sound/Vibration das Ende der Pause signalisiert.'
+      },
+      {
+        q: 'Wie sichere ich meine Daten?',
+        a: 'Klicke oben rechts auf das Einstellungen-Zahnrad (Backup & Restore). Du kannst deine Daten als Datei sichern oder einen Export-Code kopieren. Da DSCPLN deine Daten komplett lokal speichert (offline-first), solltest du regelmäßig ein Backup machen!'
+      },
+      {
+        q: 'Sind meine Fortschritts-Fotos sicher?',
+        a: 'Ja. Wenn du auf "Fotos" klickst, wirst du aufgefordert, eine 4-stellige PIN zu vergeben. Alle Fotos verbleiben sicher in der lokalen Sandbox deines Geräts und sind ohne PIN nicht einsehbar. Sie werden niemals auf fremde Server geladen.'
+      }
+    ]
+  },
+  en: {
+    faq: [
+      {
+        q: 'How do I create a workout plan?',
+        a: 'Go to <strong>GymLab</strong> and tap the "+" on "Templates" for single workouts, or "Programs" for a weekly routine calendar. You can also ask the <strong>AI Coach</strong>: "Create a Push/Pull plan" – he will generate an importable layout for you!'
+      },
+      {
+        q: 'What do the set types (N, W, D) stand for?',
+        a: 'When logging sets, tap the type button to toggle:<br><strong>N (Normal)</strong>: Your standard working set.<br><strong>W (Warmup)</strong>: A warmup set, tracked separately in stats.<br><strong>D (Drop Set)</strong>: A drop set, where you drop weight and immediately perform reps.'
+      },
+      {
+        q: 'How does the rest timer countdown work?',
+        a: 'Activate "Rest timer" on the training log page and select your duration (e.g., 1:30). When you check a set as completed during your workout, a round timer overlay starts automatically at the bottom, alerting you with sound/vibration when it is time to lift again.'
+      },
+      {
+        q: 'How do I backup my data?',
+        a: 'Tap the settings gear icon in the top header (Backup & Restore). You can download your data as a file or copy a code. Since DSCPLN stores all data locally (offline-first), we recommend regular backups!'
+      },
+      {
+        q: 'Are my progress photos secure?',
+        a: 'Yes. When you open "Photos", you will be prompted to create a 4-digit PIN. All photos remain in your device\'s local storage and cannot be viewed without the PIN. They are never uploaded to any servers.'
+      }
+    ]
+  }
+};
+
 // Guide Card list for Interactive Menu rendering
 const GUIDE_TOUR_ITEMS = {
   de: [
@@ -286,13 +338,16 @@ function checkOnboardingStatus() {
   const onboarded = localStorage.getItem('dscpln_onboarded');
   const welcomeBanner = document.getElementById('guideWelcomeBanner');
   const badgePulse = document.getElementById('guideBadgePulse');
+  const tourBtn = document.getElementById('btnSettingsTour');
   
   if (!onboarded) {
     if (welcomeBanner) welcomeBanner.style.display = 'block';
     if (badgePulse) badgePulse.style.display = 'block';
+    if (tourBtn) tourBtn.classList.add('guide-highlight-pulse');
   } else {
     if (welcomeBanner) welcomeBanner.style.display = 'none';
     if (badgePulse) badgePulse.style.display = 'none';
+    if (tourBtn) tourBtn.classList.remove('guide-highlight-pulse');
   }
 }
 
