@@ -166,10 +166,13 @@ function applyAiTranslations() {
   s('btnSaveAiOnboard', 'Schlüssel speichern & starten', 'Save Key & Start');
   sp('aiOnboardKeyInput', 'API-Key einfügen...', 'Paste API-Key...');
 
+  s('lblAiOnboardOptionBName', 'Konto verbinden', 'Connect Account');
+  s('lblAiConnectionStatus', 'Verbindungsstatus', 'Connection Status');
+
   const optNames = document.querySelectorAll('.ai-onboarding-screen .ai-onboard-option-name');
   if (optNames.length >= 2) {
     optNames[0].textContent = isDe ? 'Chrome Lokale KI' : 'Chrome Local AI';
-    optNames[1].textContent = isDe ? 'Google Gemini API-Key' : 'Google Gemini API Key';
+    optNames[1].textContent = isDe ? 'Konto verbinden' : 'Connect Account';
   }
 
   const txtKeyHint = document.getElementById('txtAiKeyHint');
@@ -206,6 +209,7 @@ function initAiCoachSettings() {
 
   onAiProviderChange();
   onAiModelChange();
+  updateAiProxyStatusMsg();
 }
 
 function onAiProviderChange() {
@@ -236,7 +240,8 @@ function onAiModelChange() {
 function saveAiSettings() {
   const provider = document.getElementById('aiProviderSelect').value;
   const modelSel = document.getElementById('aiModelSelect').value;
-  const keyVal = document.getElementById('aiApiKeyInput').value.trim();
+  const keyInput = document.getElementById('aiApiKeyInput');
+  const keyVal = keyInput ? keyInput.value.trim() : '';
   const custVal = document.getElementById('aiCustomModelInput').value.trim();
 
   aiProvider = provider;
@@ -281,6 +286,24 @@ function toggleAiSettings() {
   } else {
     panel.classList.remove('open');
     checkShowOnboarding(); // check onboarding state when settings is closed
+  }
+}
+
+function updateAiProxyStatusMsg() {
+  const statusMsg = document.getElementById('aiProxyStatusMsg');
+  if (!statusMsg) return;
+
+  const isLoggedIn = (window.supabaseClient && window.currentSession);
+  const isDe = (lang === 'de');
+
+  if (isLoggedIn) {
+    statusMsg.innerHTML = isDe
+      ? `<span style="color:var(--accent);font-weight:700;">● Aktiv (Cloud-Verbindung)</span><br>Deine Anfragen werden sicher über unser verschlüsseltes Backend-Proxy verarbeitet. Kein API-Key benötigt.`
+      : `<span style="color:var(--accent);font-weight:700;">● Active (Cloud Connection)</span><br>Your requests are processed securely via our encrypted backend proxy. No API key needed.`;
+  } else {
+    statusMsg.innerHTML = isDe
+      ? `<span style="color:var(--accent2);font-weight:700;">● Inaktiv (Nicht angemeldet)</span><br>Bitte verbinde dein Konto in den Einstellungen der App, um den Gemini AI Coach zu aktivieren.`
+      : `<span style="color:var(--accent2);font-weight:700;">● Inactive (Not logged in)</span><br>Please connect your account in the app settings to activate the Gemini AI Coach.`;
   }
 }
 
@@ -1176,7 +1199,7 @@ function checkShowOnboarding() {
 
   const chromeAi = getChromeAiAPI();
   const isLoggedIn = (window.supabaseClient && window.currentSession);
-  const isGeminiMissingKey = (aiProvider === 'gemini' && !aiApiKey && !isLoggedIn);
+  const isGeminiMissingKey = (aiProvider === 'gemini' && !isLoggedIn);
   const isChromeUnsupported = (aiProvider === 'chrome' && !chromeAi);
 
   if (isGeminiMissingKey || isChromeUnsupported) {
