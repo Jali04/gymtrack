@@ -50,6 +50,27 @@ function haptic(type) {
   navigator.vibrate(patterns[type] || [8]);
 }
 
+function testHaptic() {
+  haptic('success');
+
+  const btn = document.getElementById('btnTestHaptic');
+  if (btn) {
+    btn.classList.add('pin-shake');
+    setTimeout(() => btn.classList.remove('pin-shake'), 400);
+  }
+
+  const hasCapacitor = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics);
+  const hasVibrate = !!navigator.vibrate;
+
+  if (hasCapacitor) {
+    showToast("Haptik-Test: Erfolg (Native Vibration ausgelöst) 📳");
+  } else if (hasVibrate) {
+    showToast("Haptik-Test: Erfolg (Vibration im Web-Browser) 📳");
+  } else {
+    showToast("Haptik-Test: Simuliert (Vibration auf diesem Gerät/Browser nicht unterstützt) 📳");
+  }
+}
+
 /* ---- Animated Count-Up ---- */
 function animateCount(el, target, duration) {
   duration = duration || 700;
