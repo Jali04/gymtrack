@@ -190,7 +190,13 @@ async function handleRegisterSubmit(e) {
   showAuthMessage(isDe ? 'Erstelle Konto...' : 'Creating account...', 'var(--accent)');
 
   try {
-    const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
+    const { data, error } = await window.supabaseClient.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: window.location.origin
+      }
+    });
     if (error) throw error;
 
     // Check if user is auto-confirmed or needs email confirmation
