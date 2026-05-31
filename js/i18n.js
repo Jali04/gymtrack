@@ -437,4 +437,7 @@ function updateCategoryHint() {
   const hint = document.getElementById('categoryHint');
   if (!sel || !hint) return;
   hint.textContent = t('catHint')[getCatType(sel.value)] || '';
+  if (typeof _updateExerciseAiAnalysis === 'function' && typeof editingExId !== 'undefined' && editingExId) {
+    _updateExerciseAiAnalysis(editingExId);
+  }
 }

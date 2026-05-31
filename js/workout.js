@@ -62,6 +62,95 @@ const COACH_TIPS = [
 function _renderCoachTip() {
   const el = document.getElementById('coachTipText');
   if (!el) return;
+
+  const wk = db.weekStatus || { mode: 'normal' };
+  const mode = wk.mode || 'normal';
+
+  if (mode === 'sick') {
+    el.innerHTML = `<strong>Krankheits-Regeneration</strong>: Du bist krankgemeldet. Trainiere bitte nicht! Gönn deinem Körper maximale Ruhe, viel Flüssigkeit und Schlaf. Gute Besserung! 🤒`;
+    return;
+  }
+  if (mode === 'deload') {
+    el.innerHTML = `<strong>Deload-Fokus</strong>: Reduziere dein Trainingsvolumen und die Intensität um 30-40%. Perfekt, um Sehnen, Gelenke und das Nervensystem zu regenerieren. 😴`;
+    return;
+  }
+  if (mode === 'vacation') {
+    el.innerHTML = `<strong>Urlaubs-Erholung</strong>: Genieß die freie Zeit! Nutze aktive Regeneration (z.B. Spaziergänge, Schwimmen) oder dehne dich etwas. Bleib aktiv! 🏖️`;
+    return;
+  }
+  if (mode === 'travel') {
+    el.innerHTML = `<strong>Unterwegs-Tipp</strong>: Auf Reisen? Wenn kein Gym da ist, mach ein kurzes Bodyweight-Workout oder Hotelzimmer-Stretching, um geschmeidig zu bleiben. ✈️`;
+    return;
+  }
+
+  // Check inactivity
+  if (db.workouts && db.workouts.length > 0) {
+    const sorted = [...db.workouts].sort((a, b) => (b.startTime || b.date) - (a.startTime || a.date));
+    const lastWorkout = sorted[0];
+    const lastTime = lastWorkout.startTime || lastWorkout.date;
+    const daysInactive = Math.floor((Date.now() - lastTime) / (1000 * 60 * 60 * 24));
+    if (daysInactive >= 3) {
+      el.innerHTML = `<strong>Rhythmus finden</strong>: Dein letztes Workout liegt schon <strong>${daysInactive} Tage</strong> zurück. Der schwerste Schritt ist der Weg zum Gym. Wie wäre es heute mit einer kurzen Einheit? 🏋️`;
+      return;
+    }
+  }
+
+  // Check recent PR (Personal Record) in the last workout (within the last 3 days)
+  if (db.workouts && db.workouts.length > 0) {
+    const sorted = [...db.workouts].sort((a, b) => (b.startTime || b.date || 0) - (a.startTime || a.date || 0));
+    const lastWorkout = sorted[0];
+    const lastTime = lastWorkout.startTime || lastWorkout.date || 0;
+    const daysSinceLast = (Date.now() - lastTime) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceLast <= 3 && lastWorkout.exercises && lastWorkout.exercises.length > 0) {
+      let prExercise = null;
+      let prWeight = 0;
+      let prPriorMax = 0;
+
+      for (const we of lastWorkout.exercises) {
+        const ex = getEx(we.exId);
+        if (!ex || getCatType(ex.category) !== 'strength') continue;
+
+        const maxWeightThisSession = Math.max(...(we.sets || []).map(s => Number(s.weight) || 0));
+        if (maxWeightThisSession <= 0) continue;
+
+        // Get max weight in all prior workouts
+        let maxWeightPrior = 0;
+        const priorWorkouts = sorted.slice(1);
+        priorWorkouts.forEach(pw => {
+          if (!pw.exercises) return;
+          const pwe = pw.exercises.find(pe => pe.exId === we.exId);
+          if (pwe && pwe.sets) {
+            const wMax = Math.max(...pwe.sets.map(s => Number(s.weight) || 0));
+            if (wMax > maxWeightPrior) maxWeightPrior = wMax;
+          }
+        });
+
+        // It is a PR if it beats a prior max which was greater than 0
+        if (maxWeightPrior > 0 && maxWeightThisSession > maxWeightPrior) {
+          if (maxWeightThisSession > prWeight) {
+            prExercise = ex.name;
+            prWeight = maxWeightThisSession;
+            prPriorMax = maxWeightPrior;
+          }
+        }
+      }
+
+      if (prExercise) {
+        el.innerHTML = `<strong>Neuer Rekord!</strong> Du hast im letzten Training bei <strong>${prExercise}</strong> eine neue Bestleistung von <strong>${prWeight} kg</strong> aufgestellt (vorher: ${prPriorMax} kg). Der AI Coach gratuliert dir zu diesem Fortschritt! 🏆`;
+        return;
+      }
+    }
+  }
+
+  // Check streak
+  const streak = typeof calcStreak === 'function' ? calcStreak() : 0;
+  if (streak >= 3) {
+    el.innerHTML = `<strong>Momentum nutzen</strong>: Du hast eine <strong>${streak}-Tage-Streak</strong>! Unglaubliche Konsistenz. Achte auf genug Proteine und Schlaf, um die Leistung hochzuhalten! 🔥`;
+    return;
+  }
+
+  // Default rotating science tip
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / 86400000);
   const tip = COACH_TIPS[dayOfYear % COACH_TIPS.length];
   el.textContent = tip;
