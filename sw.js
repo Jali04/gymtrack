@@ -6,7 +6,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v4.20';
+const CACHE_VERSION = 'v4.22';
 const CACHE_NAME = `dscpln-static-${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [
@@ -49,12 +49,18 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('[Service Worker] Pre-caching static assets');
+        console.log('[Service Worker] Pre-caching static assets with cache-bypass');
         return Promise.all(
           ASSETS_TO_CACHE.map(url => {
-            return cache.add(url).catch(err => {
-              console.error(`[Service Worker] Failed to cache: ${url}`, err);
-            });
+            const request = new Request(url, { cache: 'reload' });
+            return fetch(request)
+              .then(response => {
+                if (!response.ok) throw new Error(`Request failed for ${url}: status ${response.status}`);
+                return cache.put(url, response);
+              })
+              .catch(err => {
+                console.error(`[Service Worker] Failed to cache: ${url}`, err);
+              });
           })
         );
       })
@@ -95,7 +101,7 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
+    caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
       if (cachedResponse) {
         // Return cached response, then update in background
         fetch(event.request).then(networkResponse => {

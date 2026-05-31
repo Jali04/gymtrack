@@ -2,15 +2,14 @@
    GYMTRACK / DSCPLN — Authentication & Client
    ============================================= */
 
-let supabase = null;
-let currentSession = null;
+window.supabaseClient = null;
+window.currentSession = null;
 
 function initSupabase() {
   if (SUPABASE_CONFIG.url && SUPABASE_CONFIG.url !== 'YOUR_SUPABASE_URL' &&
       SUPABASE_CONFIG.anonKey && SUPABASE_CONFIG.anonKey !== 'YOUR_SUPABASE_ANON_KEY') {
     try {
-      supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-      window.supabaseClient = supabase;
+      window.supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
       console.log('[Supabase] Initialized client successfully');
     } catch (e) {
       console.error('[Supabase] Failed to initialize client:', e);
@@ -27,13 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupAuthListeners() {
-  if (!supabase) {
+  if (!window.supabaseClient) {
     updateSettingsAccountButton(null);
     return;
   }
 
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    currentSession = session;
+  window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
     window.currentSession = session;
     console.log(`[Supabase Auth Event] ${event}`);
 
@@ -152,7 +150,7 @@ function switchAuthTab(tab) {
 
 async function handleLoginSubmit(e) {
   e.preventDefault();
-  if (!supabase) return;
+  if (!window.supabaseClient) return;
 
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
@@ -162,7 +160,7 @@ async function handleLoginSubmit(e) {
   showAuthMessage(isDe ? 'Melde an...' : 'Logging in...', 'var(--accent)');
 
   try {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
     
     closeModal('authModal');
@@ -175,7 +173,7 @@ async function handleLoginSubmit(e) {
 
 async function handleRegisterSubmit(e) {
   e.preventDefault();
-  if (!supabase) return;
+  if (!window.supabaseClient) return;
 
   const email = document.getElementById('registerEmail').value.trim();
   const password = document.getElementById('registerPassword').value;
@@ -192,7 +190,7 @@ async function handleRegisterSubmit(e) {
   showAuthMessage(isDe ? 'Erstelle Konto...' : 'Creating account...', 'var(--accent)');
 
   try {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
     if (error) throw error;
 
     // Check if user is auto-confirmed or needs email confirmation
@@ -213,7 +211,7 @@ async function handleRegisterSubmit(e) {
 }
 
 async function handleLogout() {
-  if (!supabase) return;
+  if (!window.supabaseClient) return;
   const isDe = (lang === 'de');
 
   if (!confirm(isDe ? 'Möchtest du dich wirklich abmelden?' : 'Are you sure you want to log out?')) {
@@ -221,7 +219,7 @@ async function handleLogout() {
   }
 
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await window.supabaseClient.auth.signOut();
     if (error) throw error;
     closeModal('authModal');
   } catch (error) {
