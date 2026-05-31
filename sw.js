@@ -84,8 +84,13 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
   
-  // Do not intercept or cache service worker file itself, browser extensions, or non-http URLs
-  if (url.pathname.endsWith('sw.js') || !event.request.url.startsWith('http')) {
+  // Do not intercept or cache service worker file itself, browser extensions, non-http URLs, or external APIs (Supabase, Gemini)
+  if (
+    url.pathname.endsWith('sw.js') || 
+    !event.request.url.startsWith('http') ||
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('googleapis.com')
+  ) {
     return;
   }
 
