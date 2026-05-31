@@ -1071,7 +1071,7 @@ async function requestGeminiAi(latestMessage) {
           },
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 8192
+            maxOutputTokens: 1024
           }
         })
       });
