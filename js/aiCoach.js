@@ -122,7 +122,7 @@ function applyAiTranslations() {
   s('chipSummary', 'Wochenrückblick', 'Weekly Summary');
   
   const personaSel = document.getElementById('aiPersonaSelect');
-  if (personaSel) {
+  if (personaSel && personaSel.options && personaSel.options.length >= 4) {
     personaSel.options[0].text = isDe ? 'Standard (Motivierend & Professionell)' : 'Standard (Motivational & Professional)';
     personaSel.options[1].text = isDe ? 'Drill Sergeant (Hart & Direkt)' : 'Drill Sergeant (Hard & Direct)';
     personaSel.options[2].text = isDe ? 'Zen Coach (Achtsam & Ganzheitlich)' : 'Zen Coach (Mindful & Calm)';

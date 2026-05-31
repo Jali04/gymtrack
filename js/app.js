@@ -13,21 +13,66 @@ if (savedVersion && savedVersion !== CURRENT_VERSION) {
 }
 
 function initUI() {
-  renderLog();
-  if (typeof renderProgress === 'function') renderProgress();
-  if (typeof renderPrograms === 'function') {
-    renderPrograms();
-    updateActiveProgramBanner();
+  try {
+    renderLog();
+  } catch (e) {
+    console.error("Error in renderLog:", e);
   }
-  if (typeof renderAchievements === 'function') renderAchievements();
-  if (typeof updateSuppNavBadge === 'function') updateSuppNavBadge();
-  if (typeof initUIEffects === 'function') initUIEffects();
+
+  try {
+    if (typeof renderProgress === 'function') renderProgress();
+  } catch (e) {
+    console.error("Error in renderProgress:", e);
+  }
+
+  try {
+    if (typeof renderPrograms === 'function') {
+      renderPrograms();
+      updateActiveProgramBanner();
+    }
+  } catch (e) {
+    console.error("Error in renderPrograms:", e);
+  }
+
+  try {
+    if (typeof renderAchievements === 'function') renderAchievements();
+  } catch (e) {
+    console.error("Error in renderAchievements:", e);
+  }
+
+  try {
+    if (typeof updateSuppNavBadge === 'function') updateSuppNavBadge();
+  } catch (e) {
+    console.error("Error in updateSuppNavBadge:", e);
+  }
+
+  try {
+    if (typeof initUIEffects === 'function') initUIEffects();
+  } catch (e) {
+    console.error("Error in initUIEffects:", e);
+  }
 }
 
-// Boot
-initSplash();
-applyTranslations();
-initUI();
+// Boot on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    initSplash();
+  } catch (e) {
+    console.error("Error in initSplash:", e);
+  }
+
+  try {
+    applyTranslations();
+  } catch (e) {
+    console.error("Error in applyTranslations:", e);
+  }
+
+  try {
+    initUI();
+  } catch (e) {
+    console.error("Error in initUI:", e);
+  }
+});
 
 // Modal backdrop — tap outside to close
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
