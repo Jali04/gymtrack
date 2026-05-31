@@ -124,7 +124,17 @@ const TR = {
     tmplUpdateTitle: 'Vorlage aktualisieren?', tmplUpdateDesc: 'Du hast neue Übungen hinzugefügt. Sollen sie dauerhaft in der Vorlage gespeichert werden?',
     tmplUpdateConfirm: 'Ausgewählte übernehmen', tmplUpdateSkip: 'Überspringen',
     lblCopyrightTitle: '© Urheberrechtsschutz',
-    lblCopyrightText: 'Diese App, ihr Design, der Quellcode sowie alle Inhalte sind geistiges Eigentum des Urhebers. Jede unbefugte Vervielfältigung, Verbreitung, Modifikation oder das Kopieren (auch auszugsweise) ist strengstens untersagt. Alle Rechte vorbehalten.'
+    lblCopyrightText: 'Diese App, ihr Design, der Quellcode sowie alle Inhalte sind geistiges Eigentum des Urhebers. Jede unbefugte Vervielfältigung, Verbreitung, Modifikation oder das Kopieren (auch auszugsweise) ist strengstens untersagt. Alle Rechte vorbehalten.',
+    // User Guide / Onboarding
+    guideHeaderTitle: 'Anleitung & Hilfe',
+    guideBannerTitle: 'Neu bei DSCPLN? 🚀',
+    guideBannerText: 'Lerne in 2 Minuten, wie du deine Workouts loggst, Pläne erstellst und den AI Coach nutzt!',
+    guideBannerStart: 'Schnelle Tour',
+    guideBannerDismiss: 'Schließen',
+    guideTabTour: 'Interaktive Tour',
+    guideTabFaq: 'Komplette Anleitung',
+    guideShowMe: 'Zeig es mir! ➔',
+    guideHighlightToast: 'Hier findest du diesen Bereich. Schau dich in Ruhe um!'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar', allLabel: 'All',
@@ -247,7 +257,17 @@ const TR = {
     tmplUpdateTitle: 'Update Template?', tmplUpdateDesc: 'You added new exercises. Save them permanently to the template?',
     tmplUpdateConfirm: 'Save Selected', tmplUpdateSkip: 'Skip',
     lblCopyrightTitle: '© Copyright Protection',
-    lblCopyrightText: 'This app, its design, source code, and all content are the intellectual property of the author. Any unauthorized duplication, distribution, modification, or copying (even in part) is strictly prohibited. All rights reserved.'
+    lblCopyrightText: 'This app, its design, source code, and all content are the intellectual property of the author. Any unauthorized duplication, distribution, modification, or copying (even in part) is strictly prohibited. All rights reserved.',
+    // User Guide / Onboarding
+    guideHeaderTitle: 'Guide & Help',
+    guideBannerTitle: 'New to DSCPLN? 🚀',
+    guideBannerText: 'Learn in 2 minutes how to log your workouts, create templates, and use the AI Coach!',
+    guideBannerStart: 'Quick Tour',
+    guideBannerDismiss: 'Dismiss',
+    guideTabTour: 'Interactive Tour',
+    guideTabFaq: 'Full Guide',
+    guideShowMe: 'Show me! ➔',
+    guideHighlightToast: 'Here is this section. Take a look around!'
   }
 };
 
@@ -374,6 +394,7 @@ function applyTranslations() {
   if (calPage && calPage.classList.contains('active')) renderCalendar();
   
   if (typeof applyAiTranslations === 'function') applyAiTranslations();
+  if (typeof renderGuide === 'function') renderGuide();
 }
 
 function updateCategoryHint() {

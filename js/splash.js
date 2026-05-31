@@ -70,4 +70,5 @@ function enterApp() {
   el.classList.add('fade-out');
   setTimeout(() => { el.style.display = 'none'; }, 620);
   try { haptic('medium'); } catch(e) {}
+  if (typeof checkOnboardingStatus === 'function') checkOnboardingStatus();
 }

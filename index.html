@@ -59,6 +59,15 @@
           <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z" />
         </svg>
       </button>
+      <button onclick="openGuideModal()" id="guideBtn" class="header-btn" title="Anleitung & Hilfe" style="position: relative;">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span class="guide-badge-pulse" id="guideBadgePulse" style="display:none;"></span>
+      </button>
       <button onclick="openExportModal()" title="Backup & Einstellungen" class="header-btn">
         <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -77,6 +86,17 @@
   <div class="page active" id="page-log">
     <div class="section-title" id="ttlStartTraining">Training starten</div>
     <div id="quickStart">
+      <!-- Welcome Onboarding Banner -->
+      <div id="guideWelcomeBanner" class="guide-welcome-card" style="display:none;">
+        <div class="guide-welcome-close" onclick="dismissGuideBanner(event)">✕</div>
+        <div class="guide-welcome-title" id="lblGuideBannerTitle">Neu bei DSCPLN? 🚀</div>
+        <p class="guide-welcome-text" id="lblGuideBannerText">Lerne in 2 Minuten, wie du dein Training loggst, Vorlagen erstellst und den AI Coach nutzt!</p>
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button class="btn btn-primary btn-sm" onclick="openGuideModal('tour')" id="btnGuideBannerStart" style="margin:0;flex:1;">Tour starten</button>
+          <button class="btn btn-secondary btn-sm" onclick="dismissGuideBanner(event)" id="btnGuideBannerDismiss" style="margin:0;width:auto;border-color:transparent;background:rgba(255,255,255,0.05);">Schließen</button>
+        </div>
+      </div>
+
       <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;"
         onclick="startNextProgramDay()">
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Aktuelles Programm
@@ -1197,6 +1217,39 @@
     </div>
   </div>
 
+  <!-- ===== USER GUIDE MODAL ===== -->
+  <div class="modal-overlay" id="helpGuideModal">
+    <div class="modal guide-modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="lblGuideHeaderTitle">Anleitung & Hilfe</div>
+        <div class="close-btn" onclick="closeModal('helpGuideModal')">✕</div>
+      </div>
+      
+      <!-- Guide Tabs -->
+      <div class="guide-tabs">
+        <button class="guide-tab active" id="btnGuideTabTour" onclick="switchGuideTab('tour')">Interaktive Tour</button>
+        <button class="guide-tab" id="btnGuideTabFaq" onclick="switchGuideTab('faq')">Komplette Anleitung</button>
+      </div>
+
+      <!-- Tab Content 1: Interactive Tour -->
+      <div id="guideTabContentTour">
+        <div class="guide-tour-list" id="guideTourList">
+          <!-- Dynamically generated tour cards -->
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Full FAQ Guide -->
+      <div id="guideTabContentFaq" style="display:none;">
+        <div class="guide-faq-list" id="guideFaqList">
+          <!-- FAQ accordions -->
+        </div>
+      </div>
+      
+      <button class="btn btn-secondary" onclick="closeModal('helpGuideModal')" style="margin-top:20px;" id="btnGuideModalClose">Schließen</button>
+    </div>
+  </div>
+
   <!-- ===== SCRIPTS (order matters) ===== -->
   <script>
     // Register Service Worker for background rest-timer notifications
@@ -1244,6 +1297,7 @@
   <script src="js/programs.js?v=4.12"></script>
   <script src="js/supplements.js?v=4.12"></script>
   <script src="js/tools.js?v=4.12"></script>
+  <script src="js/guide.js?v=4.12"></script>
   <script src="js/app.js?v=4.12"></script>
   <script src="js/aiCoach.js?v=4.12"></script>
 
