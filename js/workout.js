@@ -124,7 +124,6 @@ window.showAllWorkouts = function() {
     if (typeof haptic === 'function') haptic('light');
   }
 };
-}
 
 function _renderQuickStartTemplates() {
   const container = document.getElementById('quickStartTemplates');
