@@ -194,7 +194,7 @@ async function handleRegisterSubmit(e) {
       email, 
       password,
       options: {
-        emailRedirectTo: window.location.origin
+        emailRedirectTo: window.location.origin + window.location.pathname
       }
     });
     if (error) throw error;
