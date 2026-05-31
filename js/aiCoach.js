@@ -990,7 +990,7 @@ async function requestAiResponse(userMessage) {
 }
 
 async function requestGeminiAi(latestMessage) {
-  const isProxy = (supabase && currentSession && SUPABASE_CONFIG.aiProxyUrl);
+  const isProxy = (window.supabaseClient && window.currentSession && SUPABASE_CONFIG.aiProxyUrl);
 
   if (!isProxy && !aiApiKey) {
     throw new Error(lang === 'de' ? 'API-Key fehlt oder nicht angemeldet.' : 'API key is missing or not logged in.');
@@ -1026,7 +1026,7 @@ async function requestGeminiAi(latestMessage) {
   };
 
   if (isProxy) {
-    headers['Authorization'] = `Bearer ${currentSession.access_token}`;
+    headers['Authorization'] = `Bearer ${window.currentSession.access_token}`;
   }
   
   const maxRetries = 3;
@@ -1175,7 +1175,7 @@ function checkShowOnboarding() {
   if (!onboardScreen) return;
 
   const chromeAi = getChromeAiAPI();
-  const isLoggedIn = (supabase && currentSession);
+  const isLoggedIn = (window.supabaseClient && window.currentSession);
   const isGeminiMissingKey = (aiProvider === 'gemini' && !aiApiKey && !isLoggedIn);
   const isChromeUnsupported = (aiProvider === 'chrome' && !chromeAi);
 

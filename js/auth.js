@@ -10,6 +10,7 @@ function initSupabase() {
       SUPABASE_CONFIG.anonKey && SUPABASE_CONFIG.anonKey !== 'YOUR_SUPABASE_ANON_KEY') {
     try {
       supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+      window.supabaseClient = supabase;
       console.log('[Supabase] Initialized client successfully');
     } catch (e) {
       console.error('[Supabase] Failed to initialize client:', e);
@@ -33,6 +34,7 @@ function setupAuthListeners() {
 
   supabase.auth.onAuthStateChange(async (event, session) => {
     currentSession = session;
+    window.currentSession = session;
     console.log(`[Supabase Auth Event] ${event}`);
 
     const user = session?.user;

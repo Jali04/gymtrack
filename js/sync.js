@@ -222,8 +222,8 @@ const LOCAL_DB_KEYS = {
 };
 
 async function syncAll() {
-  if (!supabase || !currentSession) return;
-  const user = currentSession.user;
+  if (!window.supabaseClient || !window.currentSession) return;
+  const user = window.currentSession.user;
   console.log('[Sync] Starting full sync cycle for user:', user.email);
 
   // 1. Sync User Profile (Active Program + Week Status)
@@ -252,7 +252,7 @@ async function syncUserProfile(userId) {
   try {
     let localUpdatedAt = Number(localStorage.getItem('gym_profile_updated_at') || 0);
 
-    const { data: remoteProfile, error } = await supabase
+    const { data: remoteProfile, error } = await window.supabaseClient
       .from('profiles')
       .select('*')
       .eq('id', userId)
@@ -283,7 +283,7 @@ async function syncUserProfile(userId) {
     } else if (localNeedsPush) {
       console.log('[Sync] Pushing profile updates to remote');
       const now = Date.now();
-      const { error: upsertError } = await supabase
+      const { error: upsertError } = await window.supabaseClient
         .from('profiles')
         .upsert({
           id: userId,
@@ -307,7 +307,7 @@ async function syncTable(table, userId) {
   console.log(`[Sync] Syncing table: ${table}`);
 
   // Fetch remote records
-  const { data: remoteData, error } = await supabase
+  const { data: remoteData, error } = await window.supabaseClient
     .from(table)
     .select('*')
     .eq('user_id', userId);
@@ -360,7 +360,7 @@ async function syncTable(table, userId) {
   if (upsertQueue.length > 0) {
     console.log(`[Sync] Pushing ${upsertQueue.length} records to ${table}`);
     const rows = upsertQueue.map(row => ({ ...row, user_id: userId }));
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await window.supabaseClient
       .from(table)
       .upsert(rows);
     
@@ -372,7 +372,7 @@ async function syncAiChats(userId) {
   const mapping = SYNC_MAPPINGS.ai_chats;
   console.log('[Sync] Syncing AI chats');
 
-  const { data: remoteData, error } = await supabase
+  const { data: remoteData, error } = await window.supabaseClient
     .from('ai_chats')
     .select('*')
     .eq('user_id', userId);
@@ -426,7 +426,7 @@ async function syncAiChats(userId) {
   if (upsertQueue.length > 0) {
     console.log(`[Sync] Pushing ${upsertQueue.length} AI chats`);
     const rows = upsertQueue.map(row => ({ ...row, user_id: userId }));
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await window.supabaseClient
       .from('ai_chats')
       .upsert(rows);
 
@@ -436,17 +436,17 @@ async function syncAiChats(userId) {
 
 // Background Sync Trigger for individual saves
 async function syncTableItem(tableName, item) {
-  if (!supabase || !currentSession) return;
+  if (!window.supabaseClient || !window.currentSession) return;
   const mapping = SYNC_MAPPINGS[tableName];
   if (!mapping) return;
 
   const dbItem = mapping.toDb(item);
-  dbItem.user_id = currentSession.user.id;
+  dbItem.user_id = window.currentSession.user.id;
 
   console.log(`[Sync Background] Upserting item into ${tableName}:`, dbItem.id);
   
   // Asynchronous background call
-  supabase
+  window.supabaseClient
     .from(tableName)
     .upsert(dbItem)
     .then(({ error }) => {
@@ -456,13 +456,13 @@ async function syncTableItem(tableName, item) {
 
 // Background Sync Trigger for user profile updates
 async function syncProfileUpdate() {
-  if (!supabase || !currentSession) return;
-  const userId = currentSession.user.id;
+  if (!window.supabaseClient || !window.currentSession) return;
+  const userId = window.currentSession.user.id;
   const now = Date.now();
 
   console.log(`[Sync Background] Upserting profile data`);
   
-  supabase
+  window.supabaseClient
     .from('profiles')
     .upsert({
       id: userId,
@@ -481,10 +481,10 @@ async function syncProfileUpdate() {
 
 // Background Sync Trigger for user deletions
 async function syncDeleteTableItem(tableName, id) {
-  if (!supabase || !currentSession) return;
+  if (!window.supabaseClient || !window.currentSession) return;
   console.log(`[Sync Background] Deleting item from ${tableName}:`, id);
 
-  supabase
+  window.supabaseClient
     .from(tableName)
     .delete()
     .eq('id', id)
@@ -519,7 +519,7 @@ function initChangeDetection() {
 }
 
 function detectAndSyncChanges() {
-  if (!supabase || !currentSession) return;
+  if (!window.supabaseClient || !window.currentSession) return;
   if (!window._lastSyncedDb) {
     initChangeDetection();
     return;
