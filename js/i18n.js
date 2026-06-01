@@ -145,7 +145,23 @@ const TR = {
     settingsLangBtn: 'English',
     settingsTourLabel: 'Hilfe & Anleitung',
     settingsTourDesc: 'Die interaktive App-Tour erneut starten',
-    settingsTourBtn: 'Tour starten'
+    settingsTourBtn: 'Tour starten',
+    tabCalories: '🥣 Kalorien',
+    tabMealPlans: '📋 Pläne',
+    tabSupplements: '💊 Supps',
+    tabFoodLibrary: '🍎 Lebensmittel',
+    lblLibFoodTitleEdit: 'Lebensmittel bearbeiten',
+    lblLibFoodTitleNew: 'Lebensmittel hinzufügen',
+    lblLibFoodName: 'Name des Lebensmittels',
+    lblLibFoodServing: 'Standard-Einheit',
+    lblLibMacrosTitle: 'Referenz-Nährwerte (pro Einheit)',
+    libFoodNamePlaceholder: 'z.B. Erdnussbutter',
+    libFoodServing100: 'Gramm (100g / 100ml)',
+    libFoodServing1: 'Stück (1 Stk.)',
+    libFoodSearchPlaceholder: 'Lebensmittel suchen...',
+    libFoodNewBtn: '+ Neu',
+    libFoodStandardBadge: 'Standard',
+    libFoodConfirmDelete: 'Lebensmittel wirklich aus der Bibliothek löschen?'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar', allLabel: 'All',
@@ -289,7 +305,23 @@ const TR = {
     settingsLangBtn: 'Deutsch',
     settingsTourLabel: 'Help & Guide',
     settingsTourDesc: 'Restart the interactive walkthrough tour',
-    settingsTourBtn: 'Start Tour'
+    settingsTourBtn: 'Start Tour',
+    tabCalories: '🥣 Calories',
+    tabMealPlans: '📋 Plans',
+    tabSupplements: '💊 Supps',
+    tabFoodLibrary: '🍎 Foods',
+    lblLibFoodTitleEdit: 'Edit Food',
+    lblLibFoodTitleNew: 'Add Food',
+    lblLibFoodName: 'Food Name',
+    lblLibFoodServing: 'Serving Unit',
+    lblLibMacrosTitle: 'Reference Nutrients (per unit)',
+    libFoodNamePlaceholder: 'e.g. Peanut Butter',
+    libFoodServing100: 'Grams (100g / 100ml)',
+    libFoodServing1: 'Piece (1 pc)',
+    libFoodSearchPlaceholder: 'Search foods...',
+    libFoodNewBtn: '+ New',
+    libFoodStandardBadge: 'Standard',
+    libFoodConfirmDelete: 'Really delete this food from library?'
   }
 };
 
@@ -309,7 +341,11 @@ function toggleLang() {
   const id = active.id.replace('page-', '');
   const renders = {
     log: renderLog, gymlab: renderGymLab,
-    stats: renderStats, supps: renderSupplements,
+    stats: renderStats,
+    supps: () => {
+      const activeSub = localStorage.getItem('gymtrack_nutrition_subtab') || 'calories';
+      if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab(activeSub);
+    },
     progress: () => {
       const activeSub = localStorage.getItem('gymtrack_progress_subtab') || 'calendar-stats';
       if (typeof switchProgressSubTab === 'function') switchProgressSubTab(activeSub);
@@ -384,6 +420,22 @@ function applyTranslations() {
   s('ttlExport', 'exportTitle'); s('txtExportDesc', 'exportDesc');
   // Tools modal
   s('ttlTools', 'ttlTools');
+
+  // Nutrition subtabs & library modal
+  s('tabNutriCalories', 'tabCalories');
+  s('tabNutriMealPlans', 'tabMealPlans');
+  s('tabNutriSupplements', 'tabSupplements');
+  s('tabNutriFoodLibrary', 'tabFoodLibrary');
+  s('lblLibFoodName', 'lblLibFoodName');
+  s('lblLibFoodServing', 'lblLibFoodServing');
+  s('lblLibMacrosTitle', 'lblLibMacrosTitle');
+  s('btnCancelLibFood', 'cancel');
+  s('btnSaveLibFood', 'save');
+  sp('libFoodName', 'libFoodNamePlaceholder');
+  const opt100 = document.querySelector('#libFoodServingType option[value="100"]');
+  if (opt100) opt100.textContent = t('libFoodServing100');
+  const opt1 = document.querySelector('#libFoodServingType option[value="1"]');
+  if (opt1) opt1.textContent = t('libFoodServing1');
   
   // Progress
   s('navProgress', 'navProgress');

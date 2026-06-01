@@ -225,8 +225,9 @@
   <div class="page" id="page-supps">
     <div class="nutrition-subtabs" style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:16px;gap:4px;">
       <button class="nutrition-subtab active" onclick="switchNutritionSubTab('calories')" id="tabNutriCalories" style="flex:1;background:var(--accent);color:#0a0a0a;border:none;border-radius:8px;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">🥣 Kalorien</button>
-      <button class="nutrition-subtab" onclick="switchNutritionSubTab('meal-plans')" id="tabNutriMealPlans" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:8px;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">📋 Ernährungsplan</button>
+      <button class="nutrition-subtab" onclick="switchNutritionSubTab('meal-plans')" id="tabNutriMealPlans" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:8px;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">📋 Pläne</button>
       <button class="nutrition-subtab" onclick="switchNutritionSubTab('supplements')" id="tabNutriSupplements" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:8px;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">💊 Supps</button>
+      <button class="nutrition-subtab" onclick="switchNutritionSubTab('food-library')" id="tabNutriFoodLibrary" style="flex:1;background:transparent;color:var(--muted);border:none;border-radius:8px;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;">🍎 Lebensmittel</button>
     </div>
 
     <!-- SUBPAGE 1: Calorie Tracker -->
@@ -242,6 +243,11 @@
     <!-- SUBPAGE 3: Supplements -->
     <div id="nutri-subpage-supplements" class="nutrition-subpage-content" style="display:none;">
       <div class="supp-content"></div>
+    </div>
+
+    <!-- SUBPAGE 4: Food Library -->
+    <div id="nutri-subpage-food-library" class="nutrition-subpage-content" style="display:none; padding: 4px 0;">
+      <div class="food-library-content"></div>
     </div>
   </div>
 
@@ -466,6 +472,57 @@
     </div>
   </div>
 
+  <!-- Library Food Modal -->
+  <div class="modal-overlay" id="libraryFoodModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="lblLibFoodTitle">Lebensmittel bearbeiten</div>
+        <div class="close-btn" onclick="closeModal('libraryFoodModal')">✕</div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" id="lblLibFoodName">Name des Lebensmittels</label>
+        <input type="text" class="form-input" id="libFoodName" placeholder="z.B. Erdnussbutter">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" id="lblLibFoodServing">Standard-Einheit</label>
+        <select class="form-input" id="libFoodServingType">
+          <option value="100">Gramm (100g / 100ml)</option>
+          <option value="1">Stück (1 Stk.)</option>
+        </select>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:rgba(255,255,255,0.01);margin-bottom:14px;">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;" id="lblLibMacrosTitle">Referenz-Nährwerte (pro Einheit)</div>
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;">
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px;">Kcal</label>
+            <input type="number" class="form-input" id="libFoodCal" style="height:32px;font-size:13px;padding:0 8px;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px;">Prot (g)</label>
+            <input type="number" class="form-input" id="libFoodProt" style="height:32px;font-size:13px;padding:0 8px;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px;">Carb (g)</label>
+            <input type="number" class="form-input" id="libFoodCarb" style="height:32px;font-size:13px;padding:0 8px;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px;">Fat (g)</label>
+            <input type="number" class="form-input" id="libFoodFat" style="height:32px;font-size:13px;padding:0 8px;">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+        <button class="btn btn-secondary" onclick="closeModal('libraryFoodModal')" style="margin:0;flex:1;" id="btnCancelLibFood">Abbrechen</button>
+        <button class="btn btn-primary" onclick="saveLibraryFood()" style="margin:0;flex:1;height:48px;display:flex;align-items:center;justify-content:center;" id="btnSaveLibFood">Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Logged Food Modal -->
   <div class="modal-overlay" id="nutritionFoodModal">
     <div class="modal">
@@ -497,7 +554,7 @@
       <!-- Recent Foods Section -->
       <div id="recentFoodsSection" style="margin-bottom: 12px; display: none;">
         <div style="font-size:10px; color:var(--muted); font-weight:700; text-transform:uppercase; margin-bottom:6px;">Häufig / Zuletzt getrackt:</div>
-        <div id="recentFoodsList" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; padding:2px;"></div>
+        <div id="recentFoodsList" style="display:flex; flex-direction:row; flex-wrap:nowrap; gap:6px; overflow-x:auto; padding:4px 2px; scrollbar-width:none; -webkit-overflow-scrolling:touch;"></div>
       </div>
 
       <div style="display:flex;gap:12px;margin-bottom:12px;">
@@ -544,9 +601,9 @@
         <div style="font-size:12px;color:var(--accent);margin-top:10px;text-align:right;font-weight:700;" id="nutriFoodTotalSummary">Gesamt: 0 kcal</div>
       </div>
 
-      <div style="display:flex;gap:10px;align-items:center;">
-        <button class="btn btn-secondary" id="btnDeleteLoggedFood" onclick="deleteLoggedFood()" style="margin:0;display:none;background:var(--accent2);color:white;border:none;width:48px;min-width:48px;padding:0;font-size:18px;border-radius:12px;flex-shrink:0;" title="Löschen">🗑️</button>
-        <button class="btn btn-primary" onclick="saveLoggedFood()" style="margin:0;flex:1;" id="btnSaveLoggedFood">Speichern</button>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+        <button class="btn btn-secondary" id="btnDeleteLoggedFood" onclick="deleteLoggedFood()" style="margin:0;display:none;align-items:center;justify-content:center;background:var(--accent2);color:white;border:none;width:48px;height:48px;min-width:48px;padding:0;font-size:18px;border-radius:12px;flex-shrink:0;" title="Löschen">🗑️</button>
+        <button class="btn btn-primary" onclick="saveLoggedFood()" style="margin:0;flex:1;height:48px;display:flex;align-items:center;justify-content:center;" id="btnSaveLoggedFood">Speichern</button>
       </div>
     </div>
   </div>

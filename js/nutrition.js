@@ -30,7 +30,8 @@ function switchNutritionSubTab(subTabId) {
   document.querySelectorAll('.nutrition-subtab').forEach(btn => {
     const isTarget = (subTabId === 'calories' && btn.id === 'tabNutriCalories') ||
                      (subTabId === 'meal-plans' && btn.id === 'tabNutriMealPlans') ||
-                     (subTabId === 'supplements' && btn.id === 'tabNutriSupplements');
+                     (subTabId === 'supplements' && btn.id === 'tabNutriSupplements') ||
+                     (subTabId === 'food-library' && btn.id === 'tabNutriFoodLibrary');
     btn.classList.toggle('active', isTarget);
     if (isTarget) {
       btn.style.background = 'var(--accent)';
@@ -55,6 +56,8 @@ function switchNutritionSubTab(subTabId) {
     if (typeof renderSupplements === 'function') {
       renderSupplements();
     }
+  } else if (subTabId === 'food-library') {
+    renderFoodLibrary();
   }
 
   localStorage.setItem('gymtrack_nutrition_subtab', subTabId);
@@ -440,13 +443,15 @@ function renderRecentFoodsInModal() {
     }
   }
 
-  if (uniqueFoods.length === 0) {
+  const foodsToShow = uniqueFoods;
+
+  if (foodsToShow.length === 0) {
     section.style.display = 'none';
     return;
   }
 
   let html = '';
-  uniqueFoods.forEach(food => {
+  foodsToShow.forEach(food => {
     const grams = food.grams || 100;
     const factor = grams / 100;
     const cal100 = Math.round(food.calories / factor);
@@ -582,7 +587,7 @@ function openEditLoggedFood(logId) {
   }
 
   const delBtn = document.getElementById('btnDeleteLoggedFood');
-  if (delBtn) delBtn.style.display = 'block';
+  if (delBtn) delBtn.style.display = 'inline-flex';
 
   const dropdown = document.getElementById('foodAutocompleteResults');
   if (dropdown) {
@@ -709,47 +714,46 @@ function recalcFoodModalMacros() {
       : `Total: <strong>${totalCals} kcal</strong>${approxGramsText} (${totalProt}g P · ${totalCarb}g C · ${totalFat}g F)`;
   }
 
-  // Update per-unit header label
+  // Update per-unit header label (must always remain base reference 100g/100ml)
   const perLabel = document.getElementById('lblNutriMacrosPer100');
   if (perLabel) {
     const isDe2 = (lang === 'de');
-    const unitLabels = {
-      g:       isDe2 ? 'Nährwerte pro 100g'             : 'Nutritional values per 100g',
-      ml:      isDe2 ? 'Nährwerte pro 100ml'            : 'Nutritional values per 100ml',
-      kg:      isDe2 ? 'Nährwerte pro 100g'             : 'Nutritional values per 100g',
-      pcs:     isDe2 ? 'Nährwerte pro Stück'            : 'Nutritional values per piece',
-      tbsp:    isDe2 ? 'Nährwerte pro Esslöffel (15g)'  : 'Nutritional values per tbsp (15g)',
-      tsp:     isDe2 ? 'Nährwerte pro Teelöffel (5g)'   : 'Nutritional values per tsp (5g)',
-      portion: isDe2 ? 'Nährwerte pro Portion (100g)'   : 'Nutritional values per serving (100g)'
-    };
-    perLabel.textContent = unitLabels[unit] || (isDe2 ? 'Nährwerte pro 100g / Portion' : 'Nutritional values per 100g / Serving');
+    if (unit === 'ml') {
+      perLabel.textContent = isDe2 ? 'Referenz-Nährwerte (Basis: 100ml)' : 'Reference values (Basis: 100ml)';
+    } else {
+      perLabel.textContent = isDe2 ? 'Referenz-Nährwerte (Basis: 100g)' : 'Reference values (Basis: 100g)';
+    }
   }
 
   // Update contextual hint
   const hintEl = document.getElementById('nutriMacroHint');
   if (hintEl) {
     const isDe3 = (lang === 'de');
-    if (unit === 'g') {
-      hintEl.textContent = isDe3
-        ? '💡 Diese Werte sind die Basis (pro 100g). Oben Menge & Einheit wählen — das Ergebnis wird automatisch umgerechnet.'
-        : '💡 These are base values (per 100g). Select amount & unit above — totals are calculated automatically.';
-    } else if (unit === 'pcs') {
-      const unitW = _getUnitWeightInGrams(name, 'pcs');
-      hintEl.textContent = isDe3
-        ? `💡 Gib oben die Anzahl ein (z.B. 4 Stück). 1 Stück ≈ ${unitW}g. Das Ergebnis unten wird automatisch berechnet.`
-        : `💡 Enter the count above (e.g. 4 pcs). 1 piece ≈ ${unitW}g. The total below is calculated automatically.`;
-    } else if (unit === 'tbsp') {
-      hintEl.textContent = isDe3
-        ? '💡 Gib oben die Anzahl Esslöffel ein. 1 EL ≈ 15g. Das Ergebnis wird automatisch umgerechnet.'
-        : '💡 Enter the number of tablespoons above. 1 tbsp ≈ 15g. The total is calculated automatically.';
-    } else if (unit === 'tsp') {
-      hintEl.textContent = isDe3
-        ? '💡 Gib oben die Anzahl Teelöffel ein. 1 TL ≈ 5g. Das Ergebnis wird automatisch umgerechnet.'
-        : '💡 Enter the number of teaspoons above. 1 tsp ≈ 5g. The total is calculated automatically.';
+    if (unit === 'g' || unit === 'ml') {
+      const baseUnit = unit === 'ml' ? '100ml' : '100g';
+      hintEl.innerHTML = isDe3
+        ? `💡 <strong>Referenz-Nährwerte (${baseUnit}):</strong> Trag hier die Werte von der Verpackung ein. Oben die Menge anpassen — das Ergebnis wird automatisch umgerechnet.`
+        : `💡 <strong>Reference values (${baseUnit}):</strong> Enter the values from the package. Adjust the quantity above — totals are calculated automatically.`;
     } else {
-      hintEl.textContent = isDe3
-        ? '💡 Diese Werte sind die Referenz-Nährwerte. Oben Menge & Einheit wählen — das Ergebnis wird automatisch umgerechnet.'
-        : '💡 These are reference nutritional values. Select amount & unit above — totals are calculated automatically.';
+      let unitLabel = unit;
+      if (isDe3) {
+        if (unit === 'pcs') unitLabel = 'Stück';
+        else if (unit === 'tbsp') unitLabel = 'Esslöffel (EL)';
+        else if (unit === 'tsp') unitLabel = 'Teelöffel (TL)';
+        else if (unit === 'portion') unitLabel = 'Portion';
+        else if (unit === 'kg') unitLabel = 'kg';
+      } else {
+        if (unit === 'pcs') unitLabel = 'piece(s)';
+        else if (unit === 'tbsp') unitLabel = 'tablespoon(s)';
+        else if (unit === 'tsp') unitLabel = 'teaspoon(s)';
+        else if (unit === 'portion') unitLabel = 'serving(s)';
+        else if (unit === 'kg') unitLabel = 'kg';
+      }
+      
+      const unitW = _getUnitWeightInGrams(name, unit);
+      hintEl.innerHTML = isDe3
+        ? `💡 <strong>Automatische Umrechnung:</strong> Die Werte unten bleiben pro 100g. Oben hast du <strong>${unitLabel}</strong> gewählt. Die App rechnet das Gewicht (1 ${unitLabel} ≈ ${unitW}g) automatisch um!`
+        : `💡 <strong>Automatic conversion:</strong> The values below remain per 100g. You selected <strong>${unitLabel}</strong> above. The app converts the weight (1 ${unitLabel} ≈ ${unitW}g) automatically!`;
     }
   }
 }
@@ -1239,3 +1243,212 @@ async function lookupBarcode(barcode) {
   }
 }
 window.lookupBarcode = lookupBarcode;
+
+// ---------------------------------------------
+// FOOD LIBRARY MANAGER
+// ---------------------------------------------
+let editingLibraryFoodId = null;
+let foodLibSearchQuery = '';
+
+function renderFoodLibrary(searchQuery = '') {
+  const container = document.querySelector('.food-library-content');
+  if (!container) return;
+
+  const library = db.foodLibrary || [];
+  
+  // Sort: custom items first, then alphabetical by name
+  const sortedLibrary = [...library].sort((a, b) => {
+    if (a.isCustom && !b.isCustom) return -1;
+    if (!a.isCustom && b.isCustom) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const query = searchQuery.trim().toLowerCase();
+  const filtered = query 
+    ? sortedLibrary.filter(f => f.name.toLowerCase().includes(query))
+    : sortedLibrary;
+
+  const searchVal = searchQuery || foodLibSearchQuery || '';
+
+  let html = `
+    <div class="search-wrapper" style="display:flex;gap:8px;margin-bottom:16px;">
+      <input type="text" id="foodLibSearch" class="form-input" style="flex:1;height:42px;" placeholder="${t('libFoodSearchPlaceholder')}" value="${searchVal}" oninput="onFoodLibSearch(this.value)">
+      <button class="btn btn-primary" onclick="openCreateLibraryFoodModal()" style="margin:0;padding:0 16px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13.5px;">${t('libFoodNewBtn')}</button>
+    </div>
+  `;
+
+  if (filtered.length === 0) {
+    html += `
+      <div class="empty-state" style="padding:40px 0;">
+        <div class="empty-icon">🍎</div>
+        <div class="empty-text">${t('noSearchResults')}</div>
+      </div>
+    `;
+  } else {
+    filtered.forEach(item => {
+      const isDe = (lang === 'de');
+      const unitText = item.servingSize === 1 
+        ? (isDe ? '1 Stk.' : '1 pc')
+        : (isDe ? '100g / 100ml' : '100g / 100ml');
+
+      html += `
+        <div class="card food-lib-card" style="margin-bottom:10px; padding:12px; border-left:3px solid ${item.isCustom ? 'var(--accent2)' : 'var(--border)'}; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:border-color 0.2s;" onclick="openEditLibraryFood('${item.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${item.isCustom ? 'var(--accent2)' : 'var(--border)'}'">
+          <div style="flex:1; min-width:0; padding-right:8px;">
+            <div style="font-weight:700; font-size:15px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:2px;">
+              ${Math.round(item.calories)} kcal · ${item.protein}g P · ${item.carbs}g ${isDe ? 'K' : 'C'} · ${item.fat}g F <span style="color:var(--muted); opacity:0.8;">(${unitText})</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            ${item.isCustom ? `
+              <button class="close-btn" onclick="deleteLibraryFood('${item.id}', event)" style="background:transparent; color:var(--accent2); border:none; padding:8px; font-size:14px; display:flex; align-items:center; justify-content:center; border-radius:8px; width:36px; height:36px; min-width:36px;" title="${isDe ? 'Löschen' : 'Delete'}">🗑️</button>
+            ` : `
+              <span style="font-size:9px; color:var(--muted); background:var(--surface2); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${t('libFoodStandardBadge')}</span>
+            `}
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  container.innerHTML = html;
+}
+window.renderFoodLibrary = renderFoodLibrary;
+
+function onFoodLibSearch(val) {
+  foodLibSearchQuery = val;
+  renderFoodLibrary(val);
+}
+window.onFoodLibSearch = onFoodLibSearch;
+
+function openCreateLibraryFoodModal() {
+  editingLibraryFoodId = null;
+  
+  document.getElementById('libFoodName').value = '';
+  document.getElementById('libFoodServingType').value = '100';
+  document.getElementById('libFoodCal').value = '';
+  document.getElementById('libFoodProt').value = '';
+  document.getElementById('libFoodCarb').value = '';
+  document.getElementById('libFoodFat').value = '';
+
+  const titleEl = document.getElementById('lblLibFoodTitle');
+  if (titleEl) {
+    titleEl.textContent = t('lblLibFoodTitleNew');
+  }
+
+  openModal('libraryFoodModal');
+  if (typeof haptic === 'function') haptic('light');
+}
+window.openCreateLibraryFoodModal = openCreateLibraryFoodModal;
+
+function openEditLibraryFood(id) {
+  const library = db.foodLibrary || [];
+  const item = library.find(f => f.id === id);
+  if (!item) return;
+
+  editingLibraryFoodId = id;
+
+  document.getElementById('libFoodName').value = item.name;
+  document.getElementById('libFoodServingType').value = item.servingSize === 1 ? '1' : '100';
+  document.getElementById('libFoodCal').value = Math.round(item.calories);
+  document.getElementById('libFoodProt').value = item.protein;
+  document.getElementById('libFoodCarb').value = item.carbs;
+  document.getElementById('libFoodFat').value = item.fat;
+
+  const titleEl = document.getElementById('lblLibFoodTitle');
+  if (titleEl) {
+    titleEl.textContent = t('lblLibFoodTitleEdit');
+  }
+
+  openModal('libraryFoodModal');
+  if (typeof haptic === 'function') haptic('light');
+}
+window.openEditLibraryFood = openEditLibraryFood;
+
+function saveLibraryFood() {
+  const name = document.getElementById('libFoodName').value.trim();
+  if (!name) {
+    alert(lang === 'de' ? 'Bitte gib einen Namen ein.' : 'Please enter a name.');
+    return;
+  }
+
+  const servingSize = parseInt(document.getElementById('libFoodServingType').value) || 100;
+  const calories = parseFloat(document.getElementById('libFoodCal').value) || 0;
+  const protein = parseFloat(document.getElementById('libFoodProt').value) || 0;
+  const carbs = parseFloat(document.getElementById('libFoodCarb').value) || 0;
+  const fat = parseFloat(document.getElementById('libFoodFat').value) || 0;
+
+  if (!db.foodLibrary) db.foodLibrary = [];
+
+  if (editingLibraryFoodId) {
+    const index = db.foodLibrary.findIndex(f => f.id === editingLibraryFoodId);
+    if (index !== -1) {
+      const existing = db.foodLibrary[index];
+      db.foodLibrary[index] = {
+        ...existing,
+        name: name,
+        calories: calories,
+        protein: protein,
+        carbs: carbs,
+        fat: fat,
+        servingSize: servingSize,
+        isCustom: existing.hasOwnProperty('isCustom') ? existing.isCustom : true,
+        updated_at: Date.now()
+      };
+    }
+  } else {
+    // Check duplicate name
+    const exists = db.foodLibrary.some(f => f.name.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      alert(lang === 'de' 
+        ? 'Ein Lebensmittel mit diesem Namen existiert bereits.' 
+        : 'A food with this name already exists.'
+      );
+      return;
+    }
+
+    const newItem = {
+      id: uid(),
+      name: name,
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fat: fat,
+      servingSize: servingSize,
+      isCustom: true,
+      updated_at: Date.now()
+    };
+    db.foodLibrary.push(newItem);
+  }
+
+  save();
+  closeModal('libraryFoodModal');
+  renderFoodLibrary(foodLibSearchQuery);
+  if (typeof haptic === 'function') haptic('success');
+}
+window.saveLibraryFood = saveLibraryFood;
+
+function deleteLibraryFood(id, event) {
+  if (event) {
+    event.stopPropagation(); // prevent opening the edit modal
+  }
+
+  const library = db.foodLibrary || [];
+  const item = library.find(f => f.id === id);
+  if (!item) return;
+
+  if (!item.isCustom) {
+    alert(lang === 'de' ? 'Standard-Lebensmittel können nicht gelöscht werden.' : 'Standard foods cannot be deleted.');
+    return;
+  }
+
+  const confirmMsg = t('libFoodConfirmDelete') || (lang === 'de' ? 'Lebensmittel wirklich aus der Bibliothek löschen?' : 'Really delete this food from library?');
+  if (!confirm(confirmMsg)) return;
+
+  db.foodLibrary = library.filter(f => f.id !== id);
+  save();
+
+  renderFoodLibrary(foodLibSearchQuery);
+  if (typeof haptic === 'function') haptic('warning');
+}
+window.deleteLibraryFood = deleteLibraryFood;

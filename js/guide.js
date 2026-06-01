@@ -112,30 +112,50 @@ const TOUR_STEPS = {
       {
         page: 'supps',
         target: '#tabNutriCalories',
-        title: 'Schritt 1 von 4: Kalorien-Dashboard',
+        title: 'Schritt 1 von 5: Kalorien-Dashboard',
         text: 'Im Kalorien-Tab siehst du dein tägliches Makro-Dashboard: Kalorien, Protein, Carbs und Fett. Tippe auf "⚙️ Ziele", um deine Tagesziele anzupassen oder automatisch berechnen zu lassen.',
         onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
       },
       {
         page: 'supps',
         target: '.food-section-add-btn',
-        title: 'Schritt 2 von 4: Essen eintragen',
-        text: 'Tippe auf "+" neben einer Mahlzeit, um ein Lebensmittel einzutragen. Du kannst den Barcode scannen (Kamera oder manuell) — die Nährwerte werden automatisch aus Open Food Facts geladen!',
+        title: 'Schritt 2 von 5: Essen hinzufügen',
+        text: 'Tippe auf das "+" neben einer Mahlzeit, um ein Lebensmittel einzutragen. Du kannst den Barcode scannen — die Nährwerte werden automatisch geladen!',
         onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
       },
       {
         page: 'supps',
         target: '#nutriFoodUnit',
-        title: 'Schritt 3 von 4: Mengen & Einheiten',
-        text: 'Wähle die passende Einheit: Gramm, Stück, Esslöffel (EL), Teelöffel (TL), ml oder Portion. Die Nährwerte unten sind immer die Basis-Referenz (z.B. pro 100g). Das Ergebnis wird basierend auf deiner Menge automatisch umgerechnet!',
+        title: 'Schritt 3 von 5: Menge & Einheit',
+        text: 'Wähle oben einfach deine gewünschte Menge und Einheit (z.B. 1 Stück oder 2 Esslöffel). Die App rechnet das Gewicht und die Nährwerte automatisch um!',
         onEnter: () => { if (typeof openNutritionFoodModal === 'function') openNutritionFoodModal('breakfast'); },
         onLeave: () => { if (typeof closeModal === 'function') closeModal('nutritionFoodModal'); }
       },
       {
         page: 'supps',
+        target: '#lblNutriMacrosPer100',
+        title: 'Schritt 4 von 5: Referenz-Nährwerte (100g)',
+        text: 'Die Werte hier unten sind IMMER die Basis-Referenz pro 100g. Wenn du einen Barcode scannst, werden diese 100g-Werte automatisch eingetragen. Du musst sie NICHT für deine Portion ändern, das macht die App oben ganz von allein!',
+        onEnter: () => { 
+          if (typeof openNutritionFoodModal === 'function') {
+            openNutritionFoodModal('breakfast');
+            document.getElementById('nutriFoodName').value = 'Haferflocken';
+            document.getElementById('nutriFoodCal100').value = '370';
+            document.getElementById('nutriFoodProt100').value = '13';
+            document.getElementById('nutriFoodCarb100').value = '59';
+            document.getElementById('nutriFoodFat100').value = '7';
+            document.getElementById('nutriFoodAmount').value = '1';
+            document.getElementById('nutriFoodUnit').value = 'tbsp';
+            if (typeof recalcFoodModalMacros === 'function') recalcFoodModalMacros();
+          }
+        },
+        onLeave: () => { if (typeof closeModal === 'function') closeModal('nutritionFoodModal'); }
+      },
+      {
+        page: 'supps',
         target: '#tabNutriMealPlans',
-        title: 'Schritt 4 von 4: Ernährungsplan & AI Coach',
-        text: 'Unter "Pläne" kannst du deinen eigenen Ernährungsplan schreiben oder den AI Coach bitten, einen personalisierten Plan basierend auf deinen Zielen zu erstellen.',
+        title: 'Schritt 5 von 5: Ernährungspläne',
+        text: 'Unter "Pläne" kannst du deinen Ernährungsplan eintragen oder deinen AI Coach bitten, dir einen Plan zu generieren und direkt hierher zu importieren.',
         onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('meal-plans'); }
       }
     ],
@@ -271,30 +291,50 @@ const TOUR_STEPS = {
       {
         page: 'supps',
         target: '#tabNutriCalories',
-        title: 'Step 1 of 4: Calorie Dashboard',
-        text: 'The Calories tab shows your daily macro dashboard: calories, protein, carbs, and fat. Tap "⚙️ Goals" to adjust targets or auto-calculate them based on your body stats.',
+        title: 'Step 1 of 5: Calorie Dashboard',
+        text: 'The Calories tab shows your daily macro dashboard: calories, protein, carbs, and fat. Tap "⚙️ Goals" to adjust targets or calculate them based on your body stats.',
         onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
       },
       {
         page: 'supps',
         target: '.food-section-add-btn',
-        title: 'Step 2 of 4: Log Food',
-        text: 'Tap "+" next to a meal to log food. You can scan a barcode (camera or manual entry) — nutritional values are auto-loaded from Open Food Facts!',
+        title: 'Step 2 of 5: Log Food',
+        text: 'Tap "+" next to a meal to log a food item. You can scan barcodes to automatically load nutrition data!',
         onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
       },
       {
         page: 'supps',
         target: '#nutriFoodUnit',
-        title: 'Step 3 of 4: Amounts & Units',
-        text: 'Choose the right unit: grams, pieces, tablespoon (tbsp), teaspoon (tsp), ml, or serving. The values below are always the base reference (e.g. per 100g). The result is automatically converted based on your amount!',
+        title: 'Step 3 of 5: Amount & Unit',
+        text: 'Select your portion size and unit (e.g. 1 piece or 2 tablespoons). The app handles weight and macro scaling automatically!',
         onEnter: () => { if (typeof openNutritionFoodModal === 'function') openNutritionFoodModal('breakfast'); },
         onLeave: () => { if (typeof closeModal === 'function') closeModal('nutritionFoodModal'); }
       },
       {
         page: 'supps',
+        target: '#lblNutriMacrosPer100',
+        title: 'Step 4 of 5: Reference Macros (100g)',
+        text: 'The inputs below represent the base reference values per 100g. Scanned foods auto-fill these 100g values. Do NOT edit them to match your current portion — the app scales them automatically above!',
+        onEnter: () => { 
+          if (typeof openNutritionFoodModal === 'function') {
+            openNutritionFoodModal('breakfast');
+            document.getElementById('nutriFoodName').value = 'Oats';
+            document.getElementById('nutriFoodCal100').value = '370';
+            document.getElementById('nutriFoodProt100').value = '13';
+            document.getElementById('nutriFoodCarb100').value = '59';
+            document.getElementById('nutriFoodFat100').value = '7';
+            document.getElementById('nutriFoodAmount').value = '1';
+            document.getElementById('nutriFoodUnit').value = 'tbsp';
+            if (typeof recalcFoodModalMacros === 'function') recalcFoodModalMacros();
+          }
+        },
+        onLeave: () => { if (typeof closeModal === 'function') closeModal('nutritionFoodModal'); }
+      },
+      {
+        page: 'supps',
         target: '#tabNutriMealPlans',
-        title: 'Step 4 of 4: Meal Plans & AI Coach',
-        text: 'Under "Plans" you can write your own meal plan or ask the AI Coach to create a personalized plan based on your goals.',
+        title: 'Step 5 of 5: Meal Plans',
+        text: 'Under "Plans", you can write your own meal plan or request a custom plan from your AI Coach to import here.',
         onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('meal-plans'); }
       }
     ],

@@ -109,6 +109,9 @@ function switchGymLabTab(tab) {
   
   if (chipsWrapper) {
     chipsWrapper.style.display = tab === 'exercises' ? 'block' : 'none';
+    if (tab === 'exercises' && typeof renderGymLabCategoryChips === 'function') {
+      renderGymLabCategoryChips();
+    }
   }
   
   if (typeof initRipples === 'function') initRipples();
@@ -169,3 +172,9 @@ document.addEventListener('touchend', e => {
   showPage(PAGE_ORDER[next], navBtn);
   if (navBtn) navBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }, { passive: true });
+
+// Export global functions explicitly for HTML handlers
+window.showPage = showPage;
+window.switchGymLabTab = switchGymLabTab;
+window.filterGymLabExercisesByCategory = filterGymLabExercisesByCategory;
+window.onGymLabSearchInput = onGymLabSearchInput;
