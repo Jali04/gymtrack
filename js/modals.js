@@ -256,7 +256,10 @@ function _mergeImportedDb(imported) {
       _registerCustomCategory(ex.category);
       if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex);
     });
-    if (!db.templates.find(x => x.id === imported.t.id)) db.templates.push(imported.t);
+    if (imported.t.id !== undefined && imported.t.id !== null) {
+      imported.t.id = String(imported.t.id);
+    }
+    if (!db.templates.find(x => String(x.id) === String(imported.t.id))) db.templates.push(imported.t);
     save(); closeModal('importModal'); renderTemplates(); renderExercises();
     showToast(t('tmplImportSuccess'));
     return;
@@ -267,9 +270,24 @@ function _mergeImportedDb(imported) {
       _registerCustomCategory(ex.category);
       if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex);
     });
-    imported.t.forEach(tmpl => { if (!db.templates.find(x => x.id === tmpl.id)) db.templates.push(tmpl); });
+    imported.t.forEach(tmpl => {
+      if (tmpl.id !== undefined && tmpl.id !== null) {
+        tmpl.id = String(tmpl.id);
+      }
+      if (!db.templates.find(x => String(x.id) === String(tmpl.id))) db.templates.push(tmpl);
+    });
+    if (imported.p.id !== undefined && imported.p.id !== null) {
+      imported.p.id = String(imported.p.id);
+    }
+    if (imported.p.schedule) {
+      for (let day in imported.p.schedule) {
+        if (imported.p.schedule[day] !== undefined && imported.p.schedule[day] !== null) {
+          imported.p.schedule[day] = String(imported.p.schedule[day]);
+        }
+      }
+    }
     if (!db.programs) db.programs = [];
-    if (!db.programs.find(x => x.id === imported.p.id)) db.programs.push(imported.p);
+    if (!db.programs.find(x => String(x.id) === String(imported.p.id))) db.programs.push(imported.p);
     save(); closeModal('importModal'); renderTemplates(); renderExercises();
     if (typeof renderPrograms === 'function') renderPrograms();
     showToast('✓ Programm importiert!');

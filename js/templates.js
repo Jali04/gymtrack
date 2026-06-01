@@ -86,7 +86,7 @@ function openCreateTemplate() {
 }
 
 function openEditTemplate(id) {
-  const tmpl = db.templates.find(t => t.id === id); if (!tmpl) return;
+  const tmpl = db.templates.find(t => String(t.id) === String(id)); if (!tmpl) return;
   editingTemplateId = id; tmplExercises = [...tmpl.exerciseIds];
   document.getElementById('tmplName').value = tmpl.name;
   const selType = document.getElementById('tmplType');
@@ -247,7 +247,7 @@ function saveTemplate() {
   if (type === 'training' && tmplExercises.length === 0) { alert(t('minOneExercise')); return; }
   
   if (editingTemplateId) {
-    const tmpl = db.templates.find(x => x.id === editingTemplateId);
+    const tmpl = db.templates.find(x => String(x.id) === String(editingTemplateId));
     tmpl.name = name; tmpl.type = type; tmpl.exerciseIds = [...tmplExercises];
   } else {
     db.templates.push({ id: uid(), name, type, exerciseIds: [...tmplExercises] });
@@ -260,14 +260,14 @@ function saveTemplate() {
 
 function deleteTemplate() {
   if (!confirm(t('confirmDeleteTmpl'))) return;
-  db.templates = db.templates.filter(x => x.id !== editingTemplateId);
+  db.templates = db.templates.filter(x => String(x.id) !== String(editingTemplateId));
   save();
   closeModal('templateModal');
   renderTemplates();
 }
 
 function startWorkoutFromTemplate(tmplId) {
-  const tmpl = db.templates.find(x => x.id === tmplId); if (!tmpl) return;
+  const tmpl = db.templates.find(x => String(x.id) === String(tmplId)); if (!tmpl) return;
   db.currentWorkout = {
     id: uid(), date: Date.now(), startTime: Date.now(),
     templateId: tmplId,

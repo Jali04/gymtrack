@@ -61,7 +61,7 @@ const DEFAULT_EXERCISES = [
 ];
 if (db.exercises.length === 0) { db.exercises = DEFAULT_EXERCISES; }
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const MIGRATIONS = {
   1: (data) => {
@@ -101,6 +101,68 @@ const MIGRATIONS = {
       if (!data.exercises.find(e => e.name === 'Seilspringen')) {
         data.exercises.push({ id: 'e11', name: 'Seilspringen', category: 'Cardio' });
         changed = true;
+      }
+    }
+    return changed;
+  },
+  4: (data) => {
+    let changed = false;
+    if (data.activeProgram && data.activeProgram.id) {
+      const orig = data.activeProgram.id;
+      data.activeProgram.id = String(orig);
+      if (data.activeProgram.id !== orig) changed = true;
+    }
+    if (data.templates) {
+      data.templates.forEach(t => {
+        if (t.id !== undefined && t.id !== null) {
+          const orig = t.id;
+          t.id = String(orig);
+          if (t.id !== orig) changed = true;
+        }
+      });
+    }
+    if (data.programs) {
+      data.programs.forEach(p => {
+        if (p.id !== undefined && p.id !== null) {
+          const orig = p.id;
+          p.id = String(orig);
+          if (p.id !== orig) changed = true;
+        }
+        if (p.schedule) {
+          for (let day in p.schedule) {
+            if (p.schedule[day] !== undefined && p.schedule[day] !== null) {
+              const orig = p.schedule[day];
+              p.schedule[day] = String(orig);
+              if (p.schedule[day] !== orig) changed = true;
+            }
+          }
+        }
+      });
+    }
+    if (data.workouts) {
+      data.workouts.forEach(w => {
+        if (w.templateId !== undefined && w.templateId !== null) {
+          const orig = w.templateId;
+          w.templateId = String(orig);
+          if (w.templateId !== orig) changed = true;
+        }
+        if (w.id !== undefined && w.id !== null) {
+          const orig = w.id;
+          w.id = String(orig);
+          if (w.id !== orig) changed = true;
+        }
+      });
+    }
+    if (data.currentWorkout) {
+      if (data.currentWorkout.templateId !== undefined && data.currentWorkout.templateId !== null) {
+        const orig = data.currentWorkout.templateId;
+        data.currentWorkout.templateId = String(orig);
+        if (data.currentWorkout.templateId !== orig) changed = true;
+      }
+      if (data.currentWorkout.id !== undefined && data.currentWorkout.id !== null) {
+        const orig = data.currentWorkout.id;
+        data.currentWorkout.id = String(orig);
+        if (data.currentWorkout.id !== orig) changed = true;
       }
     }
     return changed;

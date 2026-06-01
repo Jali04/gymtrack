@@ -850,19 +850,31 @@ function importAiPayload(payloadB64, buttonId) {
     // Normalize payload to guarantee compatibility with _mergeImportedDb
     if (payload.v === 't') {
       if (!payload.t) payload.t = {};
-      if (!payload.t.id) payload.t.id = 'ai_temp_' + uid();
+      if (!payload.t.id) {
+        payload.t.id = 'ai_temp_' + uid();
+      } else {
+        payload.t.id = String(payload.t.id);
+      }
       if (!payload.t.type) payload.t.type = 'training';
       if (!payload.t.exerciseIds) payload.t.exerciseIds = [];
       if (!payload.e || !Array.isArray(payload.e)) payload.e = [];
     } else if (payload.v === 'p') {
       if (!payload.p) payload.p = {};
-      if (!payload.p.id) payload.p.id = 'ai_prog_' + uid();
+      if (!payload.p.id) {
+        payload.p.id = 'ai_prog_' + uid();
+      } else {
+        payload.p.id = String(payload.p.id);
+      }
       if (!payload.t || !Array.isArray(payload.t)) payload.t = [];
       if (!payload.e || !Array.isArray(payload.e)) payload.e = [];
       
-      // Auto-assign missing IDs for templates inside the program
+      // Auto-assign missing IDs for templates inside the program and stringify IDs
       payload.t.forEach(tmpl => {
-        if (!tmpl.id) tmpl.id = 'ai_temp_' + uid();
+        if (!tmpl.id) {
+          tmpl.id = 'ai_temp_' + uid();
+        } else {
+          tmpl.id = String(tmpl.id);
+        }
         if (!tmpl.type) tmpl.type = 'training';
         if (!tmpl.exerciseIds) tmpl.exerciseIds = [];
       });
@@ -873,9 +885,11 @@ function importAiPayload(payloadB64, buttonId) {
           const ref = payload.p.schedule[day];
           if (!ref) continue;
           // Find template by ID or Name
-          let targetTmpl = payload.t.find(t => t.id === ref || t.name === ref);
+          let targetTmpl = payload.t.find(t => String(t.id) === String(ref) || t.name === ref);
           if (targetTmpl) {
-            payload.p.schedule[day] = targetTmpl.id;
+            payload.p.schedule[day] = String(targetTmpl.id);
+          } else {
+            payload.p.schedule[day] = String(ref);
           }
         }
       }

@@ -271,7 +271,7 @@ function renderActiveWorkout() {
     // Template persist button (show if exercise is not in the original template)
     let persistBtn = '';
     if (cw.templateId) {
-      const tmpl = db.templates.find(x => x.id === cw.templateId);
+      const tmpl = db.templates.find(x => String(x.id) === String(cw.templateId));
       if (tmpl && !tmpl.exerciseIds.includes(e.exId) && e.exId) {
         persistBtn = `<button class="tmpl-persist-btn" onclick="event.stopPropagation();saveExerciseToTemplate('${e.exId}', this)">${t('saveToTemplate')}</button>`;
       }
@@ -1191,7 +1191,7 @@ function _updateRestDisplay() {
 function saveExerciseToTemplate(exId, btnEl) {
   const cw = db.currentWorkout;
   if (!cw || !cw.templateId) return;
-  const tmpl = db.templates.find(x => x.id === cw.templateId);
+  const tmpl = db.templates.find(x => String(x.id) === String(cw.templateId));
   if (!tmpl) return;
   if (tmpl.exerciseIds.includes(exId)) return;
   
@@ -1211,7 +1211,7 @@ let _pendingTemplateUpdate = null;
 
 function _checkTemplateUpdates(finishedWorkout) {
   if (!finishedWorkout.templateId) return;
-  const tmpl = db.templates.find(x => x.id === finishedWorkout.templateId);
+  const tmpl = db.templates.find(x => String(x.id) === String(finishedWorkout.templateId));
   if (!tmpl) return;
   
   // Find exercises that were added during the workout but not in the template
@@ -1269,7 +1269,7 @@ function _toggleTmplUpdateItem(exId) {
 
 function confirmTemplateUpdate() {
   if (!_pendingTemplateUpdate) { closeModal('tmplUpdateModal'); return; }
-  const tmpl = db.templates.find(x => x.id === _pendingTemplateUpdate.templateId);
+  const tmpl = db.templates.find(x => String(x.id) === String(_pendingTemplateUpdate.templateId));
   if (tmpl && _pendingTemplateUpdate.selected.length > 0) {
     _pendingTemplateUpdate.selected.forEach(exId => {
       if (!tmpl.exerciseIds.includes(exId)) tmpl.exerciseIds.push(exId);

@@ -17,7 +17,7 @@ function renderPrograms(searchQuery = '') {
       if (p.name.toLowerCase().includes(q)) return true;
       if (p.schedule) {
         return Object.values(p.schedule).some(tplId => {
-          const tpl = db.templates.find(x => x.id === tplId);
+          const tpl = db.templates.find(x => String(x.id) === String(tplId));
           return tpl && tpl.name.toLowerCase().includes(q);
         });
       }
@@ -41,11 +41,11 @@ function renderPrograms(searchQuery = '') {
       if (scoreA !== scoreB) return scoreB - scoreA;
 
       const aHasTmplStart = a.schedule ? Object.values(a.schedule).some(tplId => {
-        const tpl = db.templates.find(x => x.id === tplId);
+        const tpl = db.templates.find(x => String(x.id) === String(tplId));
         return tpl && tpl.name.toLowerCase().startsWith(q);
       }) : false;
       const bHasTmplStart = b.schedule ? Object.values(b.schedule).some(tplId => {
-        const tpl = db.templates.find(x => x.id === tplId);
+        const tpl = db.templates.find(x => String(x.id) === String(tplId));
         return tpl && tpl.name.toLowerCase().startsWith(q);
       }) : false;
       if (aHasTmplStart !== bHasTmplStart) return bHasTmplStart ? 1 : -1;
@@ -60,7 +60,7 @@ function renderPrograms(searchQuery = '') {
   }
   
   filteredPrograms.forEach(p => {
-    const isActive = db.activeProgram && db.activeProgram.id === p.id;
+    const isActive = db.activeProgram && String(db.activeProgram.id) === String(p.id);
     const border = isActive ? 'border:1px solid var(--accent);' : 'border:1px solid transparent;';
     const tag = isActive ? `<span style="background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:8px;">AKTIV</span>` : '';
 
@@ -69,7 +69,7 @@ function renderPrograms(searchQuery = '') {
     let summaries = displayDays.map(d => {
       const tplId = p.schedule ? p.schedule[d] : null;
       if (!tplId) return '';
-      const tpl = db.templates.find(x => x.id === tplId);
+      const tpl = db.templates.find(x => String(x.id) === String(tplId));
       const dayName = t('weekDays')[d].substr(0, 2); // e.g. Mo, Di
       return `<div style="font-size:12px;color:var(--muted);"><span style="display:inline-block;width:30px;font-weight:600;">${dayName}</span> ${tpl ? tpl.name : 'Unbekannt'}</div>`;
     }).filter(Boolean).join('');
@@ -95,7 +95,7 @@ function renderPrograms(searchQuery = '') {
 }
 
 function activateProgram(id) {
-  db.activeProgram = { id: id };
+  db.activeProgram = { id: String(id) };
   save();
   renderPrograms();
   updateActiveProgramBanner();
@@ -111,7 +111,7 @@ function updateActiveProgramBanner() {
     return;
   }
   
-  const prog = db.programs.find(x => x.id === db.activeProgram.id);
+  const prog = db.programs.find(x => String(x.id) === String(db.activeProgram.id));
   if (!prog || !prog.schedule) {
     db.activeProgram = null;
     save();
@@ -130,7 +130,7 @@ function updateActiveProgramBanner() {
     return;
   }
   
-  const tpl = db.templates.find(x => x.id === todayTplId);
+  const tpl = db.templates.find(x => String(x.id) === String(todayTplId));
   const tplName = tpl ? tpl.name : 'Gelöschte Vorlage';
   
   let typeObj = tpl ? (tpl.type || 'training') : 'training';
@@ -151,7 +151,7 @@ function quitProgram() {
 
 function startNextProgramDay() {
   if (!db.activeProgram || db.currentWorkout) return;
-  const prog = db.programs.find(x => x.id === db.activeProgram.id);
+  const prog = db.programs.find(x => String(x.id) === String(db.activeProgram.id));
   if (!prog || !prog.schedule) return;
   
   const todayDayIndex = new Date().getDay();
@@ -162,7 +162,7 @@ function startNextProgramDay() {
     return;
   }
   
-  const tpl = db.templates.find(x => x.id === todayTplId);
+  const tpl = db.templates.find(x => String(x.id) === String(todayTplId));
   if (!tpl) {
     alert('Die Vorlage für heute wurde gelöscht.');
     return;
@@ -241,7 +241,7 @@ function openCreateProgram() {
 }
 
 function openEditProgram(id) {
-  const p = db.programs.find(x => x.id === id);
+  const p = db.programs.find(x => String(x.id) === String(id));
   if (!p) return;
   currentProgId = id;
   
@@ -272,7 +272,7 @@ function saveProgram() {
   if (!hasWorkout) return alert('Mindestens ein Tag muss eine Vorlage haben');
   
   if (currentProgId) {
-    const p = db.programs.find(x => x.id === currentProgId);
+    const p = db.programs.find(x => String(x.id) === String(currentProgId));
     if (p) {
       p.name = name;
       p.schedule = schedule;
@@ -294,8 +294,8 @@ function saveProgram() {
 function deleteProgram() {
   if (!currentProgId) return;
   if (confirm('Programm wirklich löschen?')) {
-    db.programs = db.programs.filter(x => x.id !== currentProgId);
-    if (db.activeProgram && db.activeProgram.id === currentProgId) {
+    db.programs = db.programs.filter(x => String(x.id) !== String(currentProgId));
+    if (db.activeProgram && String(db.activeProgram.id) === String(currentProgId)) {
       db.activeProgram = null;
     }
     save();
@@ -306,13 +306,13 @@ function deleteProgram() {
 }
 
 async function openProgramShare(id) {
-  const prog = db.programs.find(x => x.id === id);
+  const prog = db.programs.find(x => String(x.id) === String(id));
   if (!prog) return;
 
   // Collect all templates referenced by this program
   const tmplIds = [...new Set(Object.values(prog.schedule || {}))];
   const templates = tmplIds
-    .map(tid => db.templates.find(t => t.id === tid))
+    .map(tid => db.templates.find(t => String(t.id) === String(tid)))
     .filter(Boolean)
     .map(({ id, name, type, exerciseIds }) => ({ id, name, type: type || 'training', exerciseIds: exerciseIds || [] }));
 
