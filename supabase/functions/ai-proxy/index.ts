@@ -39,7 +39,8 @@ serve(async (req) => {
     }
 
     // 3. Retrieve body payload (matching what the frontend sends)
-    const { model, contents, systemInstruction, generationConfig } = await req.json()
+    const body = await req.json()
+    const { model, ...geminiPayload } = body
 
     // 4. Retrieve Gemini API Key from secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
@@ -59,11 +60,7 @@ serve(async (req) => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        contents,
-        systemInstruction,
-        generationConfig
-      })
+      body: JSON.stringify(geminiPayload)
     })
 
     if (!response.ok) {
