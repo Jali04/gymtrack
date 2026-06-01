@@ -473,7 +473,7 @@ function renderRecentFoodsInModal() {
 
     const payloadStr = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     html += `
-      <div class="recent-food-chip" onclick="selectRecentFood('${payloadStr}')" style="background:var(--surface2); border:1px solid var(--border); border-radius:18px; padding:6px 12px; font-size:12px; color:var(--text); cursor:pointer; font-weight:600; display:flex; align-items:center; gap:4px; transition:all 0.2s; white-space:nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div class="recent-food-chip" onclick="selectRecentFood('${payloadStr}')" style="background:var(--surface2); border:1px solid var(--border); border-radius:18px; padding:6px 12px; font-size:12px; color:var(--text); cursor:pointer; font-weight:600; display:flex; align-items:center; gap:4px; transition:all 0.2s; white-space:nowrap;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
         <span>🕒</span> ${food.name}
       </div>
     `;
@@ -1258,9 +1258,13 @@ function renderFoodLibrary(searchQuery = '') {
   
   // Sort: custom items first, then alphabetical by name
   const sortedLibrary = [...library].sort((a, b) => {
-    if (a.isCustom && !b.isCustom) return -1;
-    if (!a.isCustom && b.isCustom) return 1;
-    return a.name.localeCompare(b.name);
+    const aCustom = !!a.isCustom;
+    const bCustom = !!b.isCustom;
+    if (aCustom && !bCustom) return -1;
+    if (!aCustom && bCustom) return 1;
+    const nameA = a.name || '';
+    const nameB = b.name || '';
+    return nameA.localeCompare(nameB);
   });
 
   const query = searchQuery.trim().toLowerCase();

@@ -66,7 +66,8 @@ function renderGymLabCategoryChips() {
   html += `<button class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" data-cat="all" onclick="filterGymLabExercisesByCategory('all')">${t('allLabel') || 'Alle'}</button>`;
   
   allCategories.forEach(cat => {
-    const label = t('cats')[cat] || cat;
+    const catsObj = t('cats');
+    const label = (catsObj && typeof catsObj === 'object') ? (catsObj[cat] || cat) : cat;
     html += `<button class="filter-chip ${currentFilter === cat ? 'active' : ''}" data-cat="${cat}" onclick="filterGymLabExercisesByCategory('${cat}')">${label}</button>`;
   });
   
