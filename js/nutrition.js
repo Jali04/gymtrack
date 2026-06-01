@@ -1098,9 +1098,26 @@ window.calculateAiGoals = calculateAiGoals;
 // BARCODE SCANNER (html5-qrcode + Open Food Facts API)
 // ---------------------------------------------
 let html5QrScanner = null;
+let barcodeScanTarget = 'nutrition'; // 'nutrition' or 'library'
 
 function openBarcodeScanner() {
-  closeModal('nutritionFoodModal');
+  barcodeScanTarget = 'nutrition';
+  _startBarcodeScannerWorkflow();
+}
+window.openBarcodeScanner = openBarcodeScanner;
+
+function openLibBarcodeScanner() {
+  barcodeScanTarget = 'library';
+  _startBarcodeScannerWorkflow();
+}
+window.openLibBarcodeScanner = openLibBarcodeScanner;
+
+function _startBarcodeScannerWorkflow() {
+  if (barcodeScanTarget === 'library') {
+    closeModal('libraryFoodModal');
+  } else {
+    closeModal('nutritionFoodModal');
+  }
   openModal('barcodeScannerModal');
   
   const statusEl = document.getElementById('barcodeStatus');
@@ -1131,7 +1148,12 @@ function openBarcodeScanner() {
         (decodedText, decodedResult) => {
           stopBarcodeScanner();
           closeModal('barcodeScannerModal');
-          openModal('nutritionFoodModal');
+          
+          if (barcodeScanTarget === 'library') {
+            openModal('libraryFoodModal');
+          } else {
+            openModal('nutritionFoodModal');
+          }
           
           if (typeof haptic === 'function') haptic('success');
           lookupBarcode(decodedText);
@@ -1160,7 +1182,6 @@ function openBarcodeScanner() {
     }
   }, 300);
 }
-window.openBarcodeScanner = openBarcodeScanner;
 
 function stopBarcodeScanner() {
   if (html5QrScanner) {
@@ -1176,7 +1197,11 @@ function stopBarcodeScanner() {
 function closeBarcodeScanner() {
   stopBarcodeScanner();
   closeModal('barcodeScannerModal');
-  openModal('nutritionFoodModal');
+  if (barcodeScanTarget === 'library') {
+    openModal('libraryFoodModal');
+  } else {
+    openModal('nutritionFoodModal');
+  }
 }
 window.closeBarcodeScanner = closeBarcodeScanner;
 
@@ -1187,7 +1212,11 @@ function lookupBarcodeDirect() {
     return;
   }
   closeModal('barcodeScannerModal');
-  openModal('nutritionFoodModal');
+  if (barcodeScanTarget === 'library') {
+    openModal('libraryFoodModal');
+  } else {
+    openModal('nutritionFoodModal');
+  }
   lookupBarcode(code);
 }
 window.lookupBarcodeDirect = lookupBarcodeDirect;
@@ -1216,16 +1245,25 @@ async function lookupBarcode(barcode) {
       const carbs = nut.carbohydrates_100g || nut.carbohydrates || 0;
       const fat = nut.fat_100g || nut.fat || 0;
 
-      // Fill modal inputs
-      document.getElementById('nutriFoodName').value = name;
-      document.getElementById('nutriFoodCal100').value = Math.round(kcal);
-      document.getElementById('nutriFoodProt100').value = Math.round(protein * 10) / 10;
-      document.getElementById('nutriFoodCarb100').value = Math.round(carbs * 10) / 10;
-      document.getElementById('nutriFoodFat100').value = Math.round(fat * 10) / 10;
-      document.getElementById('nutriFoodAmount').value = '100';
-      document.getElementById('nutriFoodUnit').value = 'g';
+      if (barcodeScanTarget === 'library') {
+        document.getElementById('libFoodName').value = name;
+        document.getElementById('libFoodCal').value = Math.round(kcal);
+        document.getElementById('libFoodProt').value = Math.round(protein * 10) / 10;
+        document.getElementById('libFoodCarb').value = Math.round(carbs * 10) / 10;
+        document.getElementById('libFoodFat').value = Math.round(fat * 10) / 10;
+        document.getElementById('libFoodServingType').value = '100';
+      } else {
+        // Fill modal inputs
+        document.getElementById('nutriFoodName').value = name;
+        document.getElementById('nutriFoodCal100').value = Math.round(kcal);
+        document.getElementById('nutriFoodProt100').value = Math.round(protein * 10) / 10;
+        document.getElementById('nutriFoodCarb100').value = Math.round(carbs * 10) / 10;
+        document.getElementById('nutriFoodFat100').value = Math.round(fat * 10) / 10;
+        document.getElementById('nutriFoodAmount').value = '100';
+        document.getElementById('nutriFoodUnit').value = 'g';
 
-      recalcFoodModalMacros();
+        recalcFoodModalMacros();
+      }
       showToast(isDe ? 'Produkt erfolgreich geladen!' : 'Product loaded successfully!');
       if (typeof haptic === 'function') haptic('success');
     } else {
@@ -1275,9 +1313,9 @@ function renderFoodLibrary(searchQuery = '') {
   const searchVal = searchQuery || foodLibSearchQuery || '';
 
   let html = `
-    <div class="search-wrapper" style="display:flex;gap:8px;margin-bottom:16px;">
-      <input type="text" id="foodLibSearch" class="form-input" style="flex:1;height:42px;" placeholder="${t('libFoodSearchPlaceholder')}" value="${searchVal}" oninput="onFoodLibSearch(this.value)">
-      <button class="btn btn-primary" onclick="openCreateLibraryFoodModal()" style="margin:0;padding:0 16px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13.5px;">${t('libFoodNewBtn')}</button>
+    <div class="search-wrapper" style="display:flex;gap:8px;margin-bottom:16px;align-items:center;width:100%;">
+      <input type="text" id="foodLibSearch" class="form-input" style="flex:1;height:42px;min-width:0;" placeholder="${t('libFoodSearchPlaceholder')}" value="${searchVal}" oninput="onFoodLibSearch(this.value)">
+      <button class="btn btn-primary" onclick="openCreateLibraryFoodModal()" style="margin:0;width:48px;height:42px;min-width:48px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;padding:0;" title="${t('libFoodNewBtn')}">+</button>
     </div>
   `;
 
@@ -1296,7 +1334,7 @@ function renderFoodLibrary(searchQuery = '') {
         : (isDe ? '100g / 100ml' : '100g / 100ml');
 
       html += `
-        <div class="card food-lib-card" style="margin-bottom:10px; padding:12px; border-left:3px solid ${item.isCustom ? 'var(--accent2)' : 'var(--border)'}; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:border-color 0.2s;" onclick="openEditLibraryFood('${item.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${item.isCustom ? 'var(--accent2)' : 'var(--border)'}'">
+        <div class="card food-lib-card" style="margin-bottom:10px; padding:12px; border-left:3px solid ${item.isCustom ? 'var(--accent2)' : 'var(--border)'}; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:border-color 0.2s;" onclick="openNutritionFoodModalFromLibrary('${item.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${item.isCustom ? 'var(--accent2)' : 'var(--border)'}'">
           <div style="flex:1; min-width:0; padding-right:8px;">
             <div style="font-weight:700; font-size:15px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
             <div style="font-size:12px; color:var(--muted); margin-top:2px;">
@@ -1304,6 +1342,7 @@ function renderFoodLibrary(searchQuery = '') {
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <button class="close-btn" onclick="openEditLibraryFood('${item.id}', event)" style="background:transparent; color:var(--accent); border:none; padding:8px; font-size:14px; display:flex; align-items:center; justify-content:center; border-radius:8px; width:36px; height:36px; min-width:36px;" title="${isDe ? 'Bearbeiten' : 'Edit'}">✏️</button>
             ${item.isCustom ? `
               <button class="close-btn" onclick="deleteLibraryFood('${item.id}', event)" style="background:transparent; color:var(--accent2); border:none; padding:8px; font-size:14px; display:flex; align-items:center; justify-content:center; border-radius:8px; width:36px; height:36px; min-width:36px;" title="${isDe ? 'Löschen' : 'Delete'}">🗑️</button>
             ` : `
@@ -1345,7 +1384,10 @@ function openCreateLibraryFoodModal() {
 }
 window.openCreateLibraryFoodModal = openCreateLibraryFoodModal;
 
-function openEditLibraryFood(id) {
+function openEditLibraryFood(id, event) {
+  if (event) {
+    event.stopPropagation();
+  }
   const library = db.foodLibrary || [];
   const item = library.find(f => f.id === id);
   if (!item) return;
@@ -1456,3 +1498,84 @@ function deleteLibraryFood(id, event) {
   if (typeof haptic === 'function') haptic('warning');
 }
 window.deleteLibraryFood = deleteLibraryFood;
+
+function openNutritionFoodModalFromLibrary(itemId) {
+  const library = db.foodLibrary || [];
+  const item = library.find(f => f.id === itemId);
+  if (!item) return;
+
+  editingLoggedFoodId = null;
+
+  // Auto-detect meal type from current hour
+  const hour = new Date().getHours();
+  let defaultMeal = 'breakfast';
+  if (hour >= 11 && hour < 15) defaultMeal = 'lunch';
+  else if (hour >= 15 && hour < 18) defaultMeal = 'snack';
+  else if (hour >= 18 || hour < 5) defaultMeal = 'dinner';
+
+  const mealEl = document.getElementById('nutriFoodMeal');
+  if (mealEl) {
+    mealEl.value = defaultMeal;
+  }
+  
+  const nameEl = document.getElementById('nutriFoodName');
+  if (nameEl) {
+    nameEl.value = item.name;
+  }
+  
+  const isPcs = item.servingSize === 1;
+  const unitEl = document.getElementById('nutriFoodUnit');
+  if (unitEl) {
+    unitEl.value = isPcs ? 'pcs' : 'g';
+  }
+  
+  const amtEl = document.getElementById('nutriFoodAmount');
+  if (amtEl) {
+    amtEl.value = isPcs ? '1' : '100';
+  }
+
+  const calEl = document.getElementById('nutriFoodCal100');
+  if (calEl) {
+    calEl.value = Math.round(item.calories);
+  }
+  
+  const protEl = document.getElementById('nutriFoodProt100');
+  if (protEl) {
+    protEl.value = item.protein;
+  }
+  
+  const carbEl = document.getElementById('nutriFoodCarb100');
+  if (carbEl) {
+    carbEl.value = item.carbs;
+  }
+  
+  const fatEl = document.getElementById('nutriFoodFat100');
+  if (fatEl) {
+    fatEl.value = item.fat;
+  }
+
+  const label = document.getElementById('lblNutriFoodTitle');
+  if (label) {
+    label.textContent = (lang === 'de') ? 'Essen eintragen' : 'Log Food';
+  }
+
+  const delBtn = document.getElementById('btnDeleteLoggedFood');
+  if (delBtn) delBtn.style.display = 'none';
+
+  const dropdown = document.getElementById('foodAutocompleteResults');
+  if (dropdown) {
+    dropdown.innerHTML = '';
+    dropdown.style.display = 'none';
+  }
+
+  const recentSec = document.getElementById('recentFoodsSection');
+  if (recentSec) {
+    recentSec.style.display = 'none';
+  }
+
+  recalcFoodModalMacros();
+  openModal('nutritionFoodModal');
+  if (typeof haptic === 'function') haptic('light');
+}
+window.openNutritionFoodModalFromLibrary = openNutritionFoodModalFromLibrary;
+

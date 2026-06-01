@@ -25,12 +25,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DSCPLN">
-  <meta name="version" content="4.33">
+  <meta name="version" content="4.34">
   <title>DSCPLN</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4.33">
+  <link rel="stylesheet" href="css/styles.css?v=4.34">
 </head>
 
 <body>
@@ -481,8 +481,11 @@
         <div class="close-btn" onclick="closeModal('libraryFoodModal')">✕</div>
       </div>
       
-      <div class="form-group">
-        <label class="form-label" id="lblLibFoodName">Name des Lebensmittels</label>
+      <div class="form-group" style="position:relative;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <label class="form-label" id="lblLibFoodName" style="margin:0;">Name des Lebensmittels</label>
+          <button type="button" onclick="openLibBarcodeScanner()" style="background:transparent; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; font-family:'DM Sans', sans-serif;">🔍 Barcode scannen</button>
+        </div>
         <input type="text" class="form-input" id="libFoodName" placeholder="z.B. Erdnussbutter">
       </div>
 
@@ -1705,10 +1708,10 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-  <script src="js/db.js?v=4.33"></script>
-  <script src="js/i18n.js?v=4.33"></script>
-  <script src="js/modals.js?v=4.33"></script>
-  <script src="js/nav.js?v=4.33"></script>
+  <script src="js/db.js?v=4.34"></script>
+  <script src="js/i18n.js?v=4.34"></script>
+  <script src="js/modals.js?v=4.34"></script>
+  <script src="js/nav.js?v=4.34"></script>
   <script src="js/workout.js?v=4.31"></script>
   <script src="js/exercises.js?v=4.31"></script>
   <script src="js/history.js?v=4.31"></script>
@@ -1723,15 +1726,15 @@
   <script src="js/programs.js?v=4.31"></script>
   <script src="js/supplements.js?v=4.31"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="js/nutrition.js?v=4.33"></script>
+  <script src="js/nutrition.js?v=4.34"></script>
   <script src="js/tools.js?v=4.31"></script>
-  <script src="js/guide.js?v=4.33"></script>
+  <script src="js/guide.js?v=4.34"></script>
   <script src="js/app.js?v=4.31"></script>
   <script src="js/aiCoach.js?v=4.31"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=4.31"></script>
   <script src="js/auth.js?v=4.31"></script>
-  <script src="js/sync.js?v=4.33"></script>
+  <script src="js/sync.js?v=4.34"></script>
 
 </body>
 
