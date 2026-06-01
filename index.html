@@ -426,13 +426,22 @@
           </select>
         </div>
 
-        <div class="form-group" style="margin-bottom:12px;">
+        <div class="form-group" style="margin-bottom:8px;">
           <label class="form-label" style="font-size:10px;">Fitnessziel</label>
-          <select class="form-input" id="calcGoal" style="height:32px; font-size:13px; padding:0 4px;">
-            <option value="lose">Abnehmen / Definition (-500 kcal)</option>
-            <option value="maintain">Gewicht halten (TDEE)</option>
-            <option value="gain">Muskelaufbau / Zunehmen (+300 kcal)</option>
+          <select class="form-input" id="calcGoal" style="height:32px; font-size:13px; padding:0 4px;" onchange="onCalcGoalChange(this.value)">
+            <option value="-500">Fettabbau (Standard, -500 kcal)</option>
+            <option value="-300">Fettabbau (Moderat, -300 kcal)</option>
+            <option value="-800">Fettabbau (Aggressiv, -800 kcal)</option>
+            <option value="0">Gewicht halten (0 kcal)</option>
+            <option value="300">Muskelaufbau (Lean Bulk, +300 kcal)</option>
+            <option value="500">Muskelaufbau (Standard, +500 kcal)</option>
+            <option value="custom">Eigener Wert (kcal)...</option>
           </select>
+        </div>
+
+        <div class="form-group" id="calcGoalCustomRow" style="display:none; margin-bottom:12px;">
+          <label class="form-label" style="font-size:10px;">Eigener Kalorien-Offset (kcal)</label>
+          <input type="number" class="form-input" id="calcGoalCustom" style="height:32px; font-size:13px; padding:0 8px;" placeholder="z.B. -400 oder 250">
         </div>
 
         <button type="button" class="btn btn-secondary btn-sm" onclick="calculateAiGoals()" style="margin:0; width:100%;">Berechnen & Übernehmen</button>

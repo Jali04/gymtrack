@@ -760,6 +760,14 @@ function toggleGoalsCalculator() {
 }
 window.toggleGoalsCalculator = toggleGoalsCalculator;
 
+function onCalcGoalChange(val) {
+  const customRow = document.getElementById('calcGoalCustomRow');
+  if (customRow) {
+    customRow.style.display = val === 'custom' ? 'block' : 'none';
+  }
+}
+window.onCalcGoalChange = onCalcGoalChange;
+
 function calculateAiGoals() {
   const weight = parseFloat(document.getElementById('calcWeight').value);
   const height = parseFloat(document.getElementById('calcHeight').value);
@@ -792,12 +800,14 @@ function calculateAiGoals() {
   let tdee = bmr * multiplier;
 
   // Calorie deficit/surplus adjustment
-  let targetCal = tdee;
-  if (goal === 'lose') {
-    targetCal -= 500;
-  } else if (goal === 'gain') {
-    targetCal += 300;
+  let offset = 0;
+  if (goal === 'custom') {
+    const customOffsetVal = document.getElementById('calcGoalCustom').value;
+    offset = parseInt(customOffsetVal) || 0;
+  } else {
+    offset = parseInt(goal) || 0;
   }
+  let targetCal = tdee + offset;
 
   targetCal = Math.max(1200, Math.round(targetCal)); // Floor floor limit
 
