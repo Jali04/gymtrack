@@ -1355,8 +1355,9 @@
 
         <!-- Chat Input Area -->
         <div class="ai-chat-input-row">
-          <input type="text" class="ai-chat-input" id="aiChatInput" placeholder="Frag deinen Coach..."
-            onkeydown="if(event.key==='Enter') sendAiMessage()" autocomplete="off">
+          <textarea class="ai-chat-input" id="aiChatInput" placeholder="Frag deinen Coach..."
+            onkeydown="if((event.ctrlKey || event.metaKey) && event.key==='Enter') { event.preventDefault(); sendAiMessage(); }"
+            oninput="autoResizeChatInput()" autocomplete="off" rows="1"></textarea>
           <button class="ai-send-btn" id="aiSendBtn" onclick="sendAiMessage()">▶</button>
         </div>
 

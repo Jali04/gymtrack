@@ -2135,7 +2135,7 @@ body.modal-open {
 .ai-chat-input-row {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .ai-chat-input {
@@ -2143,12 +2143,19 @@ body.modal-open {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 11px 14px;
   color: var(--text);
   font-size: 15px;
   outline: none;
   font-family: 'DM Sans', sans-serif;
   transition: border-color 0.2s, box-shadow 0.2s;
+  resize: none;
+  height: 44px;
+  min-height: 44px;
+  max-height: 150px;
+  box-sizing: border-box;
+  line-height: 1.4;
+  overflow-y: auto;
 }
 .ai-chat-input:focus {
   border-color: var(--accent);

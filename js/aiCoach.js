@@ -956,6 +956,7 @@ async function sendAiMessage() {
   saveCurrentChat();
   
   input.value = '';
+  if (typeof autoResizeChatInput === 'function') autoResizeChatInput();
   aiIsLoading = true;
   updateSendButtonState();
   renderChatFeed();
@@ -1587,3 +1588,9 @@ function updateActiveModelBadge() {
   }
 }
 
+function autoResizeChatInput() {
+  const input = document.getElementById('aiChatInput');
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = input.scrollHeight + 'px';
+}
