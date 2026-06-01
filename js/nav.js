@@ -17,8 +17,13 @@ function showPage(id, btn) {
     switchProgressSubTab(activeSub);
   }
   if (id === 'supps')    {
-    if (window.currentSuppsDate) window.currentSuppsDate = new Date();
-    if (typeof renderSupplements === 'function') renderSupplements();
+    const activeSub = localStorage.getItem('gymtrack_nutrition_subtab') || 'calories';
+    if (typeof switchNutritionSubTab === 'function') {
+      switchNutritionSubTab(activeSub);
+    } else {
+      if (window.currentSuppsDate) window.currentSuppsDate = new Date();
+      if (typeof renderSupplements === 'function') renderSupplements();
+    }
   }
 }
 

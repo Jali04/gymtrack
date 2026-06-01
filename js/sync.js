@@ -205,6 +205,62 @@ const SYNC_MAPPINGS = {
     getLocalId: item => item.id,
     getDbId: dbItem => dbItem.id,
     getTimestamp: item => Number(item.updated_at || item.created || Date.now())
+  },
+  nutrition_logs: {
+    toDb: item => ({
+      id: item.id,
+      date: item.date,
+      time_of_day: item.timeOfDay,
+      name: item.name,
+      calories: Number(item.calories),
+      protein: Number(item.protein),
+      carbs: Number(item.carbs),
+      fat: Number(item.fat),
+      grams: Number(item.grams),
+      updated_at: Number(item.updated_at || Date.now())
+    }),
+    toLocal: dbItem => ({
+      id: dbItem.id,
+      date: dbItem.date,
+      timeOfDay: dbItem.time_of_day,
+      name: dbItem.name,
+      calories: Number(dbItem.calories),
+      protein: Number(dbItem.protein),
+      carbs: Number(dbItem.carbs),
+      fat: Number(dbItem.fat),
+      grams: Number(dbItem.grams),
+      updated_at: Number(dbItem.updated_at)
+    }),
+    getLocalId: item => item.id,
+    getDbId: dbItem => dbItem.id,
+    getTimestamp: item => Number(item.updated_at || Date.now())
+  },
+  food_library: {
+    toDb: item => ({
+      id: item.id,
+      name: item.name,
+      calories: Number(item.calories),
+      protein: Number(item.protein),
+      carbs: Number(item.carbs),
+      fat: Number(item.fat),
+      serving_size: Number(item.servingSize || 100),
+      is_custom: item.isCustom !== false,
+      updated_at: Number(item.updated_at || Date.now())
+    }),
+    toLocal: dbItem => ({
+      id: dbItem.id,
+      name: dbItem.name,
+      calories: Number(dbItem.calories),
+      protein: Number(dbItem.protein),
+      carbs: Number(dbItem.carbs),
+      fat: Number(dbItem.fat),
+      servingSize: Number(dbItem.serving_size),
+      isCustom: dbItem.is_custom,
+      updated_at: Number(dbItem.updated_at)
+    }),
+    getLocalId: item => item.id,
+    getDbId: dbItem => dbItem.id,
+    getTimestamp: item => Number(item.updated_at || Date.now())
   }
 };
 
@@ -218,7 +274,9 @@ const LOCAL_DB_KEYS = {
   progress_pics: 'progressPics',
   supplements: 'supplements',
   supplement_log: 'supplementLog',
-  achievements: 'achievements'
+  achievements: 'achievements',
+  nutrition_logs: 'nutritionLog',
+  food_library: 'foodLibrary'
 };
 
 async function syncAll() {
@@ -228,6 +286,7 @@ async function syncAll() {
 
   // 1. Sync User Profile (Active Program + Week Status)
   await syncUserProfile(user.id);
+  await syncNutritionGoals(user.id);
 
   // 2. Sync regular DB tables
   for (const table in SYNC_MAPPINGS) {
@@ -297,6 +356,89 @@ async function syncUserProfile(userId) {
   } catch (e) {
     console.error('[Sync] Failed to sync user profile:', e);
   }
+}
+
+async function syncNutritionGoals(userId) {
+  try {
+    let localUpdatedAt = Number(localStorage.getItem('gym_nutrition_goals_updated_at') || 0);
+
+    const { data: remoteGoals, error } = await window.supabaseClient
+      .from('nutrition_goals')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    let localNeedsPush = false;
+    let remoteNeedsPull = false;
+
+    if (remoteGoals) {
+      const remoteUpdatedAt = Number(remoteGoals.updated_at);
+      if (remoteUpdatedAt > localUpdatedAt) {
+        remoteNeedsPull = true;
+      } else if (localUpdatedAt > remoteUpdatedAt) {
+        localNeedsPush = true;
+      }
+    } else {
+      localNeedsPush = true;
+    }
+
+    if (remoteNeedsPull && remoteGoals) {
+      console.log('[Sync] Pulling nutrition goals from remote');
+      db.nutritionGoals = {
+        calories: Number(remoteGoals.calories),
+        protein: Number(remoteGoals.protein),
+        carbs: Number(remoteGoals.carbs),
+        fat: Number(remoteGoals.fat)
+      };
+      localStorage.setItem('gym_nutrition_goals_updated_at', String(remoteGoals.updated_at));
+      save(); // local save
+    } else if (localNeedsPush) {
+      console.log('[Sync] Pushing nutrition goals to remote');
+      const now = Date.now();
+      const { error: upsertError } = await window.supabaseClient
+        .from('nutrition_goals')
+        .upsert({
+          user_id: userId,
+          calories: db.nutritionGoals.calories,
+          protein: db.nutritionGoals.protein,
+          carbs: db.nutritionGoals.carbs,
+          fat: db.nutritionGoals.fat,
+          updated_at: now
+        });
+      if (upsertError) throw upsertError;
+      localStorage.setItem('gym_nutrition_goals_updated_at', String(now));
+    }
+  } catch (e) {
+    console.error('[Sync] Failed to sync nutrition goals:', e);
+  }
+}
+
+async function syncNutritionGoalsUpdate() {
+  if (!window.supabaseClient || !window.currentSession) return;
+  const userId = window.currentSession.user.id;
+  const now = Date.now();
+
+  console.log(`[Sync Background] Upserting nutrition goals`);
+  
+  window.supabaseClient
+    .from('nutrition_goals')
+    .upsert({
+      user_id: userId,
+      calories: db.nutritionGoals.calories,
+      protein: db.nutritionGoals.protein,
+      carbs: db.nutritionGoals.carbs,
+      fat: db.nutritionGoals.fat,
+      updated_at: now
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.error('[Sync Background Error] Nutrition goals update failed:', error);
+      } else {
+        localStorage.setItem('gym_nutrition_goals_updated_at', String(now));
+      }
+    });
 }
 
 async function syncTable(table, userId) {

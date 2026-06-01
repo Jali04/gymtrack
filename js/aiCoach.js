@@ -683,6 +683,21 @@ function parseMarkdownAndImports(text) {
   return html;
 }
 
+function toggleImportPreview(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isVisible = el.style.display !== 'none';
+  el.style.display = isVisible ? 'none' : 'block';
+  const btn = el.previousElementSibling;
+  if (btn && btn.classList.contains('ai-import-preview-btn')) {
+    const isDe = (lang === 'de');
+    btn.textContent = isVisible 
+      ? (isDe ? 'Vorschau anzeigen' : 'Show Preview')
+      : (isDe ? 'Vorschau ausblenden' : 'Hide Preview');
+  }
+}
+window.toggleImportPreview = toggleImportPreview;
+
 function renderImportBlockCard(payload) {
   const isDe = (lang === 'de');
   
@@ -698,13 +713,37 @@ function renderImportBlockCard(payload) {
       : (isDe ? '📥 In GymLab importieren' : '📥 Import to GymLab');
     
     const uniqueId = `btn_imp_${payload.t.id || uid()}`;
+    const previewId = `pre_imp_${payload.t.id || uid()}`;
     // Stringify payload to pass in click handler safely
     const payloadStr = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+
+    // Build Preview HTML
+    let previewHtml = `<div style="font-size:12px;font-weight:600;margin-bottom:6px;">${isDe ? 'Enthaltene Übungen:' : 'Included Exercises:'}</div><ul style="margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.5;">`;
+    if (payload.t.exerciseIds && payload.t.exerciseIds.length > 0) {
+      payload.t.exerciseIds.forEach(id => {
+        const newEx = (payload.e || []).find(x => x.id === id);
+        if (newEx) {
+          previewHtml += `<li style="margin-bottom:4px;"><strong style="color:var(--accent2); font-size:10px; margin-right:4px;">[NEU]</strong> ${newEx.name} <span style="color:var(--muted); font-size:11px;">(${newEx.category})</span></li>`;
+        } else {
+          const ex = db.exercises.find(x => x.id === id);
+          const exName = ex ? ex.name : (isDe ? 'Unbekannt' : 'Unknown');
+          const cat = ex ? ex.category : '';
+          previewHtml += `<li style="margin-bottom:4px; color:var(--text);">${exName} ${cat ? `<span style="color:var(--muted); font-size:11px;">(${cat})</span>` : ''}</li>`;
+        }
+      });
+    } else {
+      previewHtml += `<li>${isDe ? 'Keine Übungen' : 'No exercises'}</li>`;
+    }
+    previewHtml += `</ul>`;
 
     return `
       <div class="ai-import-card">
         <div class="ai-import-title">📋 ${isDe ? 'Workout-Vorlage' : 'Workout Template'}</div>
         <div class="ai-import-subtitle">${name} (${exCount} ${isDe ? 'Übungen' : 'Exercises'})</div>
+        <button class="ai-import-preview-btn" onclick="toggleImportPreview('${previewId}')">${isDe ? 'Vorschau anzeigen' : 'Show Preview'}</button>
+        <div class="ai-import-preview-box" id="${previewId}" style="display:none; margin-bottom:12px;">
+          ${previewHtml}
+        </div>
         <button class="${btnClass}" id="${uniqueId}" onclick="importAiPayload('${payloadStr}', '${uniqueId}')">${btnText}</button>
       </div>
     `;
@@ -721,12 +760,54 @@ function renderImportBlockCard(payload) {
       : (isDe ? '📥 In GymLab importieren' : '📥 Import to GymLab');
     
     const uniqueId = `btn_imp_${payload.p.id || uid()}`;
+    const previewId = `pre_imp_${payload.p.id || uid()}`;
     const payloadStr = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+
+    // Build Preview HTML
+    const dayNamesDe = { '1': 'Montag', '2': 'Dienstag', '3': 'Mittwoch', '4': 'Donnerstag', '5': 'Freitag', '6': 'Samstag', '0': 'Sonntag' };
+    const dayNamesEn = { '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday', '4': 'Thursday', '5': 'Friday', '6': 'Saturday', '0': 'Sunday' };
+    const dayNames = isDe ? dayNamesDe : dayNamesEn;
+
+    let previewHtml = `<div style="font-size:12px;font-weight:600;margin-bottom:6px;">${isDe ? 'Wochenplan & Übungen:' : 'Weekly Schedule & Exercises:'}</div>`;
+    if (payload.p.schedule && Object.keys(payload.p.schedule).length > 0) {
+      for (let day in payload.p.schedule) {
+        const tmplId = payload.p.schedule[day];
+        const tmpl = (payload.t || []).find(t => t.id === tmplId);
+        const dayLabel = dayNames[day] || `Tag ${day}`;
+        const tmplName = tmpl ? tmpl.name : (isDe ? 'Ruhetag' : 'Rest Day');
+        
+        previewHtml += `<div style="margin-top:8px; margin-bottom:4px; font-size:12px; font-weight:600; color:var(--accent);">${dayLabel}: ${tmplName}</div>`;
+        
+        if (tmpl && tmpl.exerciseIds && tmpl.exerciseIds.length > 0) {
+          previewHtml += `<ul style="margin: 0; padding-left: 16px; font-size: 11.5px; line-height: 1.4; color:var(--text);">`;
+          tmpl.exerciseIds.forEach(id => {
+            const newEx = (payload.e || []).find(x => x.id === id);
+            if (newEx) {
+              previewHtml += `<li style="margin-bottom:2px;"><strong style="color:var(--accent2); font-size:10px; margin-right:4px;">[NEU]</strong> ${newEx.name} <span style="color:var(--muted); font-size:10.5px;">(${newEx.category})</span></li>`;
+            } else {
+              const ex = db.exercises.find(x => x.id === id);
+              const exName = ex ? ex.name : (isDe ? 'Unbekannt' : 'Unknown');
+              const cat = ex ? ex.category : '';
+              previewHtml += `<li style="margin-bottom:2px; color:var(--text);">${exName} ${cat ? `<span style="color:var(--muted); font-size:10.5px;">(${cat})</span>` : ''}</li>`;
+            }
+          });
+          previewHtml += `</ul>`;
+        } else if (tmpl) {
+          previewHtml += `<div style="font-size:11px; color:var(--muted); padding-left: 16px; font-style:italic;">${isDe ? 'Keine Übungen' : 'No exercises'}</div>`;
+        }
+      }
+    } else {
+      previewHtml += `<div style="font-size:11px; color:var(--muted); font-style:italic;">${isDe ? 'Kein Zeitplan definiert' : 'No schedule defined'}</div>`;
+    }
 
     return `
       <div class="ai-import-card">
         <div class="ai-import-title">💪 ${isDe ? 'Wochen-Programm' : 'Weekly Program'}</div>
         <div class="ai-import-subtitle">${name} (${daysCount} ${isDe ? 'Tage' : 'Days'})</div>
+        <button class="ai-import-preview-btn" onclick="toggleImportPreview('${previewId}')">${isDe ? 'Vorschau anzeigen' : 'Show Preview'}</button>
+        <div class="ai-import-preview-box" id="${previewId}" style="display:none; margin-bottom:12px;">
+          ${previewHtml}
+        </div>
         <button class="${btnClass}" id="${uniqueId}" onclick="importAiPayload('${payloadStr}', '${uniqueId}')">${btnText}</button>
       </div>
     `;

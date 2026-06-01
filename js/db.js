@@ -33,6 +33,19 @@ if (!db.weekStatus) db.weekStatus = { weekKey: 0, mode: 'normal' };
 if (!db.supplements) db.supplements = [];
 if (!db.supplementLog) db.supplementLog = [];
 if (!db.customCategories) db.customCategories = {};
+if (!db.nutritionGoals) db.nutritionGoals = { calories: 2000, protein: 150, carbs: 200, fat: 70 };
+if (!db.nutritionLog) db.nutritionLog = [];
+const DEFAULT_FOODS = [
+  { id: 'f1', name: 'Haferflocken', calories: 370, protein: 13, carbs: 59, fat: 7, servingSize: 100, isCustom: false },
+  { id: 'f2', name: 'Hähnchenbrust (roh)', calories: 110, protein: 23, carbs: 0, fat: 1.5, servingSize: 100, isCustom: false },
+  { id: 'f3', name: 'Magerquark', calories: 68, protein: 12, carbs: 4, fat: 0.2, servingSize: 100, isCustom: false },
+  { id: 'f4', name: 'Vollei (Größe M)', calories: 143, protein: 12.5, carbs: 0.7, fat: 9.9, servingSize: 100, isCustom: false },
+  { id: 'f5', name: 'Whey Protein', calories: 375, protein: 78, carbs: 6, fat: 4, servingSize: 100, isCustom: false },
+  { id: 'f6', name: 'Reis (ungekocht)', calories: 350, protein: 7, carbs: 77, fat: 0.6, servingSize: 100, isCustom: false },
+  { id: 'f7', name: 'Erdnussbutter', calories: 620, protein: 25, carbs: 13, fat: 50, servingSize: 100, isCustom: false },
+  { id: 'f8', name: 'Banane', calories: 90, protein: 1.1, carbs: 20, fat: 0.2, servingSize: 100, isCustom: false }
+];
+if (!db.foodLibrary || db.foodLibrary.length === 0) db.foodLibrary = DEFAULT_FOODS;
 
 const DEFAULT_EXERCISES = [
   { id: 'e1',  name: 'Bankdrücken',     category: 'Brust' },
@@ -130,6 +143,9 @@ function save() {
   
   if (typeof syncProfileUpdate === 'function') {
     syncProfileUpdate();
+  }
+  if (typeof syncNutritionGoalsUpdate === 'function') {
+    syncNutritionGoalsUpdate();
   }
   
   if (typeof detectAndSyncChanges === 'function') {
