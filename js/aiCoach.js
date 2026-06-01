@@ -1028,6 +1028,11 @@ async function requestGeminiAi(latestMessage) {
   // Add all history messages except the very last user message (which we will append with context)
   for (let i = 0; i < aiChatHistory.length - 1; i++) {
     const msg = aiChatHistory[i];
+    // Gemini API requires the conversation history to start with a 'user' turn.
+    // If the first message in the history is the default coach welcome message, we skip it.
+    if (i === 0 && msg.role === 'coach') {
+      continue;
+    }
     contents.push({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.text }]
