@@ -606,6 +606,28 @@ function compileAiContext(provider = aiProvider) {
     context += `Noch kein Training absolviert.\n`;
   }
   
+  // Nutrition & Calories context
+  context += `\nERNÄHRUNG & KALORIEN ZIELE:\n`;
+  if (db.nutritionGoals) {
+    context += `- Tägliches Ziel: ${db.nutritionGoals.calories || 2000} kcal (Protein: ${db.nutritionGoals.protein || 150}g, Kohlenhydrate: ${db.nutritionGoals.carbs || 200}g, Fett: ${db.nutritionGoals.fat || 70}g)\n`;
+  }
+  if (db.mealPlanText) {
+    context += `- Aktiver Ernährungsplan:\n"${db.mealPlanText}"\n`;
+  }
+  
+  context += `\nLETZTE ERNÄHRUNGS-LOGS (Ernährungsverlauf):\n`;
+  if (db.nutritionLog && db.nutritionLog.length > 0) {
+    // Sort by date desc
+    const sortedLogs = [...db.nutritionLog]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 20); // last 20 logged food entries
+    sortedLogs.forEach(l => {
+      context += `- Datum: ${l.date}, Mahlzeit: ${l.timeOfDay}, Name: "${l.name}", Menge: ${l.grams}g/port, Nährwerte: ${l.calories} kcal (${l.protein}g P, ${l.carbs}g K, ${l.fat}g F)\n`;
+    });
+  } else {
+    context += `Noch keine Lebensmittel geloggt.\n`;
+  }
+
   return context;
 }
 
@@ -1693,3 +1715,11 @@ function autoResizeChatInput() {
   input.style.height = 'auto';
   input.style.height = input.scrollHeight + 'px';
 }
+
+function askCoachAboutNutrition() {
+  openAiCoach();
+  setTimeout(() => {
+    triggerAiPreset('nutrition');
+  }, 300);
+}
+window.askCoachAboutNutrition = askCoachAboutNutrition;

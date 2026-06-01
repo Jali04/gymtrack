@@ -679,9 +679,27 @@ function renderMealPlans() {
     `;
   }
 
+  const aiCoachCardHtml = `
+    <div class="card" style="margin-top:16px; background: linear-gradient(135deg, rgba(155,92,246,0.12), rgba(232,255,71,0.04)); border: 1px solid rgba(155,92,246,0.25); border-radius: 14px; padding: 14px; cursor:pointer;" onclick="askCoachAboutNutrition()">
+      <div style="display:flex; gap:12px; align-items:flex-start;">
+        <div style="font-size:24px; line-height:1; flex-shrink:0; filter:drop-shadow(0 2px 8px rgba(155,92,246,0.4));">🤖</div>
+        <div>
+          <div style="font-size:10px; text-transform:uppercase; font-weight:700; letter-spacing:0.8px; color:var(--accent2);">AI Coach · Ernährung</div>
+          <p style="font-size:13px; line-height:1.45; color:var(--text); margin:6px 0 0 0; font-family:'DM Sans', sans-serif;">
+            ${lang === 'de' 
+              ? 'Lass deinen Coach deinen Ernährungsplan analysieren und optimieren oder erstelle einen neuen Plan basierend auf deiner Gewichtsentwicklung!'
+              : 'Let your Coach analyze and optimize your nutrition plan or create a new plan based on your weight progress!'}
+          </p>
+          <div style="font-size:11.5px; font-weight:600; color:var(--accent); margin-top:8px;">${lang === 'de' ? 'Plan optimieren ➔' : 'Optimize Plan ➔'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
   container.innerHTML = `
     ${targetSummaryHtml}
     ${planEditorHtml}
+    ${aiCoachCardHtml}
   `;
 }
 window.renderMealPlans = renderMealPlans;
@@ -717,3 +735,243 @@ document.addEventListener('click', (e) => {
     dropdown.style.display = 'none';
   }
 });
+
+// ---------------------------------------------
+// DAILY GOALS CALCULATOR (Harris-Benedict / Mifflin-St Jeor)
+// ---------------------------------------------
+function toggleGoalsCalculator() {
+  const box = document.getElementById('goalsCalculatorBox');
+  if (!box) return;
+  const isVisible = box.style.display !== 'none';
+  box.style.display = isVisible ? 'none' : 'block';
+  
+  const btn = document.getElementById('btnToggleGoalCalc');
+  if (btn) {
+    btn.textContent = isVisible ? '🤖 Kalorienbedarf berechnen' : '🤖 Berechner ausblenden';
+  }
+
+  // Pre-fill weight if available in db.measurements
+  if (!isVisible && db.measurements && db.measurements.length > 0) {
+    const sorted = [...db.measurements].sort((a,b) => new Date(b.date) - new Date(a.date));
+    if (sorted[0] && !document.getElementById('calcWeight').value) {
+      document.getElementById('calcWeight').value = sorted[0].weight;
+    }
+  }
+}
+window.toggleGoalsCalculator = toggleGoalsCalculator;
+
+function calculateAiGoals() {
+  const weight = parseFloat(document.getElementById('calcWeight').value);
+  const height = parseFloat(document.getElementById('calcHeight').value);
+  const age = parseInt(document.getElementById('calcAge').value);
+  const gender = document.getElementById('calcGender').value;
+  const activity = document.getElementById('calcActivity').value;
+  const goal = document.getElementById('calcGoal').value;
+
+  if (!weight || !height || !age) {
+    alert(lang === 'de' ? 'Bitte gib Gewicht, Größe und Alter ein.' : 'Please enter weight, height, and age.');
+    return;
+  }
+
+  // Mifflin-St Jeor Formula
+  let bmr = 0;
+  if (gender === 'male') {
+    bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+  } else {
+    bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+  }
+
+  // Activity multiplier
+  const activityMultipliers = {
+    sedentary: 1.2,
+    light: 1.375,
+    moderate: 1.55,
+    active: 1.725
+  };
+  const multiplier = activityMultipliers[activity] || 1.2;
+  let tdee = bmr * multiplier;
+
+  // Calorie deficit/surplus adjustment
+  let targetCal = tdee;
+  if (goal === 'lose') {
+    targetCal -= 500;
+  } else if (goal === 'gain') {
+    targetCal += 300;
+  }
+
+  targetCal = Math.max(1200, Math.round(targetCal)); // Floor floor limit
+
+  // Macro split rules (fitness recommended)
+  const targetProt = Math.round(weight * 2.0); // 2g per kg
+  const targetFat = Math.round(weight * 0.9);   // 0.9g per kg
+
+  const protKcal = targetProt * 4;
+  const fatKcal = targetFat * 9;
+  const remainingKcal = targetCal - (protKcal + fatKcal);
+  const targetCarb = Math.max(50, Math.round(remainingKcal / 4)); // Carbs floor
+
+  // Assign inputs
+  document.getElementById('nutriGoalCal').value = targetCal;
+  document.getElementById('nutriGoalProt').value = targetProt;
+  document.getElementById('nutriGoalCarb').value = targetCarb;
+  document.getElementById('nutriGoalFat').value = targetFat;
+
+  toggleGoalsCalculator();
+  if (typeof haptic === 'function') haptic('success');
+  
+  alert(lang === 'de' 
+    ? `Empfehlungen berechnet!\nKalorien: ${targetCal} kcal\nProtein: ${targetProt}g\nKohlenhydrate: ${targetCarb}g\nFett: ${targetFat}g` 
+    : `Recommendations calculated!\nCalories: ${targetCal} kcal\nProtein: ${targetProt}g\nCarbs: ${targetCarb}g\nFat: ${targetFat}g`
+  );
+}
+window.calculateAiGoals = calculateAiGoals;
+
+// ---------------------------------------------
+// BARCODE SCANNER (html5-qrcode + Open Food Facts API)
+// ---------------------------------------------
+let html5QrScanner = null;
+
+function openBarcodeScanner() {
+  closeModal('nutritionFoodModal');
+  openModal('barcodeScannerModal');
+  
+  const statusEl = document.getElementById('barcodeStatus');
+  if (statusEl) {
+    statusEl.textContent = (lang === 'de') ? 'Kamera wird gestartet...' : 'Starting camera...';
+    statusEl.style.color = 'var(--muted)';
+  }
+
+  if (typeof Html5Qrcode === 'undefined') {
+    if (statusEl) {
+      statusEl.textContent = (lang === 'de') 
+        ? 'Scanner-Bibliothek konnte nicht geladen werden. Bitte gib den Code manuell ein.' 
+        : 'Scanner library load failed. Please enter the barcode manually.';
+      statusEl.style.color = 'var(--accent2)';
+    }
+    return;
+  }
+
+  setTimeout(() => {
+    try {
+      html5QrScanner = new Html5Qrcode("barcodeReader");
+      html5QrScanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 280, height: 160 }
+        },
+        (decodedText, decodedResult) => {
+          stopBarcodeScanner();
+          closeModal('barcodeScannerModal');
+          openModal('nutritionFoodModal');
+          
+          if (typeof haptic === 'function') haptic('success');
+          lookupBarcode(decodedText);
+        },
+        (errorMessage) => {
+          // Scan in progress
+        }
+      ).then(() => {
+        if (statusEl) {
+          statusEl.textContent = (lang === 'de') 
+            ? 'Kamera aktiv. Halte den Barcode im Sucher.' 
+            : 'Camera active. Position barcode in the viewfinder.';
+          statusEl.style.color = 'var(--accent)';
+        }
+      }).catch(err => {
+        console.error("Barcode start failed:", err);
+        if (statusEl) {
+          statusEl.textContent = (lang === 'de') 
+            ? 'Kamerafehler. Bitte gib den Code manuell ein.' 
+            : 'Camera error. Please enter the barcode manually.';
+          statusEl.style.color = 'var(--accent2)';
+        }
+      });
+    } catch(e) {
+      console.error("Scanner setup failed", e);
+    }
+  }, 300);
+}
+window.openBarcodeScanner = openBarcodeScanner;
+
+function stopBarcodeScanner() {
+  if (html5QrScanner) {
+    html5QrScanner.stop().then(() => {
+      html5QrScanner = null;
+    }).catch(err => {
+      console.error("Error stopping scanner:", err);
+      html5QrScanner = null;
+    });
+  }
+}
+
+function closeBarcodeScanner() {
+  stopBarcodeScanner();
+  closeModal('barcodeScannerModal');
+  openModal('nutritionFoodModal');
+}
+window.closeBarcodeScanner = closeBarcodeScanner;
+
+function lookupBarcodeDirect() {
+  const code = document.getElementById('manualBarcodeVal').value.trim();
+  if (!code) {
+    alert(lang === 'de' ? 'Bitte gib einen Barcode ein.' : 'Please enter a barcode.');
+    return;
+  }
+  closeModal('barcodeScannerModal');
+  openModal('nutritionFoodModal');
+  lookupBarcode(code);
+}
+window.lookupBarcodeDirect = lookupBarcodeDirect;
+
+async function lookupBarcode(barcode) {
+  const isDe = (lang === 'de');
+  showToast(isDe ? 'Suche Produkt in Open Food Facts...' : 'Searching Open Food Facts...');
+
+  try {
+    const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data && data.status === 1 && data.product) {
+      const p = data.product;
+      const name = p.product_name_de || p.product_name || p.product_name_en || (isDe ? 'Unbekanntes Produkt' : 'Unknown Product');
+      
+      const nut = p.nutriments || {};
+      
+      let kcal = nut['energy-kcal_100g'] || nut['energy-kcal'] || 0;
+      if (!kcal && nut['energy_100g']) {
+        kcal = Math.round(nut['energy_100g'] / 4.184);
+      }
+      
+      const protein = nut.proteins_100g || nut.proteins || 0;
+      const carbs = nut.carbohydrates_100g || nut.carbohydrates || 0;
+      const fat = nut.fat_100g || nut.fat || 0;
+
+      // Fill modal inputs
+      document.getElementById('nutriFoodName').value = name;
+      document.getElementById('nutriFoodCal100').value = Math.round(kcal);
+      document.getElementById('nutriFoodProt100').value = Math.round(protein * 10) / 10;
+      document.getElementById('nutriFoodCarb100').value = Math.round(carbs * 10) / 10;
+      document.getElementById('nutriFoodFat100').value = Math.round(fat * 10) / 10;
+      document.getElementById('nutriFoodAmount').value = '100';
+      document.getElementById('nutriFoodUnit').value = 'g';
+
+      recalcFoodModalMacros();
+      showToast(isDe ? 'Produkt erfolgreich geladen!' : 'Product loaded successfully!');
+      if (typeof haptic === 'function') haptic('success');
+    } else {
+      alert(isDe 
+        ? `Produkt nicht gefunden (Code: ${barcode}). Bitte trage die Nährwerte manuell ein.` 
+        : `Product not found (Code: ${barcode}). Please enter values manually.`
+      );
+    }
+  } catch(e) {
+    console.error("Failed to lookup barcode", e);
+    alert(isDe 
+      ? 'Fehler bei der Produktsuche. Netzwerkverbindung prüfen.' 
+      : 'Product search failed. Check network connection.'
+    );
+  }
+}
+window.lookupBarcode = lookupBarcode;
