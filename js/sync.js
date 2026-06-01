@@ -217,6 +217,8 @@ const SYNC_MAPPINGS = {
       carbs: Number(item.carbs),
       fat: Number(item.fat),
       grams: Number(item.grams),
+      logged_amount: item.loggedAmount != null ? Number(item.loggedAmount) : null,
+      logged_unit: item.loggedUnit || 'g',
       updated_at: Number(item.updated_at || Date.now())
     }),
     toLocal: dbItem => ({
@@ -229,6 +231,8 @@ const SYNC_MAPPINGS = {
       carbs: Number(dbItem.carbs),
       fat: Number(dbItem.fat),
       grams: Number(dbItem.grams),
+      loggedAmount: dbItem.logged_amount != null ? Number(dbItem.logged_amount) : null,
+      loggedUnit: dbItem.logged_unit || 'g',
       updated_at: Number(dbItem.updated_at)
     }),
     getLocalId: item => item.id,

@@ -204,7 +204,15 @@ function renderCalories() {
     if (meal.items.length > 0) {
       meal.items.forEach(item => {
         const foodMacrosStr = `${Math.round(item.protein)}P · ${Math.round(item.carbs)}C · ${Math.round(item.fat)}F`;
-        const sizeStr = item.grams ? `${item.grams}g` : '1 Portion';
+        let sizeStr = '';
+        if (item.loggedAmount && item.loggedUnit) {
+          const uLabel = (lang === 'de') ? 
+            (item.loggedUnit === 'pcs' ? 'Stück' : item.loggedUnit === 'tbsp' ? 'EL' : item.loggedUnit === 'tsp' ? 'TL' : item.loggedUnit === 'portion' ? 'Portion(en)' : item.loggedUnit) :
+            (item.loggedUnit === 'pcs' ? 'pcs' : item.loggedUnit === 'tbsp' ? 'tbsp' : item.loggedUnit === 'tsp' ? 'tsp' : item.loggedUnit === 'portion' ? 'serving(s)' : item.loggedUnit);
+          sizeStr = `${item.loggedAmount} ${uLabel} (${Math.round(item.grams)}g)`;
+        } else {
+          sizeStr = item.grams ? `${item.grams}g` : '1 Portion';
+        }
         foodLogHtml += `
           <div class="food-log-item" onclick="openEditLoggedFood('${item.id}')">
             <div>
@@ -314,6 +322,135 @@ window.saveNutritionGoals = saveNutritionGoals;
 // ---------------------------------------------
 // FOOD LOG MODAL ACTIONS & AUTOCOMPLETE
 // ---------------------------------------------
+function _getUnitWeightInGrams(foodName, unit) {
+  const nameLower = (foodName || '').toLowerCase();
+  switch (unit) {
+    case 'g':
+    case 'ml':
+      return 1;
+    case 'kg':
+      return 1000;
+    case 'tbsp': // Esslöffel
+      return 15;
+    case 'tsp': // Teelöffel
+      return 5;
+    case 'portion':
+      return 100;
+    case 'pcs': // Stück
+      if (nameLower.includes('ei') && !nameLower.includes('eiweiß') && !nameLower.includes('eis')) {
+        return 60; // 1 Ei = 60g
+      }
+      if (nameLower.includes('egg')) {
+        return 60;
+      }
+      if (nameLower.includes('banan')) {
+        return 120; // Banane
+      }
+      if (nameLower.includes('apfel') || nameLower.includes('apple')) {
+        return 150; // Apfel
+      }
+      if (nameLower.includes('scheibe') || nameLower.includes('slice')) {
+        return 35; // Brot / Käsescheibe
+      }
+      if (nameLower.includes('tomate')) {
+        return 80;
+      }
+      if (nameLower.includes('kartoffel') || nameLower.includes('potato')) {
+        return 100;
+      }
+      return 50; // Default piece weight
+    default:
+      return 1;
+  }
+}
+window._getUnitWeightInGrams = _getUnitWeightInGrams;
+
+function renderRecentFoodsInModal() {
+  const section = document.getElementById('recentFoodsSection');
+  const listContainer = document.getElementById('recentFoodsList');
+  if (!section || !listContainer) return;
+
+  const logs = db.nutritionLog || [];
+  if (logs.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  // Get unique foods by name, sorted by recency
+  const uniqueFoods = [];
+  const namesSeen = new Set();
+  
+  const sortedLogs = [...logs].sort((a, b) => {
+    const timeA = a.updated_at || 0;
+    const timeB = b.updated_at || 0;
+    return timeB - timeA;
+  });
+
+  for (const log of sortedLogs) {
+    const nameNorm = log.name.trim().toLowerCase();
+    if (!namesSeen.has(nameNorm)) {
+      namesSeen.add(nameNorm);
+      uniqueFoods.push(log);
+      if (uniqueFoods.length >= 6) break;
+    }
+  }
+
+  if (uniqueFoods.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  let html = '';
+  uniqueFoods.forEach(food => {
+    const grams = food.grams || 100;
+    const factor = grams / 100;
+    const cal100 = Math.round(food.calories / factor);
+    const prot100 = Math.round((food.protein / factor) * 10) / 10;
+    const carb100 = Math.round((food.carbs / factor) * 10) / 10;
+    const fat100 = Math.round((food.fat / factor) * 10) / 10;
+    const unit = food.loggedUnit || 'g';
+    const amount = food.loggedAmount || grams;
+
+    const payload = {
+      name: food.name,
+      cal100,
+      prot100,
+      carb100,
+      fat100,
+      unit,
+      amount
+    };
+
+    const payloadStr = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    html += `
+      <div class="recent-food-chip" onclick="selectRecentFood('${payloadStr}')" style="background:var(--surface2); border:1px solid var(--border); border-radius:18px; padding:6px 12px; font-size:12px; color:var(--text); cursor:pointer; font-weight:600; display:flex; align-items:center; gap:4px; transition:all 0.2s; white-space:nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span>🕒</span> ${food.name}
+      </div>
+    `;
+  });
+
+  listContainer.innerHTML = html;
+  section.style.display = 'block';
+}
+window.renderRecentFoodsInModal = renderRecentFoodsInModal;
+
+function selectRecentFood(payloadStr) {
+  try {
+    const food = JSON.parse(decodeURIComponent(escape(atob(payloadStr))));
+    document.getElementById('nutriFoodName').value = food.name;
+    document.getElementById('nutriFoodCal100').value = food.cal100;
+    document.getElementById('nutriFoodProt100').value = food.prot100;
+    document.getElementById('nutriFoodCarb100').value = food.carb100;
+    document.getElementById('nutriFoodFat100').value = food.fat100;
+    document.getElementById('nutriFoodUnit').value = food.unit || 'g';
+    document.getElementById('nutriFoodAmount').value = food.amount || 100;
+    recalcFoodModalMacros();
+  } catch(e) {
+    console.error("Failed to parse recent food", e);
+  }
+}
+window.selectRecentFood = selectRecentFood;
+
 function openNutritionFoodModal(mealKey) {
   editingLoggedFoodId = null;
   
@@ -340,6 +477,7 @@ function openNutritionFoodModal(mealKey) {
     dropdown.style.display = 'none';
   }
 
+  renderRecentFoodsInModal();
   recalcFoodModalMacros();
   openModal('nutritionFoodModal');
 }
@@ -355,10 +493,10 @@ function openEditLoggedFood(logId) {
   document.getElementById('nutriFoodMeal').value = logItem.timeOfDay || 'breakfast';
   document.getElementById('nutriFoodName').value = logItem.name;
   
-  const amount = logItem.grams || 100;
+  const amount = logItem.loggedAmount || logItem.grams || 100;
+  const unit = logItem.loggedUnit || 'g';
   const libItem = (db.foodLibrary || []).find(f => f.name.toLowerCase() === logItem.name.toLowerCase());
   
-  let unit = 'g';
   let perCal = 0;
   let perProt = 0;
   let perCarb = 0;
@@ -369,12 +507,10 @@ function openEditLoggedFood(logId) {
     perProt = libItem.protein;
     perCarb = libItem.carbs;
     perFat = libItem.fat;
-    if (libItem.servingSize === 1) {
-      unit = 'pcs';
-    }
   } else {
-    unit = 'g';
-    const factor = amount / 100;
+    const unitWeight = _getUnitWeightInGrams(logItem.name, unit);
+    const totalGrams = amount * unitWeight;
+    const factor = totalGrams / 100;
     if (factor > 0) {
       perCal = Math.round(logItem.calories / factor);
       perProt = Math.round((logItem.protein / factor) * 10) / 10;
@@ -408,6 +544,10 @@ function openEditLoggedFood(logId) {
     dropdown.innerHTML = '';
     dropdown.style.display = 'none';
   }
+
+  // Hide recent foods section when editing
+  const recentSec = document.getElementById('recentFoodsSection');
+  if (recentSec) recentSec.style.display = 'none';
 
   recalcFoodModalMacros();
   openModal('nutritionFoodModal');
@@ -476,7 +616,8 @@ function selectAutocompleteFood(itemStr) {
 window.selectAutocompleteFood = selectAutocompleteFood;
 
 function recalcFoodModalMacros() {
-  const amount = parseFloat(document.getElementById('nutriFoodAmount').value) || 100;
+  const name = document.getElementById('nutriFoodName').value.trim();
+  const amount = parseFloat(document.getElementById('nutriFoodAmount').value) || 0;
   const unit = document.getElementById('nutriFoodUnit').value;
 
   const cal100 = parseFloat(document.getElementById('nutriFoodCal100').value) || 0;
@@ -484,10 +625,9 @@ function recalcFoodModalMacros() {
   const carb100 = parseFloat(document.getElementById('nutriFoodCarb100').value) || 0;
   const fat100 = parseFloat(document.getElementById('nutriFoodFat100').value) || 0;
 
-  let factor = amount / 100;
-  if (unit === 'pcs') {
-    factor = amount;
-  }
+  const unitWeight = _getUnitWeightInGrams(name, unit);
+  const totalGrams = amount * unitWeight;
+  const factor = totalGrams / 100;
 
   const totalCals = Math.round(cal100 * factor);
   const totalProt = Math.round(prot100 * factor * 10) / 10;
@@ -497,9 +637,47 @@ function recalcFoodModalMacros() {
   const summary = document.getElementById('nutriFoodTotalSummary');
   if (summary) {
     const isDe = (lang === 'de');
+    
+    let unitLabel = unit;
+    if (isDe) {
+      if (unit === 'g') unitLabel = 'g';
+      else if (unit === 'pcs') unitLabel = 'Stück';
+      else if (unit === 'tbsp') unitLabel = 'EL';
+      else if (unit === 'tsp') unitLabel = 'TL';
+      else if (unit === 'ml') unitLabel = 'ml';
+      else if (unit === 'portion') unitLabel = 'Portion(en)';
+      else if (unit === 'kg') unitLabel = 'kg';
+    } else {
+      if (unit === 'pcs') unitLabel = 'pcs';
+      else if (unit === 'tbsp') unitLabel = 'tbsp';
+      else if (unit === 'tsp') unitLabel = 'tsp';
+      else if (unit === 'portion') unitLabel = 'serving(s)';
+    }
+
+    let approxGramsText = '';
+    if (unit !== 'g') {
+      approxGramsText = ` (${amount} ${unitLabel} ≈ ${Math.round(totalGrams)}g)`;
+    }
+
     summary.innerHTML = isDe 
-      ? `Gesamt: <strong>${totalCals} kcal</strong> (${totalProt}g P · ${totalCarb}g K · ${totalFat}g F)`
-      : `Total: <strong>${totalCals} kcal</strong> (${totalProt}g P · ${totalCarb}g C · ${totalFat}g F)`;
+      ? `Gesamt: <strong>${totalCals} kcal</strong>${approxGramsText} (${totalProt}g P · ${totalCarb}g K · ${totalFat}g F)`
+      : `Total: <strong>${totalCals} kcal</strong>${approxGramsText} (${totalProt}g P · ${totalCarb}g C · ${totalFat}g F)`;
+  }
+
+  // Update per-unit header label
+  const perLabel = document.getElementById('lblNutriMacrosPer100');
+  if (perLabel) {
+    const isDe2 = (lang === 'de');
+    const unitLabels = {
+      g:       isDe2 ? 'Nährwerte pro 100g'             : 'Nutritional values per 100g',
+      ml:      isDe2 ? 'Nährwerte pro 100ml'            : 'Nutritional values per 100ml',
+      kg:      isDe2 ? 'Nährwerte pro 100g'             : 'Nutritional values per 100g',
+      pcs:     isDe2 ? 'Nährwerte pro Stück'            : 'Nutritional values per piece',
+      tbsp:    isDe2 ? 'Nährwerte pro Esslöffel (15g)'  : 'Nutritional values per tbsp (15g)',
+      tsp:     isDe2 ? 'Nährwerte pro Teelöffel (5g)'   : 'Nutritional values per tsp (5g)',
+      portion: isDe2 ? 'Nährwerte pro Portion (100g)'   : 'Nutritional values per serving (100g)'
+    };
+    perLabel.textContent = unitLabels[unit] || (isDe2 ? 'Nährwerte pro 100g / Portion' : 'Nutritional values per 100g / Serving');
   }
 }
 window.recalcFoodModalMacros = recalcFoodModalMacros;
@@ -520,10 +698,9 @@ function saveLoggedFood() {
   const carb100 = parseFloat(document.getElementById('nutriFoodCarb100').value) || 0;
   const fat100 = parseFloat(document.getElementById('nutriFoodFat100').value) || 0;
 
-  let factor = amount / 100;
-  if (unit === 'pcs') {
-    factor = amount;
-  }
+  const unitWeight = _getUnitWeightInGrams(name, unit);
+  const totalGrams = amount * unitWeight;
+  const factor = totalGrams / 100;
 
   const totalCals = Math.round(cal100 * factor);
   const totalProt = Math.round(prot100 * factor * 10) / 10;
@@ -544,7 +721,9 @@ function saveLoggedFood() {
         protein: totalProt,
         carbs: totalCarb,
         fat: totalFat,
-        grams: amount,
+        grams: totalGrams,
+        loggedAmount: amount,
+        loggedUnit: unit,
         updated_at: Date.now()
       };
     }
@@ -558,7 +737,9 @@ function saveLoggedFood() {
       protein: totalProt,
       carbs: totalCarb,
       fat: totalFat,
-      grams: amount,
+      grams: totalGrams,
+      loggedAmount: amount,
+      loggedUnit: unit,
       updated_at: Date.now()
     };
     if (!db.nutritionLog) db.nutritionLog = [];

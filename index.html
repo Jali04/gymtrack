@@ -495,16 +495,27 @@
         <div id="foodAutocompleteResults" class="autocomplete-suggestions" style="display:none;position:absolute;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto;z-index:999;"></div>
       </div>
 
+      <!-- Recent Foods Section -->
+      <div id="recentFoodsSection" style="margin-bottom: 12px; display: none;">
+        <div style="font-size:10px; color:var(--muted); font-weight:700; text-transform:uppercase; margin-bottom:6px;">Häufig / Zuletzt getrackt:</div>
+        <div id="recentFoodsList" style="display:flex; flex-wrap:wrap; gap:6px; max-height:80px; overflow-y:auto; padding:2px;"></div>
+      </div>
+
       <div style="display:flex;gap:12px;margin-bottom:12px;">
         <div class="form-group" style="flex:1;margin:0;">
           <label class="form-label" id="lblNutriFoodAmount">Menge</label>
           <input type="number" class="form-input" id="nutriFoodAmount" placeholder="100" oninput="recalcFoodModalMacros()">
         </div>
-        <div class="form-group" style="width:120px;margin:0;">
+        <div class="form-group" style="width:140px;margin:0;">
           <label class="form-label" id="lblNutriFoodUnit">Einheit</label>
           <select class="form-input" id="nutriFoodUnit" onchange="recalcFoodModalMacros()">
             <option value="g">Gramm (g)</option>
-            <option value="pcs">Portion</option>
+            <option value="pcs">Stück (pcs)</option>
+            <option value="tbsp">Esslöffel (EL)</option>
+            <option value="tsp">Teelöffel (TL)</option>
+            <option value="ml">Milliliter (ml)</option>
+            <option value="portion">Portion (Port.)</option>
+            <option value="kg">Kilogramm (kg)</option>
           </select>
         </div>
       </div>
