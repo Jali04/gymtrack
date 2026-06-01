@@ -44,7 +44,10 @@ function renderExercises(searchQuery = '', categoryFilter = 'all') {
   const CAT_ORDER = ['Brust', 'Rücken', 'Beine', 'Schultern', 'Arme', 'Core', 'Cardio', 'Dehnen'];
   categories.sort((a, b) => {
     const ia = CAT_ORDER.indexOf(a), ib = CAT_ORDER.indexOf(b);
-    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
   });
   
   list.innerHTML = categories.map(cat => {
@@ -79,16 +82,83 @@ function getProgressSummary(exId) {
   }
 }
 
+function populateCategoryDropdown(selectedValue) {
+  const select = document.getElementById('exCategory');
+  if (!select) return;
+
+  const standardCategories = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
+  
+  if (selectedValue && selectedValue !== 'new_custom' && !standardCategories.includes(selectedValue)) {
+    if (!db.customCategories) db.customCategories = {};
+    if (!db.customCategories[selectedValue]) {
+      db.customCategories[selectedValue] = 'strength';
+    }
+  }
+  
+  let html = '';
+  // Predefined categories
+  standardCategories.forEach(cat => {
+    html += `<option value="${cat}">${t('cats')[cat] || cat}</option>`;
+  });
+  
+  // Custom categories
+  if (db.customCategories) {
+    const sortedCustom = Object.keys(db.customCategories).sort();
+    sortedCustom.forEach(cat => {
+      if (!standardCategories.includes(cat)) {
+        html += `<option value="${cat}">${cat}</option>`;
+      }
+    });
+  }
+  
+  // Custom category trigger
+  html += `<option value="new_custom">${t('cats')['new_custom'] || '+ Neue Kategorie...'}</option>`;
+  
+  select.innerHTML = html;
+  select.value = selectedValue;
+}
+
+function onCategoryChange() {
+  const select = document.getElementById('exCategory');
+  const customGroup = document.getElementById('customCategoryGroup');
+  const hintGroup = document.getElementById('categoryHint');
+  if (!select) return;
+  
+  if (select.value === 'new_custom') {
+    if (customGroup) customGroup.style.display = 'block';
+    if (hintGroup) hintGroup.style.display = 'none';
+    const customNameInput = document.getElementById('customCategoryName');
+    if (customNameInput) {
+      customNameInput.value = '';
+      customNameInput.focus();
+    }
+    const customTypeSelect = document.getElementById('customCategoryType');
+    if (customTypeSelect) customTypeSelect.value = 'strength';
+  } else {
+    if (customGroup) customGroup.style.display = 'none';
+    if (hintGroup) hintGroup.style.display = 'block';
+  }
+  
+  updateCategoryHint();
+}
+
 function openAddExercise() {
   editingExId = null;
   document.getElementById('addExerciseTitle').textContent = t('newExercise');
   document.getElementById('exName').value     = '';
-  document.getElementById('exCategory').value = 'Brust';
+  
+  populateCategoryDropdown('Brust');
+  
   document.getElementById('exNotes').value    = '';
   document.getElementById('deleteExBtn').style.display = 'none';
   
   const container = document.getElementById('exerciseAiAnalysisContainer');
   if (container) container.style.display = 'none';
+
+  const customGroup = document.getElementById('customCategoryGroup');
+  if (customGroup) customGroup.style.display = 'none';
+  const hintGroup = document.getElementById('categoryHint');
+  if (hintGroup) hintGroup.style.display = 'block';
 
   updateCategoryHint();
   openModal('addExerciseModal');
@@ -99,9 +169,17 @@ function openEditExercise(id) {
   editingExId = id;
   document.getElementById('addExerciseTitle').textContent = t('editExercise');
   document.getElementById('exName').value     = ex.name;
-  document.getElementById('exCategory').value = ex.category;
+  
+  populateCategoryDropdown(ex.category);
+  
   document.getElementById('exNotes').value    = ex.notes || '';
   document.getElementById('deleteExBtn').style.display = 'block';
+  
+  const customGroup = document.getElementById('customCategoryGroup');
+  if (customGroup) customGroup.style.display = 'none';
+  const hintGroup = document.getElementById('categoryHint');
+  if (hintGroup) hintGroup.style.display = 'block';
+
   updateCategoryHint();
   _updateExerciseAiAnalysis(id);
   openModal('addExerciseModal');
@@ -109,9 +187,27 @@ function openEditExercise(id) {
 
 function saveExercise() {
   const name     = document.getElementById('exName').value.trim();
-  const category = document.getElementById('exCategory').value;
+  let category   = document.getElementById('exCategory').value;
   const notes    = document.getElementById('exNotes').value.trim();
   if (!name) { alert(t('enterName')); return; }
+  
+  if (category === 'new_custom') {
+    const customName = document.getElementById('customCategoryName').value.trim();
+    const customType = document.getElementById('customCategoryType').value;
+    if (!customName) {
+      alert(lang === 'de' ? 'Bitte Namen für die neue Kategorie eingeben!' : 'Please enter a name for the new category!');
+      return;
+    }
+    const standardCategories = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
+    if (standardCategories.includes(customName)) {
+      category = customName;
+    } else {
+      if (!db.customCategories) db.customCategories = {};
+      db.customCategories[customName] = customType;
+      category = customName;
+    }
+  }
+  
   let newId = null;
   if (editingExId) {
     const ex = getEx(editingExId);

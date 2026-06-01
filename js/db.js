@@ -7,7 +7,12 @@ const CAT_TYPE = {
   Arme: 'strength', Beine: 'strength', Core: 'strength',
   Cardio: 'cardio', Dehnen: 'stretch'
 };
-function getCatType(category) { return CAT_TYPE[category] || 'strength'; }
+function getCatType(category) {
+  if (db.customCategories && db.customCategories[category]) {
+    return db.customCategories[category];
+  }
+  return CAT_TYPE[category] || 'strength';
+}
 
 const TYPE_COLORS = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
 function getCatClass(type) {
@@ -27,6 +32,7 @@ if (!db.achievements) db.achievements = [];
 if (!db.weekStatus) db.weekStatus = { weekKey: 0, mode: 'normal' };
 if (!db.supplements) db.supplements = [];
 if (!db.supplementLog) db.supplementLog = [];
+if (!db.customCategories) db.customCategories = {};
 
 const DEFAULT_EXERCISES = [
   { id: 'e1',  name: 'Bankdrücken',     category: 'Brust' },

@@ -225,10 +225,37 @@ function openImportModal() {
   openModal('importModal');
 }
 
+function _registerCustomCategory(category) {
+  if (!category) return;
+  const standardCategories = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
+  if (!standardCategories.includes(category)) {
+    if (!db.customCategories) db.customCategories = {};
+    if (!db.customCategories[category]) {
+      let type = 'strength';
+      const catLower = category.toLowerCase();
+      if (catLower.includes('cardio') || catLower.includes('lauf') || catLower.includes('ausdauer') || catLower.includes('run') || catLower.includes('hiit') || catLower.includes('ausd')) {
+        type = 'cardio';
+      } else if (catLower.includes('dehnen') || catLower.includes('stretch') || catLower.includes('yoga') || catLower.includes('flex')) {
+        type = 'stretch';
+      }
+      db.customCategories[category] = type;
+    }
+  }
+}
+
 function _mergeImportedDb(imported) {
+  // Merge customCategories if present in the imported backup
+  if (imported.customCategories) {
+    if (!db.customCategories) db.customCategories = {};
+    Object.assign(db.customCategories, imported.customCategories);
+  }
+
   // Template-share format: {v:'t', t:{...}, e:[...]}
   if (imported.v === 't' && imported.t && imported.e) {
-    imported.e.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
+    imported.e.forEach(ex => {
+      _registerCustomCategory(ex.category);
+      if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex);
+    });
     if (!db.templates.find(x => x.id === imported.t.id)) db.templates.push(imported.t);
     save(); closeModal('importModal'); renderTemplates(); renderExercises();
     showToast(t('tmplImportSuccess'));
@@ -236,7 +263,10 @@ function _mergeImportedDb(imported) {
   }
   // Program-share format: {v:'p', p:{...}, t:[...], e:[...]}
   if (imported.v === 'p' && imported.p && imported.t && imported.e) {
-    imported.e.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
+    imported.e.forEach(ex => {
+      _registerCustomCategory(ex.category);
+      if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex);
+    });
     imported.t.forEach(tmpl => { if (!db.templates.find(x => x.id === tmpl.id)) db.templates.push(tmpl); });
     if (!db.programs) db.programs = [];
     if (!db.programs.find(x => x.id === imported.p.id)) db.programs.push(imported.p);
@@ -246,7 +276,10 @@ function _mergeImportedDb(imported) {
     return;
   }
   if (!imported.exercises || !imported.workouts) throw new Error('invalid');
-  imported.exercises.forEach(ex => { if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex); });
+  imported.exercises.forEach(ex => {
+    _registerCustomCategory(ex.category);
+    if (!db.exercises.find(e => e.id === ex.id)) db.exercises.push(ex);
+  });
   imported.workouts.forEach(w  => { if (!db.workouts.find(x  => x.id === w.id))  db.workouts.push(w); });
   if (imported.templates) {
     imported.templates.forEach(tmpl => { if (!db.templates.find(x => x.id === tmpl.id)) db.templates.push(tmpl); });
