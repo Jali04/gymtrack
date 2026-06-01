@@ -52,6 +52,29 @@ function switchProgressSubTab(subTabId) {
   localStorage.setItem('gymtrack_progress_subtab', subTabId);
 }
 
+function renderGymLabCategoryChips() {
+  const wrapper = document.getElementById('gymlabCategoryChipsWrapper');
+  if (!wrapper) return;
+
+  const standardCategories = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
+  const customCategories = db.customCategories ? Object.keys(db.customCategories) : [];
+  const allCategories = [...standardCategories, ...customCategories];
+
+  const currentFilter = window._gymlabCategoryFilter || 'all';
+
+  let html = `<div style="display: inline-flex; gap: 8px;">`;
+  html += `<button class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" data-cat="all" onclick="filterGymLabExercisesByCategory('all')">${t('allLabel') || 'Alle'}</button>`;
+  
+  allCategories.forEach(cat => {
+    const label = t('cats')[cat] || cat;
+    html += `<button class="filter-chip ${currentFilter === cat ? 'active' : ''}" data-cat="${cat}" onclick="filterGymLabExercisesByCategory('${cat}')">${label}</button>`;
+  });
+  
+  html += `</div>`;
+  wrapper.innerHTML = html;
+}
+window.renderGymLabCategoryChips = renderGymLabCategoryChips;
+
 function renderGymLab() {
   const savedTab = localStorage.getItem('gymtrack_gymlab_tab') || 'templates';
   
@@ -60,10 +83,7 @@ function renderGymLab() {
   window._gymlabSearchQuery = '';
   window._gymlabCategoryFilter = 'all';
   
-  // Reset active filter chip
-  document.querySelectorAll('.filter-chip').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.cat === 'all');
-  });
+  renderGymLabCategoryChips();
 
   renderTemplates();
   renderExercises();
@@ -135,7 +155,7 @@ document.addEventListener('touchstart', e => {
 
 document.addEventListener('touchend', e => {
   if (document.querySelector('.modal-overlay.open')) return;
-  if (e.target.closest('.qs-scroll-container') || e.target.closest('#quickStartTemplates') || e.target.closest('.horizontal-scroll') || e.target.closest('#monthlyRecap')) return;
+  if (e.target.closest('.qs-scroll-container') || e.target.closest('#quickStartTemplates') || e.target.closest('.horizontal-scroll') || e.target.closest('#monthlyRecap') || e.target.closest('.gymlab-category-chips-wrapper')) return;
   const dx = e.changedTouches[0].clientX - swipeStartX;
   const dy = e.changedTouches[0].clientY - swipeStartY;
   if (Date.now() - swipeStartTime > 400 || Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;

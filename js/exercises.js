@@ -222,6 +222,9 @@ function saveExercise() {
 
   save();
   closeModal('addExerciseModal');
+  if (typeof renderGymLabCategoryChips === 'function') {
+    renderGymLabCategoryChips();
+  }
   renderExercises();
   showToast(t('save') + ' ✓');
 
@@ -252,6 +255,9 @@ function deleteExercise() {
   db.exercises = db.exercises.filter(e => e.id !== editingExId);
   save();
   closeModal('addExerciseModal');
+  if (typeof renderGymLabCategoryChips === 'function') {
+    renderGymLabCategoryChips();
+  }
   renderExercises();
 }
 

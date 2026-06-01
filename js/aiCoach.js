@@ -87,7 +87,8 @@ CRITICAL PROTOCOLS:
    - "t" contains the day templates.
    - "e" contains any brand new exercises to register in their database first.
 
-4. SAFETY: Always encourage safe execution, warm-ups, and consulting a physician for medical conditions. Keep recommendations realistic.
+4. NUTRITION TARGETS: If the user context contains a specific daily calorie goal and macro split (e.g. 1500 kcal, 130g Protein, etc.), you MUST base your meal plans, nutrition calculations, and dietary recommendations exactly on these target values. Avoid advising standard 2000 kcal plans if their target is different.
+5. SAFETY: Always encourage safe execution, warm-ups, and consulting a physician for medical conditions. Keep recommendations realistic.
 `;
 
 const PERSONA_PROMPTS = {
@@ -610,6 +611,12 @@ function compileAiContext(provider = aiProvider) {
   context += `\nERNÄHRUNG & KALORIEN ZIELE:\n`;
   if (db.nutritionGoals) {
     context += `- Tägliches Ziel: ${db.nutritionGoals.calories || 2000} kcal (Protein: ${db.nutritionGoals.protein || 150}g, Kohlenhydrate: ${db.nutritionGoals.carbs || 200}g, Fett: ${db.nutritionGoals.fat || 70}g)\n`;
+    if (db.nutritionGoals.weight) {
+      const gLabel = db.nutritionGoals.gender === 'male' ? 'Männlich' : 'Weiblich';
+      const actLabels = { sedentary: 'Wenig Aktivität (sitzend)', light: 'Leichte Aktivität (1-3x Sport/Woche)', moderate: 'Mittlere Aktivität (3-5x Sport/Woche)', active: 'Sehr Aktiv (6-7x Sport/Woche)' };
+      const goalLabels = { '-500': 'Fettabbau (Kaloriendefizit -500 kcal)', '-300': 'Leichter Fettabbau (Defizit -300 kcal)', '0': 'Gewicht halten (Erhaltungskalorien)', '300': 'Leichter Muskelaufbau (Überschuss +300 kcal)', '500': 'Muskelaufbau (Überschuss +500 kcal)', 'custom': `Benutzerdefiniert (Offset: ${db.nutritionGoals.customGoalOffset || 0} kcal)` };
+      context += `- Körperdaten des Nutzers: Gewicht: ${db.nutritionGoals.weight} kg, Größe: ${db.nutritionGoals.height} cm, Alter: ${db.nutritionGoals.age} Jahre, Geschlecht: ${gLabel}, Aktivitätsniveau: ${actLabels[db.nutritionGoals.activity] || db.nutritionGoals.activity || 'Standard'}, Ziel-Einstellung: ${goalLabels[db.nutritionGoals.goal] || db.nutritionGoals.goal || 'Standard'}\n`;
+    }
   }
   if (db.mealPlanText) {
     context += `- Aktiver Ernährungsplan:\n"${db.mealPlanText}"\n`;
@@ -990,8 +997,9 @@ function triggerAiPreset(type) {
         : 'I haven\'t logged any workouts in the app yet. Give me tips on how to optimally design and track my first workout.';
     }
   } else if (type === 'nutrition') {
-    if (hasWeight) {
-      const latestWeight = db.measurements[0].weight;
+    const calcWeight = db.nutritionGoals && db.nutritionGoals.weight;
+    if (hasWeight || calcWeight) {
+      const latestWeight = hasWeight ? db.measurements[0].weight : calcWeight;
       msg = isDe
         ? `Erstelle mir einen personalisierten Ernährungsplan basierend auf meinem aktuellen Gewicht von ${latestWeight}kg und meinen Fitnesszielen.`
         : `Create a personalized nutrition plan for me based on my current weight of ${latestWeight}kg and my fitness goals.`;

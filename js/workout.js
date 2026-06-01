@@ -637,7 +637,26 @@ function _buildExPickerListHtml(query) {
     const type = getCatType(cat);
     const catClass = getCatClass(type);
     let exs = db.exercises.filter(e => e.category === cat);
-    if (q) exs = exs.filter(e => e.name.toLowerCase().includes(q));
+    if (q) {
+      exs = exs.filter(e => e.name.toLowerCase().includes(q));
+      
+      const getRelevanceScore = (name, query) => {
+        const n = name.toLowerCase();
+        const qy = query.toLowerCase();
+        if (n === qy) return 100;
+        if (n.startsWith(qy)) return 80;
+        const words = n.split(/[\s_-]+/);
+        if (words.some(w => w.startsWith(qy))) return 60;
+        if (n.includes(qy)) return 40;
+        return 0;
+      };
+
+      exs.sort((a, b) => {
+        const scoreA = getRelevanceScore(a.name, q);
+        const scoreB = getRelevanceScore(b.name, q);
+        return scoreB - scoreA;
+      });
+    }
     if (exs.length === 0) return '';
     return `<div style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">${catLabel}</div>` +
       exs.map(e => {

@@ -289,6 +289,33 @@ function openNutritionGoalsModal() {
   document.getElementById('nutriGoalProt').value = goals.protein || 150;
   document.getElementById('nutriGoalCarb').value = goals.carbs || 200;
   document.getElementById('nutriGoalFat').value = goals.fat || 70;
+
+  // Pre-fill the calculator fields from stored values
+  if (document.getElementById('calcWeight')) {
+    document.getElementById('calcWeight').value = goals.weight || '';
+  }
+  if (document.getElementById('calcHeight')) {
+    document.getElementById('calcHeight').value = goals.height || '';
+  }
+  if (document.getElementById('calcAge')) {
+    document.getElementById('calcAge').value = goals.age || '';
+  }
+  if (document.getElementById('calcGender')) {
+    document.getElementById('calcGender').value = goals.gender || 'male';
+  }
+  if (document.getElementById('calcActivity')) {
+    document.getElementById('calcActivity').value = goals.activity || 'sedentary';
+  }
+  if (document.getElementById('calcGoal')) {
+    document.getElementById('calcGoal').value = goals.goal || '-500';
+    if (typeof onCalcGoalChange === 'function') {
+      onCalcGoalChange(goals.goal || '-500');
+    }
+    if (goals.goal === 'custom' && document.getElementById('calcGoalCustom')) {
+      document.getElementById('calcGoalCustom').value = goals.customGoalOffset || '';
+    }
+  }
+
   openModal('nutritionGoalsModal');
 }
 window.openNutritionGoalsModal = openNutritionGoalsModal;
@@ -299,12 +326,31 @@ function saveNutritionGoals() {
   const carb = parseInt(document.getElementById('nutriGoalCarb').value) || 200;
   const fat = parseInt(document.getElementById('nutriGoalFat').value) || 70;
 
+  const weight = document.getElementById('calcWeight') ? parseFloat(document.getElementById('calcWeight').value) : null;
+  const height = document.getElementById('calcHeight') ? parseFloat(document.getElementById('calcHeight').value) : null;
+  const age = document.getElementById('calcAge') ? parseInt(document.getElementById('calcAge').value) : null;
+  const gender = document.getElementById('calcGender') ? document.getElementById('calcGender').value : null;
+  const activity = document.getElementById('calcActivity') ? document.getElementById('calcActivity').value : null;
+  const goal = document.getElementById('calcGoal') ? document.getElementById('calcGoal').value : null;
+
   db.nutritionGoals = {
     calories: kcal,
     protein: prot,
     carbs: carb,
     fat: fat
   };
+
+  if (weight) db.nutritionGoals.weight = weight;
+  if (height) db.nutritionGoals.height = height;
+  if (age) db.nutritionGoals.age = age;
+  if (gender) db.nutritionGoals.gender = gender;
+  if (activity) db.nutritionGoals.activity = activity;
+  if (goal) {
+    db.nutritionGoals.goal = goal;
+    if (goal === 'custom' && document.getElementById('calcGoalCustom')) {
+      db.nutritionGoals.customGoalOffset = parseInt(document.getElementById('calcGoalCustom').value) || 0;
+    }
+  }
 
   save();
   renderCalories();
@@ -391,7 +437,6 @@ function renderRecentFoodsInModal() {
     if (!namesSeen.has(nameNorm)) {
       namesSeen.add(nameNorm);
       uniqueFoods.push(log);
-      if (uniqueFoods.length >= 6) break;
     }
   }
 
@@ -678,6 +723,34 @@ function recalcFoodModalMacros() {
       portion: isDe2 ? 'Nährwerte pro Portion (100g)'   : 'Nutritional values per serving (100g)'
     };
     perLabel.textContent = unitLabels[unit] || (isDe2 ? 'Nährwerte pro 100g / Portion' : 'Nutritional values per 100g / Serving');
+  }
+
+  // Update contextual hint
+  const hintEl = document.getElementById('nutriMacroHint');
+  if (hintEl) {
+    const isDe3 = (lang === 'de');
+    if (unit === 'g') {
+      hintEl.textContent = isDe3
+        ? '💡 Diese Werte sind die Basis (pro 100g). Oben Menge & Einheit wählen — das Ergebnis wird automatisch umgerechnet.'
+        : '💡 These are base values (per 100g). Select amount & unit above — totals are calculated automatically.';
+    } else if (unit === 'pcs') {
+      const unitW = _getUnitWeightInGrams(name, 'pcs');
+      hintEl.textContent = isDe3
+        ? `💡 Gib oben die Anzahl ein (z.B. 4 Stück). 1 Stück ≈ ${unitW}g. Das Ergebnis unten wird automatisch berechnet.`
+        : `💡 Enter the count above (e.g. 4 pcs). 1 piece ≈ ${unitW}g. The total below is calculated automatically.`;
+    } else if (unit === 'tbsp') {
+      hintEl.textContent = isDe3
+        ? '💡 Gib oben die Anzahl Esslöffel ein. 1 EL ≈ 15g. Das Ergebnis wird automatisch umgerechnet.'
+        : '💡 Enter the number of tablespoons above. 1 tbsp ≈ 15g. The total is calculated automatically.';
+    } else if (unit === 'tsp') {
+      hintEl.textContent = isDe3
+        ? '💡 Gib oben die Anzahl Teelöffel ein. 1 TL ≈ 5g. Das Ergebnis wird automatisch umgerechnet.'
+        : '💡 Enter the number of teaspoons above. 1 tsp ≈ 5g. The total is calculated automatically.';
+    } else {
+      hintEl.textContent = isDe3
+        ? '💡 Diese Werte sind die Referenz-Nährwerte. Oben Menge & Einheit wählen — das Ergebnis wird automatisch umgerechnet.'
+        : '💡 These are reference nutritional values. Select amount & unit above — totals are calculated automatically.';
+    }
   }
 }
 window.recalcFoodModalMacros = recalcFoodModalMacros;

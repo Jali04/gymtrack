@@ -4,10 +4,19 @@
 <head>
   <script>
     window.onerror = function (msg, url, line, col, error) {
+      if (msg === "Script error." || !url || (line === 0 && col === 0)) {
+        console.warn("Ignored cross-origin script error:", msg, url, line, col);
+        return true;
+      }
       alert("JS Error: " + msg + "\nFile: " + url + "\nLine: " + line + ":" + col);
       return false;
     };
     window.onunhandledrejection = function (event) {
+      const reason = event.reason ? (event.reason.message || event.reason.toString()) : "";
+      if (reason.includes("sw.js") || reason.includes("ServiceWorker") || reason.includes("load failed")) {
+        console.warn("Ignored ServiceWorker promise rejection:", event.reason);
+        return;
+      }
       alert("Promise Rejection: " + event.reason);
     };
   </script>
@@ -179,17 +188,7 @@
 
     <!-- GymLab exercise category chips -->
     <div class="gymlab-category-chips-wrapper" id="gymlabCategoryChipsWrapper" style="display:none; margin-bottom: 16px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
-      <div style="display: inline-flex; gap: 8px;">
-        <button class="filter-chip active" data-cat="all" onclick="filterGymLabExercisesByCategory('all')">Alle</button>
-        <button class="filter-chip" data-cat="Brust" onclick="filterGymLabExercisesByCategory('Brust')">Brust</button>
-        <button class="filter-chip" data-cat="Rücken" onclick="filterGymLabExercisesByCategory('Rücken')">Rücken</button>
-        <button class="filter-chip" data-cat="Schultern" onclick="filterGymLabExercisesByCategory('Schultern')">Schultern</button>
-        <button class="filter-chip" data-cat="Arme" onclick="filterGymLabExercisesByCategory('Arme')">Arme</button>
-        <button class="filter-chip" data-cat="Beine" onclick="filterGymLabExercisesByCategory('Beine')">Beine</button>
-        <button class="filter-chip" data-cat="Core" onclick="filterGymLabExercisesByCategory('Core')">Core</button>
-        <button class="filter-chip" data-cat="Cardio" onclick="filterGymLabExercisesByCategory('Cardio')">Cardio</button>
-        <button class="filter-chip" data-cat="Dehnen" onclick="filterGymLabExercisesByCategory('Dehnen')">Dehnen</button>
-      </div>
+      <!-- Dynamically rendered by renderGymLabCategoryChips() -->
     </div>
 
     <!-- Templates -->
@@ -498,7 +497,7 @@
       <!-- Recent Foods Section -->
       <div id="recentFoodsSection" style="margin-bottom: 12px; display: none;">
         <div style="font-size:10px; color:var(--muted); font-weight:700; text-transform:uppercase; margin-bottom:6px;">Häufig / Zuletzt getrackt:</div>
-        <div id="recentFoodsList" style="display:flex; flex-wrap:wrap; gap:6px; max-height:80px; overflow-y:auto; padding:2px;"></div>
+        <div id="recentFoodsList" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto; padding:2px;"></div>
       </div>
 
       <div style="display:flex;gap:12px;margin-bottom:12px;">
@@ -522,7 +521,8 @@
 
       <!-- Custom values block -->
       <div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:rgba(255,255,255,0.01);margin-bottom:14px;">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;" id="lblNutriMacrosPer100">Nährwerte pro 100g / Portion</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;font-weight:600;" id="lblNutriMacrosPer100">Nährwerte pro 100g / Portion</div>
+        <div style="font-size:10px;color:var(--accent);margin-bottom:8px;font-style:italic;line-height:1.3;" id="nutriMacroHint">💡 Diese Werte sind die Basis (pro 100g). Oben Menge & Einheit wählen — das Ergebnis wird automatisch umgerechnet.</div>
         <div style="display:flex;gap:8px;">
           <div style="flex:1;">
             <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:2px;">Kcal</label>
@@ -541,11 +541,11 @@
             <input type="number" class="form-input" id="nutriFoodFat100" style="height:32px;font-size:13px;padding:0 8px;" oninput="recalcFoodModalMacros()">
           </div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:right;" id="nutriFoodTotalSummary">Gesamt: 0 kcal</div>
+        <div style="font-size:12px;color:var(--accent);margin-top:10px;text-align:right;font-weight:700;" id="nutriFoodTotalSummary">Gesamt: 0 kcal</div>
       </div>
 
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-secondary" id="btnDeleteLoggedFood" onclick="deleteLoggedFood()" style="margin:0;display:none;background:var(--accent2);color:white;border:none;">Löschen</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-secondary" id="btnDeleteLoggedFood" onclick="deleteLoggedFood()" style="margin:0;display:none;background:var(--accent2);color:white;border:none;width:48px;min-width:48px;padding:0;font-size:18px;border-radius:12px;flex-shrink:0;" title="Löschen">🗑️</button>
         <button class="btn btn-primary" onclick="saveLoggedFood()" style="margin:0;flex:1;" id="btnSaveLoggedFood">Speichern</button>
       </div>
     </div>
@@ -605,11 +605,11 @@
       <div id="customCategoryGroup" style="display:none; margin-bottom: 14px; border: 1px dashed var(--border); padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.01);">
         <div class="form-group" style="margin-bottom:10px;">
           <label class="form-label" id="lblCustomCategoryName" style="font-size:12px;color:var(--muted);">Kategorie-Name</label>
-          <input class="form-input" id="customCategoryName" placeholder="z.B. Bizeps oder CrossFit" style="height:38px;font-size:13px;">
+          <input class="form-input" id="customCategoryName" placeholder="z.B. Bizeps oder CrossFit" style="height:38px;font-size:13px;padding:0 12px;">
         </div>
         <div class="form-group" style="margin:0;">
           <label class="form-label" id="lblCustomCategoryType" style="font-size:12px;color:var(--muted);">Typ (für Trainings-Eingaben)</label>
-          <select class="form-input" id="customCategoryType" style="height:38px;font-size:13px;">
+          <select class="form-input" id="customCategoryType" style="height:38px;font-size:13px;padding:0 12px;">
             <option value="strength">🏋️ Kraft (Gewicht & Wiederholungen)</option>
             <option value="cardio">🏃 Ausdauer / Cardio (Kilometer & Zeit)</option>
             <option value="stretch">🧘 Dehnen (Minuten)</option>
@@ -1624,9 +1624,13 @@
         .then(reg => {
           _swReg = reg;
           // Proactively check for service worker updates
-          reg.update();
+          reg.update().catch(err => {
+            console.warn("ServiceWorker update check failed:", err);
+          });
         })
-        .catch(() => { });
+        .catch(err => {
+          console.warn("ServiceWorker registration failed:", err);
+        });
 
       // Force page reload when a new service worker takes over (claiming clients)
       let refreshing = false;

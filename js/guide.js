@@ -96,15 +96,47 @@ const TOUR_STEPS = {
     supps: [
       {
         page: 'supps',
-        target: '.supp-date-nav',
-        title: 'Schritt 1 von 2: Einnahmen protokollieren',
-        text: 'Deine heute fälligen Nahrungsergänzungsmittel werden hier angezeigt. Tippe auf ein Supplement, um die Einnahme abzuhaken.'
+        target: '#tabNutriSupplements',
+        title: 'Schritt 1 von 2: Supplements-Tab',
+        text: 'Im Ernährungs-Bereich findest du deine Supplements unter dem dritten Tab. Tippe auf ein Supplement, um die Einnahme abzuhaken.',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('supplements'); }
       },
       {
         page: 'supps',
         target: '#page-supps .btn-primary.btn-sm',
         title: 'Schritt 2 von 2: Supplement anlegen',
         text: 'Klicke auf das "+", um neue Supplements mit Dosierung, Restbestand und Erinnerungen (z.B. täglich oder bestimmte Wochentage) anzulegen.'
+      }
+    ],
+    nutrition: [
+      {
+        page: 'supps',
+        target: '#tabNutriCalories',
+        title: 'Schritt 1 von 4: Kalorien-Dashboard',
+        text: 'Im Kalorien-Tab siehst du dein tägliches Makro-Dashboard: Kalorien, Protein, Carbs und Fett. Tippe auf "⚙️ Ziele", um deine Tagesziele anzupassen oder automatisch berechnen zu lassen.',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
+      },
+      {
+        page: 'supps',
+        target: '.food-section-add-btn',
+        title: 'Schritt 2 von 4: Essen eintragen',
+        text: 'Tippe auf "+" neben einer Mahlzeit, um ein Lebensmittel einzutragen. Du kannst den Barcode scannen (Kamera oder manuell) — die Nährwerte werden automatisch aus Open Food Facts geladen!',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
+      },
+      {
+        page: 'supps',
+        target: '#nutriFoodUnit',
+        title: 'Schritt 3 von 4: Mengen & Einheiten',
+        text: 'Wähle die passende Einheit: Gramm, Stück, Esslöffel (EL), Teelöffel (TL), ml oder Portion. Die Nährwerte unten sind immer die Basis-Referenz (z.B. pro 100g). Das Ergebnis wird basierend auf deiner Menge automatisch umgerechnet!',
+        onEnter: () => { if (typeof openNutritionFoodModal === 'function') openNutritionFoodModal('breakfast'); },
+        onLeave: () => { if (typeof closeModal === 'function') closeModal('nutritionFoodModal'); }
+      },
+      {
+        page: 'supps',
+        target: '#tabNutriMealPlans',
+        title: 'Schritt 4 von 4: Ernährungsplan & AI Coach',
+        text: 'Unter "Pläne" kannst du deinen eigenen Ernährungsplan schreiben oder den AI Coach bitten, einen personalisierten Plan basierend auf deinen Zielen zu erstellen.',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('meal-plans'); }
       }
     ],
     progress: [
@@ -223,15 +255,47 @@ const TOUR_STEPS = {
     supps: [
       {
         page: 'supps',
-        target: '.supp-date-nav',
-        title: 'Step 1 of 2: Log Supplement Intake',
-        text: 'Active supplements due today are listed here. Tap any card to log your daily dosage.'
+        target: '#tabNutriSupplements',
+        title: 'Step 1 of 2: Supplements Tab',
+        text: 'In the Nutrition section, your supplements are under the third tab. Tap a supplement to log your daily intake.',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('supplements'); }
       },
       {
         page: 'supps',
         target: '#page-supps .btn-primary.btn-sm',
         title: 'Step 2 of 2: Create Supplements',
         text: 'Tap "+" to log new supplements, specify dosage, configure remaining supply, and set weekly/daily schedules.'
+      }
+    ],
+    nutrition: [
+      {
+        page: 'supps',
+        target: '#tabNutriCalories',
+        title: 'Step 1 of 4: Calorie Dashboard',
+        text: 'The Calories tab shows your daily macro dashboard: calories, protein, carbs, and fat. Tap "⚙️ Goals" to adjust targets or auto-calculate them based on your body stats.',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
+      },
+      {
+        page: 'supps',
+        target: '.food-section-add-btn',
+        title: 'Step 2 of 4: Log Food',
+        text: 'Tap "+" next to a meal to log food. You can scan a barcode (camera or manual entry) — nutritional values are auto-loaded from Open Food Facts!',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('calories'); }
+      },
+      {
+        page: 'supps',
+        target: '#nutriFoodUnit',
+        title: 'Step 3 of 4: Amounts & Units',
+        text: 'Choose the right unit: grams, pieces, tablespoon (tbsp), teaspoon (tsp), ml, or serving. The values below are always the base reference (e.g. per 100g). The result is automatically converted based on your amount!',
+        onEnter: () => { if (typeof openNutritionFoodModal === 'function') openNutritionFoodModal('breakfast'); },
+        onLeave: () => { if (typeof closeModal === 'function') closeModal('nutritionFoodModal'); }
+      },
+      {
+        page: 'supps',
+        target: '#tabNutriMealPlans',
+        title: 'Step 4 of 4: Meal Plans & AI Coach',
+        text: 'Under "Plans" you can write your own meal plan or ask the AI Coach to create a personalized plan based on your goals.',
+        onEnter: () => { if (typeof switchNutritionSubTab === 'function') switchNutritionSubTab('meal-plans'); }
       }
     ],
     progress: [
@@ -320,6 +384,7 @@ const GUIDE_TOUR_ITEMS = {
     { id: 'aicoach', icon: '🤖', title: 'AI Coach', text: 'Chatte mit dem Coach, um Pläne per Klick zu importieren.' },
     { id: 'calendar', icon: '📅', title: 'Kalender & Verlauf', text: 'Trainingskalender, Streaks, Verlauf bearbeiten und löschen.' },
     { id: 'supps', icon: '💊', title: 'Supplements', text: 'Tägliche Einnahmen planen, loggen und Vorrat verwalten.' },
+    { id: 'nutrition', icon: '🥗', title: 'Kalorien & Ernährung', text: 'Kalorien tracken, Barcode scannen, Makros berechnen, Ernährungspläne.' },
     { id: 'progress', icon: '📈', title: 'Fortschritt & Fotos', text: 'Gewichtsverlauf und PIN-gesicherte Progress-Fotos.' }
   ],
   en: [
@@ -328,6 +393,7 @@ const GUIDE_TOUR_ITEMS = {
     { id: 'aicoach', icon: '🤖', title: 'AI Coach', text: 'Chat with the coach to generate importable plans.' },
     { id: 'calendar', icon: '📅', title: 'Calendar & History', text: 'Streak calendars, workout history editing, and statistics.' },
     { id: 'supps', icon: '💊', title: 'Supplements', text: 'Schedule supplements intake and track stock.' },
+    { id: 'nutrition', icon: '🥗', title: 'Calories & Nutrition', text: 'Track calories, scan barcodes, calculate macros, manage meal plans.' },
     { id: 'progress', icon: '📈', title: 'Progress & Photos', text: 'Body weight trends and PIN-locked progress photos.' }
   ]
 };

@@ -417,6 +417,10 @@ select.form-input {
   padding-right: 40px !important;
   cursor: pointer;
 }
+select.form-input option {
+  background: var(--surface);
+  color: var(--text);
+}
 body.light-mode select.form-input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
@@ -593,6 +597,13 @@ body.modal-open {
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
   animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (max-width: 599px) {
+  #exercisePickerModal .modal,
+  #tmplExPickerModal .modal {
+    height: 85dvh;
+  }
 }
 
 @media (min-width: 600px) {

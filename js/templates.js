@@ -171,14 +171,35 @@ function _renderTmplExPickerList(query) {
     const type     = getCatType(cat);
     const catClass = getCatClass(type);
     let exs = db.exercises.filter(e => e.category === cat);
-    if (q) exs = exs.filter(e => e.name.toLowerCase().includes(q));
+    if (q) {
+      exs = exs.filter(e => e.name.toLowerCase().includes(q));
+      
+      const getRelevanceScore = (name, query) => {
+        const n = name.toLowerCase();
+        const qy = query.toLowerCase();
+        if (n === qy) return 100;
+        if (n.startsWith(qy)) return 80;
+        const words = n.split(/[\s_-]+/);
+        if (words.some(w => w.startsWith(qy))) return 60;
+        if (n.includes(qy)) return 40;
+        return 0;
+      };
+
+      exs.sort((a, b) => {
+        const scoreA = getRelevanceScore(a.name, q);
+        const scoreB = getRelevanceScore(b.name, q);
+        return scoreB - scoreA;
+      });
+    }
     if (exs.length === 0) return '';
     return `<div style="margin-bottom:8px;"><span class="cat-badge ${catClass}" style="font-size:11px;">${catLabel}</span></div>` +
       exs.map(e => {
         const alreadyIn = tmplExercises.includes(e.id);
-        return `<div class="picker-item${alreadyIn ? ' selected' : ''}" id="pickerItem_${e.id}" onclick="toggleTmplPickerItem('${e.id}', ${alreadyIn})">
+        const isPending = tmplPickerPending.includes(e.id);
+        const isSelected = alreadyIn || isPending;
+        return `<div class="picker-item${isSelected ? ' selected' : ''}" id="pickerItem_${e.id}" onclick="toggleTmplPickerItem('${e.id}', ${alreadyIn})">
           <div class="exercise-list-name" style="flex:1;">${e.name}</div>
-          <div class="picker-check" id="pickerCheck_${e.id}">${alreadyIn ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
+          <div class="picker-check" id="pickerCheck_${e.id}">${isSelected ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
         </div>`;
       }).join('');
   }).filter(Boolean).join('<div class="divider"></div>');
