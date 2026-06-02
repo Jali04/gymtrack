@@ -161,7 +161,10 @@ const TR = {
     libFoodSearchPlaceholder: 'Lebensmittel suchen...',
     libFoodNewBtn: '+ Neu',
     libFoodStandardBadge: 'Standard',
-    libFoodConfirmDelete: 'Lebensmittel wirklich aus der Bibliothek löschen?'
+    libFoodConfirmDelete: 'Lebensmittel wirklich aus der Bibliothek löschen?',
+    lblNutriFoodName: 'Name (tippen zum Suchen)',
+    nutriFoodNamePlaceholder: 'z.B. Haferflocken (tippen zum Suchen...)',
+    lblNutriFoodSearchHint: '💡 Tippe den Namen ein, um in der Lebensmittelliste zu suchen oder neu anzulegen.'
   },
   en: {
     navTraining: 'Workout', navGymLab: 'GymLab', navStats: 'Stats', navCalendar: 'Calendar', allLabel: 'All',
@@ -321,7 +324,10 @@ const TR = {
     libFoodSearchPlaceholder: 'Search foods...',
     libFoodNewBtn: '+ New',
     libFoodStandardBadge: 'Standard',
-    libFoodConfirmDelete: 'Really delete this food from library?'
+    libFoodConfirmDelete: 'Really delete this food from library?',
+    lblNutriFoodName: 'Name (type to search)',
+    nutriFoodNamePlaceholder: 'e.g. Oats (type to search...)',
+    lblNutriFoodSearchHint: '💡 Type the name to search from the food list or create new.'
   }
 };
 
@@ -432,6 +438,14 @@ function applyTranslations() {
   s('btnCancelLibFood', 'cancel');
   s('btnSaveLibFood', 'save');
   sp('libFoodName', 'libFoodNamePlaceholder');
+
+  // Logged Food search translation
+  s('lblNutriFoodName', 'lblNutriFoodName');
+  sp('nutriFoodName', 'nutriFoodNamePlaceholder');
+  s('lblNutriFoodSearchHint', 'lblNutriFoodSearchHint');
+  sp('foodLibSearch', 'libFoodSearchPlaceholder');
+  const btnNewLibFood = document.getElementById('btnNewLibFood');
+  if (btnNewLibFood) btnNewLibFood.title = t('libFoodNewBtn');
   const opt100 = document.querySelector('#libFoodServingType option[value="100"]');
   if (opt100) opt100.textContent = t('libFoodServing100');
   const opt1 = document.querySelector('#libFoodServingType option[value="1"]');

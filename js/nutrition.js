@@ -1312,12 +1312,13 @@ function renderFoodLibrary(searchQuery = '') {
 
   const searchVal = searchQuery || foodLibSearchQuery || '';
 
-  let html = `
-    <div class="search-wrapper" style="display:flex;gap:8px;margin-bottom:16px;align-items:center;width:100%;">
-      <input type="text" id="foodLibSearch" class="form-input" style="flex:1;height:42px;min-width:0;" placeholder="${t('libFoodSearchPlaceholder')}" value="${searchVal}" oninput="onFoodLibSearch(this.value)">
-      <button class="btn btn-primary" onclick="openCreateLibraryFoodModal()" style="margin:0;width:48px;height:42px;min-width:48px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;padding:0;" title="${t('libFoodNewBtn')}">+</button>
-    </div>
-  `;
+  // Synchronise input value without re-rendering the input element itself
+  const searchInput = document.getElementById('foodLibSearch');
+  if (searchInput && searchInput.value !== searchVal) {
+    searchInput.value = searchVal;
+  }
+
+  let html = '';
 
   if (filtered.length === 0) {
     html += `
