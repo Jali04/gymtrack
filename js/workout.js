@@ -693,12 +693,29 @@ function openExercisePicker() {
     bar.id = searchBarId;
     list.parentElement.insertBefore(bar, list);
   }
+
+  // Build category options including custom categories
+  const standardCategories = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
+  let quickAddCatOptions = '';
+  standardCategories.forEach(cat => {
+    quickAddCatOptions += `<option value="${cat}">${t('cats')[cat] || cat}</option>`;
+  });
+  if (db.customCategories) {
+    const sortedCustom = Object.keys(db.customCategories).sort();
+    sortedCustom.forEach(cat => {
+      if (!standardCategories.includes(cat)) {
+        quickAddCatOptions += `<option value="${cat}">${cat}</option>`;
+      }
+    });
+  }
+  quickAddCatOptions += `<option value="new_custom">${t('cats')['new_custom'] || '+ Neue Kategorie...'}</option>`;
+
   bar.innerHTML = `
     <input class="form-input picker-search" id="exPickerSearch" type="text" placeholder="${t('searchExercise')}" oninput="filterExercisePicker()" autocomplete="off">
     <div class="quick-add-row" id="exPickerQuickAdd">
       <input class="form-input quick-add-input" id="quickAddName" type="text" placeholder="${t('quickAddPlaceholder')}" autocomplete="off">
       <select class="form-input quick-add-cat" id="quickAddCat">
-        ${Object.keys(t('cats')).map(c => `<option value="${c}">${t('cats')[c]}</option>`).join('')}
+        ${quickAddCatOptions}
       </select>
       <button class="btn btn-primary quick-add-btn" onclick="quickAddExercise()">+</button>
     </div>
@@ -724,7 +741,11 @@ function quickAddExercise() {
   
   document.getElementById('exName').value = name;
   document.getElementById('exCategory').value = category;
-  if (typeof updateCategoryHint === 'function') updateCategoryHint();
+  if (typeof onCategoryChange === 'function') {
+    onCategoryChange();
+  } else if (typeof updateCategoryHint === 'function') {
+    updateCategoryHint();
+  }
   
   nameInput.value = '';
 }
