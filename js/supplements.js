@@ -231,6 +231,7 @@ function renderSupplements() {
           <div class="supp-supply-row">
             <div class="supp-supply-bar"><div class="supp-supply-fill${supplyWarn ? ' supply-low' : ''}" style="width:${supplyPct}%;"></div></div>
             <span class="supp-supply-text${supplyWarn ? ' supply-low-text' : ''}">${Math.round(supply)} ${s.dosageUnit} ${t('suppLeft')}</span>
+            <button class="supp-refill-btn" onclick="event.stopPropagation();refillSupplement('${s.id}')">🔄 ${t('suppRefill')}</button>
           </div>`;
       }
 
@@ -529,4 +530,31 @@ function deleteSupplement() {
   closeModal('supplementModal');
   renderSupplements();
   haptic('light');
+}
+
+function refillSupplement(id) {
+  const s = db.supplements.find(x => x.id === id);
+  if (!s) return;
+  
+  const defaultAmount = s.supplySize || 100;
+  const msg = lang === 'en' 
+    ? `Refill supply for ${s.name}? Enter amount to add (in ${s.dosageUnit}):` 
+    : `Vorrat für ${s.name} auffüllen? Menge zum Hinzufügen eingeben (in ${s.dosageUnit}):`;
+    
+  const amountStr = prompt(msg, defaultAmount);
+  if (amountStr === null) return; // User cancelled
+  
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) {
+    alert(lang === 'en' ? 'Invalid amount!' : 'Ungültige Menge!');
+    return;
+  }
+  
+  s.supplySize = (s.supplySize || 0) + amount;
+  s.updated_at = Date.now();
+  
+  save();
+  renderSupplements();
+  showToast((lang === 'en' ? 'Refilled: +' : 'Aufgefüllt: +') + amount + ' ' + s.dosageUnit + ' ✓');
+  haptic('success');
 }

@@ -132,7 +132,7 @@ const SYNC_MAPPINGS = {
       unit: item.unit || null,
       frequency: item.frequency || null,
       weekdays: item.weekdays || null,
-      supply: item.supply ? Number(item.supply) : null,
+      supply: item.supplySize ? Number(item.supplySize) : null,
       active: item.active !== false,
       updated_at: Number(item.updated_at || Date.now())
     }),
@@ -145,7 +145,7 @@ const SYNC_MAPPINGS = {
       unit: dbItem.unit,
       frequency: dbItem.frequency,
       weekdays: dbItem.weekdays,
-      supply: dbItem.supply ? Number(dbItem.supply) : null,
+      supplySize: dbItem.supply ? Number(dbItem.supply) : null,
       active: dbItem.active,
       updated_at: Number(dbItem.updated_at)
     }),

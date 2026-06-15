@@ -1782,6 +1782,32 @@ body.modal-open {
 .supp-supply-text.supply-low-text {
   color: var(--accent2);
 }
+.supp-refill-btn {
+  background: rgba(200, 241, 53, 0.08);
+  border: 1px solid rgba(200, 241, 53, 0.25);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  line-height: 1;
+  margin-left: 6px;
+}
+.supp-refill-btn:active {
+  transform: scale(0.95);
+  background: rgba(200, 241, 53, 0.18);
+}
+.supp-refill-btn:hover {
+  background: rgba(200, 241, 53, 0.15);
+  border-color: var(--accent);
+}
 .supp-color-dot {
   width: 28px;
   height: 28px;
