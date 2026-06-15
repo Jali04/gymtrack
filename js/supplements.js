@@ -417,7 +417,8 @@ function openEditSupplement(id) {
   document.getElementById('suppFreqValue').value = s.frequencyValue || 2;
   document.getElementById('suppTimeOfDay').value = s.timeOfDay || 'morgens';
   document.getElementById('suppNotes').value = s.notes || '';
-  document.getElementById('suppSupplySize').value = s.supplySize || '';
+  const remaining = _getSupplyRemaining(s);
+  document.getElementById('suppSupplySize').value = remaining !== null ? Math.round(remaining) : '';
   document.getElementById('deleteSuppBtn').style.display = 'block';
   document.getElementById('suppActive').checked = s.active !== false;
   _resetSuppColorPicker(s.color || SUPP_COLORS[0]);
@@ -490,6 +491,14 @@ function saveSupplement() {
   if (!name) { alert(t('enterName')); return; }
   const dosage = parseFloat(document.getElementById('suppDosage').value) || 1;
 
+  const inputSupply = parseFloat(document.getElementById('suppSupplySize').value) || 0;
+  let computedSupplySize = inputSupply;
+  if (inputSupply > 0) {
+    const suppId = editingSuppId || '';
+    const takenTotal = db.supplementLog.filter(l => l.supId === suppId && l.taken).length;
+    computedSupplySize = inputSupply + (takenTotal * dosage);
+  }
+
   const data = {
     name,
     form: document.getElementById('suppForm').value,
@@ -501,7 +510,7 @@ function saveSupplement() {
     frequencyDays: [..._selectedFreqDays],
     timeOfDay: document.getElementById('suppTimeOfDay').value,
     notes: document.getElementById('suppNotes').value.trim(),
-    supplySize: parseFloat(document.getElementById('suppSupplySize').value) || 0,
+    supplySize: computedSupplySize,
     active: document.getElementById('suppActive').checked,
     color: _selectedSuppColor
   };
@@ -550,7 +559,10 @@ function refillSupplement(id) {
     return;
   }
   
-  s.supplySize = (s.supplySize || 0) + amount;
+  const remaining = _getSupplyRemaining(s);
+  const newRemaining = (remaining || 0) + amount;
+  const takenTotal = db.supplementLog.filter(l => l.supId === s.id && l.taken).length;
+  s.supplySize = newRemaining + (takenTotal * s.dosage);
   s.updated_at = Date.now();
   
   save();
