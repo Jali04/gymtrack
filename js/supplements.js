@@ -91,7 +91,8 @@ function _wasDueOn(sup, date) {
 function _getSupplyRemaining(sup) {
   if (!sup.supplySize || sup.supplySize <= 0) return null;
   const takenTotal = db.supplementLog.filter(l => l.supId === sup.id && l.taken).length;
-  return Math.max(0, sup.supplySize - (takenTotal * sup.dosage));
+  const takenSinceRefill = Math.max(0, takenTotal - (sup.lastRefillTakenCount || 0));
+  return Math.max(0, sup.supplySize - (takenSinceRefill * sup.dosage));
 }
 
 function _getSuppStreak(supId) {
@@ -417,8 +418,7 @@ function openEditSupplement(id) {
   document.getElementById('suppFreqValue').value = s.frequencyValue || 2;
   document.getElementById('suppTimeOfDay').value = s.timeOfDay || 'morgens';
   document.getElementById('suppNotes').value = s.notes || '';
-  const remaining = _getSupplyRemaining(s);
-  document.getElementById('suppSupplySize').value = remaining !== null ? Math.round(remaining) : '';
+  document.getElementById('suppSupplySize').value = s.supplySize || '';
   document.getElementById('deleteSuppBtn').style.display = 'block';
   document.getElementById('suppActive').checked = s.active !== false;
   _resetSuppColorPicker(s.color || SUPP_COLORS[0]);
@@ -490,14 +490,7 @@ function saveSupplement() {
   const name = document.getElementById('suppName').value.trim();
   if (!name) { alert(t('enterName')); return; }
   const dosage = parseFloat(document.getElementById('suppDosage').value) || 1;
-
-  const inputSupply = parseFloat(document.getElementById('suppSupplySize').value) || 0;
-  let computedSupplySize = inputSupply;
-  if (inputSupply > 0) {
-    const suppId = editingSuppId || '';
-    const takenTotal = db.supplementLog.filter(l => l.supId === suppId && l.taken).length;
-    computedSupplySize = inputSupply + (takenTotal * dosage);
-  }
+  const newSupplySize = parseFloat(document.getElementById('suppSupplySize').value) || 0;
 
   const data = {
     name,
@@ -510,17 +503,26 @@ function saveSupplement() {
     frequencyDays: [..._selectedFreqDays],
     timeOfDay: document.getElementById('suppTimeOfDay').value,
     notes: document.getElementById('suppNotes').value.trim(),
-    supplySize: computedSupplySize,
+    supplySize: newSupplySize,
     active: document.getElementById('suppActive').checked,
     color: _selectedSuppColor
   };
 
   if (editingSuppId) {
     const s = db.supplements.find(x => x.id === editingSuppId);
-    if (s) Object.assign(s, data);
+    if (s) {
+      if (s.supplySize !== newSupplySize) {
+        const takenTotal = db.supplementLog.filter(l => l.supId === editingSuppId && l.taken).length;
+        data.lastRefillTakenCount = takenTotal;
+      } else {
+        data.lastRefillTakenCount = s.lastRefillTakenCount || 0;
+      }
+      Object.assign(s, data);
+    }
   } else {
     data.id = 'sup_' + uid();
     data.createdAt = Date.now();
+    data.lastRefillTakenCount = 0;
     db.supplements.push(data);
   }
   save();
@@ -550,23 +552,12 @@ function refillSupplement(id) {
     ? `Refill supply for ${s.name}? Enter amount to add (in ${s.dosageUnit}):` 
     : `Vorrat für ${s.name} auffüllen? Menge zum Hinzufügen eingeben (in ${s.dosageUnit}):`;
     
-  const amountStr = prompt(msg, defaultAmount);
-  if (amountStr === null) return; // User cancelled
-  
-  const amount = parseFloat(amountStr);
-  if (isNaN(amount) || amount <= 0) {
-    alert(lang === 'en' ? 'Invalid amount!' : 'Ungültige Menge!');
-    return;
-  }
-  
-  const remaining = _getSupplyRemaining(s);
-  const newRemaining = (remaining || 0) + amount;
   const takenTotal = db.supplementLog.filter(l => l.supId === s.id && l.taken).length;
-  s.supplySize = newRemaining + (takenTotal * s.dosage);
+  s.lastRefillTakenCount = takenTotal;
   s.updated_at = Date.now();
   
   save();
   renderSupplements();
-  showToast((lang === 'en' ? 'Refilled: +' : 'Aufgefüllt: +') + amount + ' ' + s.dosageUnit + ' ✓');
+  showToast((lang === 'en' ? 'Refilled to: ' : 'Aufgefüllt auf: ') + s.supplySize + ' ' + s.dosageUnit + ' ✓');
   haptic('success');
 }

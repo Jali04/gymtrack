@@ -131,24 +131,31 @@ const SYNC_MAPPINGS = {
       dosage: item.dosage || null,
       unit: item.unit || null,
       frequency: item.frequency || null,
-      weekdays: item.weekdays || null,
+      weekdays: {
+        days: item.frequencyDays || null,
+        lastRefillTakenCount: item.lastRefillTakenCount || 0
+      },
       supply: item.supplySize ? Number(item.supplySize) : null,
       active: item.active !== false,
       updated_at: Number(item.updated_at || Date.now())
     }),
-    toLocal: dbItem => ({
-      id: dbItem.id,
-      name: dbItem.name,
-      form: dbItem.form,
-      time: dbItem.time,
-      dosage: dbItem.dosage,
-      unit: dbItem.unit,
-      frequency: dbItem.frequency,
-      weekdays: dbItem.weekdays,
-      supplySize: dbItem.supply ? Number(dbItem.supply) : null,
-      active: dbItem.active,
-      updated_at: Number(dbItem.updated_at)
-    }),
+    toLocal: dbItem => {
+      const weekdaysObj = dbItem.weekdays && typeof dbItem.weekdays === 'object' && !Array.isArray(dbItem.weekdays) ? dbItem.weekdays : null;
+      return {
+        id: dbItem.id,
+        name: dbItem.name,
+        form: dbItem.form,
+        time: dbItem.time,
+        dosage: dbItem.dosage,
+        unit: dbItem.unit,
+        frequency: dbItem.frequency,
+        frequencyDays: weekdaysObj ? (weekdaysObj.days || []) : (dbItem.weekdays || []),
+        lastRefillTakenCount: weekdaysObj ? (weekdaysObj.lastRefillTakenCount || 0) : 0,
+        supplySize: dbItem.supply ? Number(dbItem.supply) : null,
+        active: dbItem.active,
+        updated_at: Number(dbItem.updated_at)
+      };
+    },
     getLocalId: item => item.id,
     getDbId: dbItem => dbItem.id,
     getTimestamp: item => Number(item.updated_at || Date.now())
