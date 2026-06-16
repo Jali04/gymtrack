@@ -217,6 +217,25 @@ if (db.supplementLog) {
     }
   });
 }
+
+// One-time fix: bump updated_at on supplements & logs to force re-sync
+// with corrected field mapping (dosageUnit, timeOfDay, color, notes, etc.)
+if (!localStorage.getItem('supp_sync_fix_v1')) {
+  const now = Date.now();
+  if (db.supplements) {
+    db.supplements.forEach(s => {
+      s.updated_at = now;
+    });
+  }
+  if (db.supplementLog) {
+    db.supplementLog.forEach(l => {
+      l.updated_at = now;
+    });
+  }
+  localStorage.setItem('supp_sync_fix_v1', '1');
+  dbNeedsSave = true;
+}
+
 if (dbNeedsSave) {
   localStorage.setItem('gymdb', JSON.stringify(db));
 }

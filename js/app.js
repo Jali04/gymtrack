@@ -41,9 +41,10 @@ function initUI() {
   }
 
   try {
-    if (typeof updateSuppNavBadge === 'function') updateSuppNavBadge();
+    if (typeof renderSupplements === 'function') renderSupplements();
+    else if (typeof updateSuppNavBadge === 'function') updateSuppNavBadge();
   } catch (e) {
-    console.error("Error in updateSuppNavBadge:", e);
+    console.error("Error in renderSupplements:", e);
   }
 
   try {

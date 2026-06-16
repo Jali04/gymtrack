@@ -318,7 +318,7 @@ function toggleSuppTaken(supId) {
       d.setHours(12, 0, 0, 0);
       takenAt = d.getTime();
     }
-    db.supplementLog.push({ id: 'suplog_' + uid(), date: key, supId, taken: true, takenAt });
+    db.supplementLog.push({ id: 'suplog_' + uid(), date: key, supId, taken: true, takenAt, updated_at: Date.now() });
   }
   save();
   renderSupplements();
