@@ -36,7 +36,8 @@ function _isDueToday(sup) {
   }
 
   if (sup.frequency === 'every_x_days') {
-    const created = new Date(sup.createdAt); created.setHours(0,0,0,0);
+    const createdVal = sup.createdAt || sup.createdAt === 0 ? sup.createdAt : (sup.updated_at || Date.now());
+    const created = new Date(createdVal); created.setHours(0,0,0,0);
     const diffDays = Math.floor((today - created) / 86400000);
     return diffDays % (sup.frequencyValue || 1) === 0;
   }
@@ -76,7 +77,8 @@ function _getAdherence(supId, days) {
 function _wasDueOn(sup, date) {
   if (!sup.active) return false;
   const d = new Date(date); d.setHours(0,0,0,0);
-  const created = new Date(sup.createdAt); created.setHours(0,0,0,0);
+  const createdVal = sup.createdAt || sup.createdAt === 0 ? sup.createdAt : (sup.updated_at || Date.now());
+  const created = new Date(createdVal); created.setHours(0,0,0,0);
   if (d < created) return false;
 
   if (sup.frequency === 'daily') return true;
@@ -106,10 +108,14 @@ function _getSuppStreak(supId) {
   if (!db.supplementLog.some(l => l.date === key && l.supId === supId && l.taken)) {
     d.setDate(d.getDate() - 1);
   }
+  let iterations = 0;
   while (true) {
+    iterations++;
+    if (iterations > 1000) break; // Emergency break to prevent infinite loop/app freeze
     const dk = _dateKey(d);
     // Break if we check before the supplement was even created
-    if (d < new Date(new Date(sup.createdAt).setHours(0,0,0,0))) break;
+    const createdVal = sup.createdAt || sup.createdAt === 0 ? sup.createdAt : (sup.updated_at || Date.now());
+    if (d < new Date(new Date(createdVal).setHours(0,0,0,0))) break;
     
     if (!_wasDueOn(sup, d)) { d.setDate(d.getDate() - 1); continue; }
     if (db.supplementLog.some(l => l.date === dk && l.supId === supId && l.taken)) {
@@ -312,7 +318,7 @@ function toggleSuppTaken(supId) {
       d.setHours(12, 0, 0, 0);
       takenAt = d.getTime();
     }
-    db.supplementLog.push({ date: key, supId, taken: true, takenAt });
+    db.supplementLog.push({ id: 'suplog_' + uid(), date: key, supId, taken: true, takenAt });
   }
   save();
   renderSupplements();

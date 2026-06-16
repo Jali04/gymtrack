@@ -133,7 +133,8 @@ const SYNC_MAPPINGS = {
       frequency: item.frequency || null,
       weekdays: {
         days: item.frequencyDays || null,
-        lastRefillTakenCount: item.lastRefillTakenCount || 0
+        lastRefillTakenCount: item.lastRefillTakenCount || 0,
+        createdAt: item.createdAt || Date.now()
       },
       supply: item.supplySize ? Number(item.supplySize) : null,
       active: item.active !== false,
@@ -151,6 +152,7 @@ const SYNC_MAPPINGS = {
         frequency: dbItem.frequency,
         frequencyDays: weekdaysObj ? (weekdaysObj.days || []) : (dbItem.weekdays || []),
         lastRefillTakenCount: weekdaysObj ? (weekdaysObj.lastRefillTakenCount || 0) : 0,
+        createdAt: weekdaysObj && weekdaysObj.createdAt ? Number(weekdaysObj.createdAt) : Number(dbItem.updated_at),
         supplySize: dbItem.supply ? Number(dbItem.supply) : null,
         active: dbItem.active,
         updated_at: Number(dbItem.updated_at)

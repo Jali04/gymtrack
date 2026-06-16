@@ -199,6 +199,28 @@ if (runMigrations(db)) {
   localStorage.setItem('gymdb', JSON.stringify(db));
 }
 
+// Startup migrations for supplements and logs
+let dbNeedsSave = false;
+if (db.supplements) {
+  db.supplements.forEach(s => {
+    if (!s.createdAt) {
+      s.createdAt = s.updated_at || Date.now();
+      dbNeedsSave = true;
+    }
+  });
+}
+if (db.supplementLog) {
+  db.supplementLog.forEach(l => {
+    if (!l.id) {
+      l.id = 'suplog_' + uid();
+      dbNeedsSave = true;
+    }
+  });
+}
+if (dbNeedsSave) {
+  localStorage.setItem('gymdb', JSON.stringify(db));
+}
+
 function save() {
   runMigrations(db);
   localStorage.setItem('gymdb', JSON.stringify(db));

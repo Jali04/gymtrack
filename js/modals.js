@@ -317,7 +317,10 @@ function _mergeImportedDb(imported) {
   if (imported.supplementLog) {
     if (!db.supplementLog) db.supplementLog = [];
     imported.supplementLog.forEach(l => {
-      if (!db.supplementLog.find(x => x.date === l.date && x.supId === l.supId)) db.supplementLog.push(l);
+      if (!db.supplementLog.find(x => x.date === l.date && x.supId === l.supId)) {
+        if (!l.id) l.id = 'suplog_' + uid();
+        db.supplementLog.push(l);
+      }
     });
   }
   save(); closeModal('importModal'); renderStats(); renderHistory();
