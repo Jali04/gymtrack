@@ -2,7 +2,7 @@
    GYMTRACK — App Initialisation
    ============================================= */
 
-const CURRENT_VERSION = '4.39';
+const CURRENT_VERSION = '4.40';
 const savedVersion    = localStorage.getItem('dscpln_version');
 
 if (savedVersion && savedVersion !== CURRENT_VERSION) {

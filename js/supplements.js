@@ -4,9 +4,14 @@
 
 let editingSuppId = null;
 let currentSuppsDate = new Date();
+let showAllActiveSupps = false;
 Object.defineProperty(window, 'currentSuppsDate', {
   get() { return currentSuppsDate; },
   set(v) { currentSuppsDate = v; }
+});
+Object.defineProperty(window, 'showAllActiveSupps', {
+  get() { return showAllActiveSupps; },
+  set(v) { showAllActiveSupps = v; }
 });
 
 const SUPP_COLORS = ['#c8f135','#38bdf8','#f59e0b','#a78bfa','#f87171','#34d399'];
@@ -24,24 +29,23 @@ function _dateKey(date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+function _getLastTakenDateBefore(supId, date) {
+  const targetKey = _dateKey(date);
+  let lastKey = null;
+  (db.supplementLog || []).forEach(l => {
+    if (l.supId === supId && l.taken && l.date < targetKey) {
+      if (!lastKey || l.date > lastKey) {
+        lastKey = l.date;
+      }
+    }
+  });
+  if (!lastKey) return null;
+  const parts = lastKey.split('-');
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
 function _isDueToday(sup) {
-  if (!sup.active) return false;
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  if (sup.frequency === 'daily') return true;
-
-  if (sup.frequency === 'weekdays') {
-    const dow = today.getDay(); // 0=Sun
-    return (sup.frequencyDays || []).includes(dow);
-  }
-
-  if (sup.frequency === 'every_x_days') {
-    const createdVal = sup.createdAt || sup.createdAt === 0 ? sup.createdAt : (sup.updated_at || Date.now());
-    const created = new Date(createdVal); created.setHours(0,0,0,0);
-    const diffDays = Math.floor((today - created) / 86400000);
-    return diffDays % (sup.frequencyValue || 1) === 0;
-  }
-  return true;
+  return _wasDueOn(sup, new Date());
 }
 
 function _isTakenOn(supId, dateKey) {
@@ -84,8 +88,15 @@ function _wasDueOn(sup, date) {
   if (sup.frequency === 'daily') return true;
   if (sup.frequency === 'weekdays') return (sup.frequencyDays || []).includes(d.getDay());
   if (sup.frequency === 'every_x_days') {
-    const diff = Math.floor((d - created) / 86400000);
-    return diff % (sup.frequencyValue || 1) === 0;
+    const lastTaken = _getLastTakenDateBefore(sup.id, d);
+    let nextDue;
+    if (lastTaken) {
+      nextDue = new Date(lastTaken);
+      nextDue.setDate(nextDue.getDate() + (sup.frequencyValue || 1));
+    } else {
+      nextDue = created;
+    }
+    return d >= nextDue;
   }
   return true;
 }
@@ -163,9 +174,15 @@ function renderSupplements() {
   const targetDateKey = _dateKey(currentSuppsDate);
   const isTargetToday = targetDateKey === _todayKey();
 
-  const dueSupps    = db.supplements.filter(s => _wasDueOn(s, currentSuppsDate));
-  const takenCount  = dueSupps.filter(s => _isTakenOn(s.id, targetDateKey)).length;
-  const totalDue    = dueSupps.length;
+  const strictlyDueSupps = db.supplements.filter(s => _wasDueOn(s, currentSuppsDate));
+  const dueSupps = db.supplements.filter(s => {
+    if (_isTakenOn(s.id, targetDateKey)) return true;
+    if (showAllActiveSupps) return s.active;
+    return _wasDueOn(s, currentSuppsDate);
+  });
+
+  const takenCount  = strictlyDueSupps.filter(s => _isTakenOn(s.id, targetDateKey)).length;
+  const totalDue    = strictlyDueSupps.length;
   const pct         = totalDue > 0 ? Math.round((takenCount / totalDue) * 100) : 100;
   const allDone     = takenCount >= totalDue && totalDue > 0;
 
@@ -180,13 +197,15 @@ function renderSupplements() {
 
   // Today view
   let todayHtml = '';
-  if (totalDue > 0) {
-    todayHtml += `
-      <div class="supp-progress-bar">
-        <div class="supp-progress-fill" style="width:${pct}%;${allDone ? 'background:var(--accent);' : ''}"></div>
-      </div>
-      <div class="supp-progress-label">${takenCount}/${totalDue} ${t('suppTaken')} ${allDone ? '✓' : ''}</div>
-    `;
+  if (dueSupps.length > 0) {
+    if (totalDue > 0) {
+      todayHtml += `
+        <div class="supp-progress-bar">
+          <div class="supp-progress-fill" style="width:${pct}%;${allDone ? 'background:var(--accent);' : ''}"></div>
+        </div>
+        <div class="supp-progress-label">${takenCount}/${totalDue} ${t('suppTaken')} ${allDone ? '✓' : ''}</div>
+      `;
+    }
 
     Object.entries(groups).forEach(([timeKey, supps]) => {
       if (supps.length === 0) return;
@@ -286,6 +305,16 @@ function renderSupplements() {
     </div>
   `;
 
+  let filterHtml = `
+    <div class="supp-filter-nav" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-bottom:16px;">
+      <span style="font-size:13px;color:var(--text);font-weight:500;">${t('suppShowAll')}</span>
+      <label class="toggle">
+        <input type="checkbox" id="showAllSuppsToggle" ${showAllActiveSupps ? 'checked' : ''} onchange="toggleShowAllSupps(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `;
+
   // Build page
   const container = page.querySelector('.supp-content') || page;
   container.innerHTML = `
@@ -293,6 +322,7 @@ function renderSupplements() {
       ${todayLabel}
     </div>
     ${dateNavHtml}
+    ${filterHtml}
     ${todayHtml}
     <div class="divider"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -303,6 +333,11 @@ function renderSupplements() {
   `;
 
   updateSuppNavBadge();
+}
+
+function toggleShowAllSupps(checked) {
+  showAllActiveSupps = checked;
+  renderSupplements();
 }
 
 /* ---- Toggle Taken ---- */
