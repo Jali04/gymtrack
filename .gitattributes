@@ -1,0 +1,23 @@
+# Normalize line endings to avoid CRLF/LF churn and interrupted-write corruption.
+# Text files are stored with LF in the repo; checked out as LF on all platforms.
+* text=auto eol=lf
+
+# Explicit source types
+*.js   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.sql  text eol=lf
+*.ts   text eol=lf
+
+# Binary assets — never normalize
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.gz   binary

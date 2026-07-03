@@ -570,3 +570,12 @@ function renderWeekStatusBanner() {
     ${banner}
   `;
 }
+
+/* ─────────────────────────────────────────────
+   Open the Achievements / Ranks screen
+   ───────────────────────────────────────────── */
+function openAchievements() {
+  if (typeof openModal === 'function') openModal('achievementsModal');
+  if (typeof renderAchievements === 'function') renderAchievements();
+}
+window.openAchievements = openAchievements;

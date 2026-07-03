@@ -6,10 +6,10 @@ const PAGE_ORDER = ['log', 'gymlab', 'supps', 'progress'];
 
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
   const pg = document.getElementById('page-' + id);
   if (pg) pg.classList.add('active');
-  if (btn) btn.classList.add('active');
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-current', 'page'); }
   if (id === 'log')      renderLog();
   if (id === 'gymlab')   renderGymLab();
   if (id === 'progress') {
