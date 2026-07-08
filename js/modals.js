@@ -42,6 +42,13 @@ function closeModal(id) {
     window._openedFromPicker = false;
   }
 
+  // Closing the picker while in swap mode must reset it, otherwise the
+  // next normal "add exercise" would silently replace an exercise.
+  if (id === 'exercisePickerModal' && window._pickerMode === 'replace') {
+    window._pickerMode = null;
+    window._swapIdx    = null;
+  }
+
   // Restore background scrolling if no other modals are open
   const openModals = document.querySelectorAll('.modal-overlay.open');
   if (openModals.length === 0) {

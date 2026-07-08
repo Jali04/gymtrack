@@ -28,13 +28,16 @@ function _hiitBadge(s) {
 
 /* ---- Log page ---- */
 function renderLog() {
+  const pageTitle = document.getElementById('ttlStartTraining');
   if (db.currentWorkout) {
     document.getElementById('quickStart').style.display    = 'none';
     document.getElementById('activeWorkout').style.display = 'block';
+    if (pageTitle) pageTitle.style.display = 'none';
     renderActiveWorkout();
     startTimer();
     return;
   }
+  if (pageTitle) pageTitle.style.display = '';
   document.getElementById('quickStart').style.display    = 'block';
   document.getElementById('activeWorkout').style.display = 'none';
   _renderRestConfig();
@@ -228,6 +231,8 @@ function openNewWorkout() {
 }
 
 function renderActiveWorkout() {
+  const pageTitle = document.getElementById('ttlStartTraining');
+  if (pageTitle) pageTitle.style.display = 'none';
   const container   = document.getElementById('workoutExercises');
   const cw          = db.currentWorkout;
   const btnFinish   = document.getElementById('btnFinishWorkout');
@@ -277,10 +282,20 @@ function renderActiveWorkout() {
       }
     }
 
+    const isFirst = i === 0;
+    const isLast  = i === cw.exercises.length - 1;
+    const actionBtns = `
+      <button class="ex-action-btn" ${isFirst ? 'disabled' : ''} onclick="event.stopPropagation();moveWorkoutExercise(${i},-1)" title="${t('moveUp')}" aria-label="${t('moveUp')}">↑</button>
+      <button class="ex-action-btn" ${isLast ? 'disabled' : ''} onclick="event.stopPropagation();moveWorkoutExercise(${i},1)" title="${t('moveDown')}" aria-label="${t('moveDown')}">↓</button>
+      <button class="ex-action-btn" onclick="event.stopPropagation();startExerciseSwap(${i})" title="${t('swapExercise')}" aria-label="${t('swapExercise')}">⇄</button>`;
+
     return `<div class="exercise-card${hasSS ? ' superset-card' : ''}">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="exercise-name">${name}<span class="cat-badge ${catClass}">${catLabel}</span>${ssLabel}</div>
-        <button class="close-btn" onclick="removeWorkoutExercise(${i})">✕</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div class="exercise-name" style="margin-bottom:0;">${name}<span class="cat-badge ${catClass}">${catLabel}</span>${ssLabel}</div>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+          ${actionBtns}
+          <button class="close-btn" onclick="event.stopPropagation();removeWorkoutExercise(${i})">✕</button>
+        </div>
       </div>
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${hiitBadges}${timerBadge}</div>
       ${e.note ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
@@ -295,6 +310,43 @@ function renderActiveWorkout() {
   }).join('');
 
   initRipples();
+  _updateWorkoutLiveStats();
+}
+
+function _updateWorkoutLiveStats() {
+  const el = document.getElementById('workoutLiveStats');
+  if (!el) return;
+  const cw = db.currentWorkout;
+  if (!cw) { el.textContent = ''; return; }
+  let setCount = 0, volume = 0;
+  (cw.exercises || []).forEach(e => {
+    (e.sets || []).forEach(s => {
+      setCount++;
+      volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    });
+  });
+  if (setCount === 0) { el.textContent = ''; return; }
+  const loc = lang === 'de' ? 'de-DE' : 'en-GB';
+  el.textContent = `${setCount} ${t('sets')}${volume > 0 ? ' · ' + Math.round(volume).toLocaleString(loc) + ' kg' : ''}`;
+}
+
+function moveWorkoutExercise(idx, dir) {
+  const cw = db.currentWorkout;
+  if (!cw) return;
+  const j = idx + dir;
+  if (j < 0 || j >= cw.exercises.length) return;
+  [cw.exercises[idx], cw.exercises[j]] = [cw.exercises[j], cw.exercises[idx]];
+  save();
+  renderActiveWorkout();
+  haptic('light');
+}
+
+/* ---- Exercise Swap (e.g. machine occupied) ---- */
+function startExerciseSwap(idx) {
+  if (!db.currentWorkout || !db.currentWorkout.exercises[idx]) return;
+  window._pickerMode = 'replace';
+  window._swapIdx    = idx;
+  openExercisePicker();
 }
 
 function removeWorkoutExercise(idx) {
@@ -378,10 +430,15 @@ function unlinkSuperset(idx, silent) {
 function finishWorkout() {
   const cw = db.currentWorkout;
   if (!cw) return;
-  const hasData = cw.exercises.some(e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0));
-  if (!hasData) { alert(t('minOneSet')); return; }
-  cw.exercises = cw.exercises.filter(e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0));
+  const hasEntries = e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0);
+  if (!cw.exercises.some(hasEntries)) { alert(t('minOneSet')); return; }
+  const emptyCount = cw.exercises.filter(e => !hasEntries(e)).length;
+  if (emptyCount > 0 && !confirm(`${emptyCount} ${t('finishEmptyWarn')}`)) return;
+  cw.exercises = cw.exercises.filter(hasEntries);
   cw.endTime   = Date.now();
+
+  const summary = _buildWorkoutSummary(cw);
+
   db.workouts.push(cw);
   db.currentWorkout = null;
   stopTimer();
@@ -393,10 +450,100 @@ function finishWorkout() {
   renderHistory();
   haptic('success');
   flashWorkoutComplete();
-  showToast(t('workoutDone'));
-  
-  // Check if new exercises were added to a template-based workout
-  _checkTemplateUpdates(cw);
+
+  // Show the summary; the template-update check runs when it is closed
+  _pendingFinishedWorkout = cw;
+  _showWorkoutSummary(summary);
+}
+
+/* ---- Workout Summary ---- */
+let _pendingFinishedWorkout = null;
+
+function _getHistoricalMaxWeight(exId, excludeWorkoutId) {
+  let max = 0;
+  (db.workouts || []).forEach(w => {
+    if (w.id === excludeWorkoutId || !w.exercises) return;
+    w.exercises.forEach(e => {
+      if (e.isCustom || e.exId !== exId || !e.sets) return;
+      e.sets.forEach(s => {
+        if (s.type === 'W') return; // warmup sets don't count as records
+        const wgt = Number(s.weight) || 0;
+        if (wgt > max) max = wgt;
+      });
+    });
+  });
+  return max;
+}
+
+// Must be called BEFORE the workout is pushed into db.workouts,
+// otherwise PRs would compare the workout against itself.
+function _buildWorkoutSummary(cw) {
+  const startTs = typeof cw.startTime === 'string' ? new Date(cw.startTime).getTime() : cw.startTime;
+  const durMin  = Math.max(1, Math.round((cw.endTime - startTs) / 60000));
+  let setCount = 0, volume = 0;
+  const prs = [];
+  cw.exercises.forEach(e => {
+    (e.sets || []).forEach(s => {
+      setCount++;
+      volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    });
+    if (!e.isCustom && e.exId) {
+      const ex = getEx(e.exId);
+      if (ex && getCatType(ex.category) === 'strength') {
+        const maxNow = Math.max(0, ...(e.sets || []).filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
+        const prior  = _getHistoricalMaxWeight(e.exId, cw.id);
+        if (prior > 0 && maxNow > prior) prs.push({ name: ex.name, weight: maxNow, prior });
+      }
+    }
+  });
+  return { durMin, exCount: cw.exercises.length, setCount, volume, prs };
+}
+
+function _showWorkoutSummary(s) {
+  const modal = document.getElementById('workoutSummaryModal');
+  if (!modal) { showToast(t('workoutDone')); if (_pendingFinishedWorkout) { const w = _pendingFinishedWorkout; _pendingFinishedWorkout = null; _checkTemplateUpdates(w); } return; }
+
+  document.getElementById('summaryTitle').textContent    = t('summaryTitle');
+  document.getElementById('summarySubtitle').textContent = t('summarySubtitle');
+  document.getElementById('btnCloseSummary').textContent = t('summaryClose');
+
+  const loc = lang === 'de' ? 'de-DE' : 'en-GB';
+  const stat = (icon, val, label) => `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+    <div style="font-size:18px;line-height:1;">${icon}</div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:17px;font-weight:700;color:var(--accent);margin-top:6px;">${val}</div>
+    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">${label}</div>
+  </div>`;
+  document.getElementById('summaryStatsGrid').innerHTML =
+    stat('⏱', `${s.durMin} min`, t('summaryDuration')) +
+    stat('🏋️', s.exCount, t('exercises')) +
+    stat('📊', s.setCount, t('sets')) +
+    stat('⚖️', `${Math.round(s.volume).toLocaleString(loc)} kg`, t('summaryVolume'));
+
+  const prSec = document.getElementById('summaryPrSection');
+  if (s.prs.length > 0) {
+    prSec.style.display = 'block';
+    prSec.innerHTML = `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);margin-bottom:8px;">🏆 ${t('summaryPRs')}</div>` +
+      s.prs.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(200,241,53,0.06);border:1px solid rgba(200,241,53,0.25);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+        <span style="font-weight:600;font-size:14px;">${p.name}</span>
+        <span style="font-size:13px;color:var(--accent);font-weight:700;">${p.prior} → ${p.weight} kg</span>
+      </div>`).join('');
+  } else {
+    prSec.style.display = 'none';
+    prSec.innerHTML = '';
+  }
+
+  openModal('workoutSummaryModal');
+
+  if (s.prs.length > 0 && typeof confetti === 'function') {
+    setTimeout(() => confetti({ particleCount: 90, spread: 70, origin: { y: 0.7 }, zIndex: 3000 }), 250);
+  }
+}
+
+function closeWorkoutSummary() {
+  closeModal('workoutSummaryModal');
+  const w = _pendingFinishedWorkout;
+  _pendingFinishedWorkout = null;
+  if (w) _checkTemplateUpdates(w);
 }
 
 function cancelWorkout() {
@@ -684,6 +831,8 @@ function filterExercisePicker() {
 
 function openExercisePicker() {
   const list = document.getElementById('exercisePickerList');
+  const ttl  = document.getElementById('ttlChooseExercise');
+  if (ttl) ttl.textContent = window._pickerMode === 'replace' ? t('swapExercise') : t('chooseExercise');
 
   // Inject search + quick-add bar above the list
   const searchBarId = 'exPickerSearchBar';
@@ -751,6 +900,26 @@ function quickAddExercise() {
 }
 
 function addExerciseToWorkout(exId) {
+  // Replace/swap mode (exchange an exercise mid-workout, keep its position & logged sets)
+  if (window._pickerMode === 'replace') {
+    const idx = window._swapIdx;
+    window._pickerMode = null;
+    window._swapIdx    = null;
+    const cw = db.currentWorkout;
+    if (!cw || idx === null || idx === undefined || !cw.exercises[idx]) return;
+    if (cw.exercises.some((e, j) => j !== idx && e.exId === exId)) { alert(t('alreadyAdded')); return; }
+    const entry = cw.exercises[idx];
+    entry.exId = exId;
+    delete entry.isCustom;
+    delete entry.customName;
+    delete entry.customCategory;
+    save();
+    closeModal('exercisePickerModal');
+    renderActiveWorkout();
+    haptic('success');
+    showToast(t('swapDone'));
+    return;
+  }
   // HIIT-assign mode
   if (window._pickerMode === 'hiit') {
     const hiitSet = window._hiitPendingSet;
@@ -894,6 +1063,23 @@ function _cycleSetType(btn) {
 
 function addSetRow(data) {
   const container = document.getElementById('setsContainer');
+
+  // "+ Satz" without data: prefill from the previous row so only deltas need typing
+  if (!data && container.children.length > 0) {
+    const last    = container.lastElementChild;
+    const inputs  = last.querySelectorAll('.set-input:not(.set-rpe)');
+    const typeBtn = last.querySelector('.set-type-btn');
+    if (currentExCategory === 'stretch') {
+      data = { minutes: inputs[0] ? inputs[0].value : '' };
+    } else if (currentExCategory !== 'cardio') {
+      data = {
+        type:   typeBtn ? (typeBtn.dataset.type || 'N') : 'N',
+        weight: inputs[0] ? inputs[0].value : '',
+        reps:   inputs[1] ? inputs[1].value : ''
+      };
+    }
+  }
+
   const idx       = container.children.length + 1;
   const row       = document.createElement('div');
   const type      = currentExCategory;
@@ -1003,13 +1189,23 @@ function saveSets() {
   }
 
   // Normal active-workout mode
-  db.currentWorkout.exercises[currentWorkoutExIdx].sets = sets;
-  db.currentWorkout.exercises[currentWorkoutExIdx].note = document.getElementById('sessionNote').value.trim();
+  const we = db.currentWorkout.exercises[currentWorkoutExIdx];
+  we.sets = sets;
+  we.note = document.getElementById('sessionNote').value.trim();
+
+  // Live PR detection (strength, non-custom exercises only)
+  let prWeight = 0;
+  if (type === 'strength' && we.exId && !we.isCustom) {
+    const maxNow = Math.max(0, ...sets.filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
+    const prior  = _getHistoricalMaxWeight(we.exId, db.currentWorkout.id);
+    if (prior > 0 && maxNow > prior) prWeight = maxNow;
+  }
+
   save();
   closeModal('logSetsModal');
   renderActiveWorkout();
   haptic('success');
-  showToast('✓');
+  showToast(prWeight ? `🏆 ${t('prToast')}: ${prWeight} kg` : '✓');
   startRestTimer();
   // Show next-exercise suggestions if not template-based
   _showNextExSuggestions();
@@ -1196,6 +1392,19 @@ function _renderStreakBanner() {
   } else {
     banner.style.display = 'none';
   }
+}
+
+function extendRestTimer(sec) {
+  if (!restTimerEndAt) return;
+  restTimerEndAt += sec * 1000;
+  restTimerMax   += sec;
+  restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+  if (typeof _postSwMsg === 'function') {
+    _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
+    _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: restTimerEndAt - Date.now() });
+  }
+  _updateRestDisplay();
+  haptic('light');
 }
 
 function skipRestTimer() {

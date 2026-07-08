@@ -120,6 +120,15 @@ const TR = {
     suppSupplyHint: 'z.B. 90 für 90 Kapseln', suppColorLabel: 'Farbe',
     suppActiveLabel: 'Aktiv', suppScoopPlaceholder: 'z.B. 1 Messlöffel = 5g',
     suppNotesLabel: 'Notizen', suppNotesPlaceholder: 'z.B. Mit Mahlzeit einnehmen...',
+    // Active workout actions
+    moveUp: 'Nach oben', moveDown: 'Nach unten',
+    swapExercise: 'Übung tauschen', swapDone: '⇄ Übung getauscht',
+    prToast: 'Neuer Rekord',
+    finishEmptyWarn: 'Übung(en) ohne Einträge werden entfernt. Training trotzdem beenden?',
+    // Workout summary
+    summaryTitle: 'Training abgeschlossen!', summarySubtitle: 'Starke Leistung – hier ist dein Überblick:',
+    summaryDuration: 'Dauer', summaryVolume: 'Volumen',
+    summaryPRs: 'Neue Rekorde', summaryClose: 'Weiter',
     // Template persistence
     saveToTemplate: '📌 Zur Vorlage', savedToTemplate: '✓ In Vorlage gespeichert',
     tmplUpdateTitle: 'Vorlage aktualisieren?', tmplUpdateDesc: 'Du hast neue Übungen hinzugefügt. Sollen sie dauerhaft in der Vorlage gespeichert werden?',
@@ -284,6 +293,15 @@ const TR = {
     suppSupplyHint: 'e.g. 90 for 90 capsules', suppColorLabel: 'Color',
     suppActiveLabel: 'Active', suppScoopPlaceholder: 'e.g. 1 scoop = 5g',
     suppNotesLabel: 'Notes', suppNotesPlaceholder: 'e.g. Take with meal...',
+    // Active workout actions
+    moveUp: 'Move up', moveDown: 'Move down',
+    swapExercise: 'Swap exercise', swapDone: '⇄ Exercise swapped',
+    prToast: 'New record',
+    finishEmptyWarn: 'exercise(s) without entries will be removed. Finish anyway?',
+    // Workout summary
+    summaryTitle: 'Workout complete!', summarySubtitle: 'Great work – here is your recap:',
+    summaryDuration: 'Duration', summaryVolume: 'Volume',
+    summaryPRs: 'New Records', summaryClose: 'Continue',
     // Template persistence
     saveToTemplate: '📌 Save to Template', savedToTemplate: '✓ Saved to Template',
     tmplUpdateTitle: 'Update Template?', tmplUpdateDesc: 'You added new exercises. Save them permanently to the template?',
