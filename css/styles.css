@@ -319,6 +319,35 @@ body.light-mode .nav-btn.active {
 }
 .exercise-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
 .exercise-meta { font-size: 13px; color: var(--muted); }
+
+/* Active-workout exercise card actions (reorder / swap) */
+.ex-action-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, transform 0.12s;
+  font-family: 'DM Sans', sans-serif;
+}
+.ex-action-btn:active {
+  transform: scale(0.92);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.ex-action-btn:disabled {
+  opacity: 0.25;
+  pointer-events: none;
+}
 .exercise-last {
   margin-top: 10px;
   background: var(--surface2);

@@ -25,12 +25,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DSCPLN">
-  <meta name="version" content="4.41">
+  <meta name="version" content="4.42">
   <title>DSCPLN</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4.41">
+  <link rel="stylesheet" href="css/styles.css?v=4.42">
 </head>
 
 <body>
@@ -155,6 +155,7 @@
         <div>
           <div id="activeWorkoutLabel" style="font-size:13px;color:var(--muted);">Aktives Training</div>
           <div class="timer-display" id="timerDisplay">00:00</div>
+          <div id="workoutLiveStats" style="font-size:12px;color:var(--muted);margin-top:2px;min-height:15px;"></div>
         </div>
         <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;"
           onclick="finishWorkout()">Fertig ✓</button>
@@ -1105,8 +1106,10 @@
       <div id="restTimerCount"
         style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">90</div>
     </div>
+    <button onclick="extendRestTimer(15)" id="btnExtendRest"
+      style="margin-left:auto;background:rgba(200,241,53,0.08);border:1px solid rgba(200,241,53,0.3);border-radius:10px;padding:8px 12px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+15s</button>
     <button onclick="skipRestTimer()" id="btnSkipRest"
-      style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Überspringen</button>
+      style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Überspringen</button>
   </div>
 
   <!-- Custom PIN Numpad Modal -->
@@ -1538,6 +1541,21 @@
     </div>
   </div>
 
+  <!-- Workout Summary (after finishing) -->
+  <div class="modal-overlay" id="workoutSummaryModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:42px;line-height:1;">💪</div>
+        <div class="modal-title" id="summaryTitle" style="margin-top:10px;">Training abgeschlossen!</div>
+        <div id="summarySubtitle" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
+      </div>
+      <div id="summaryStatsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;"></div>
+      <div id="summaryPrSection" style="display:none;margin-bottom:16px;"></div>
+      <button class="btn btn-primary" onclick="closeWorkoutSummary()" id="btnCloseSummary">Weiter</button>
+    </div>
+  </div>
+
   <!-- AI Coach Modal -->
   <div class="modal-overlay" id="aiCoachModal">
     <div class="modal ai-modal">
@@ -1770,10 +1788,10 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <script src="js/db.js?v=4.34"></script>
-  <script src="js/i18n.js?v=4.34"></script>
-  <script src="js/modals.js?v=4.34"></script>
+  <script src="js/i18n.js?v=4.42"></script>
+  <script src="js/modals.js?v=4.42"></script>
   <script src="js/nav.js?v=4.41"></script>
-  <script src="js/workout.js?v=4.31"></script>
+  <script src="js/workout.js?v=4.42"></script>
   <script src="js/exercises.js?v=4.31"></script>
   <script src="js/history.js?v=4.31"></script>
   <script src="js/stats.js?v=4.31"></script>
@@ -1791,7 +1809,7 @@
   <script src="js/tools.js?v=4.31"></script>
   <script src="js/guide.js?v=4.34"></script>
   <script src="js/achievements.js?v=4.41"></script>
-  <script src="js/app.js?v=4.41"></script>
+  <script src="js/app.js?v=4.42"></script>
   <script src="js/aiCoach.js?v=4.31"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=4.31"></script>

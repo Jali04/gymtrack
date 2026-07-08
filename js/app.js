@@ -2,7 +2,7 @@
    GYMTRACK — App Initialisation
    ============================================= */
 
-const CURRENT_VERSION = '4.41';
+const CURRENT_VERSION = '4.42';
 const savedVersion    = localStorage.getItem('dscpln_version');
 
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
@@ -81,6 +81,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target !== overlay) return;
     if (overlay.id === 'tmplExPickerModal') { closeModal('tmplExPickerModal'); openModal('templateModal'); return; }
+    if (overlay.id === 'workoutSummaryModal') { closeWorkoutSummary(); return; }
     if (SUB_MODALS.includes(overlay.id)) { closeSubModal(overlay.id); return; }
     closeModal(overlay.id);
   });
