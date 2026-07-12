@@ -220,7 +220,8 @@ async function handleLogout() {
   if (!window.supabaseClient) return;
   const isDe = (lang === 'de');
 
-  if (!confirm(isDe ? 'Möchtest du dich wirklich abmelden?' : 'Are you sure you want to log out?')) {
+  if (!await showConfirm(isDe ? 'Möchtest du dich wirklich abmelden?' : 'Are you sure you want to log out?',
+    { danger: false, confirmText: isDe ? 'Abmelden' : 'Log out' })) {
     return;
   }
 

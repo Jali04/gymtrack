@@ -189,13 +189,13 @@ function saveExercise() {
   const name     = document.getElementById('exName').value.trim();
   let category   = document.getElementById('exCategory').value;
   const notes    = document.getElementById('exNotes').value.trim();
-  if (!name) { alert(t('enterName')); return; }
-  
+  if (!name) { showAlert(t('enterName')); return; }
+
   if (category === 'new_custom') {
     const customName = document.getElementById('customCategoryName').value.trim();
     const customType = document.getElementById('customCategoryType').value;
     if (!customName) {
-      alert(lang === 'de' ? 'Bitte Namen für die neue Kategorie eingeben!' : 'Please enter a name for the new category!');
+      showAlert(lang === 'de' ? 'Bitte Namen für die neue Kategorie eingeben!' : 'Please enter a name for the new category!');
       return;
     }
     const standardCategories = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
@@ -250,8 +250,8 @@ function openAddExerciseFromTmplPicker() {
   openAddExercise();
 }
 
-function deleteExercise() {
-  if (!confirm(t('confirmDeleteExercise'))) return;
+async function deleteExercise() {
+  if (!await showConfirm(t('confirmDeleteExercise'))) return;
   db.exercises = db.exercises.filter(e => e.id !== editingExId);
   save();
   closeModal('addExerciseModal');

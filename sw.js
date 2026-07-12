@@ -6,12 +6,18 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v4.41';
+const CACHE_VERSION = 'v4.42';
 const CACHE_NAME = `dscpln-static-${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './manifest.webmanifest',
+  './icons/icon-32.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-maskable-512.png',
+  './icons/apple-touch-icon.png',
   './css/styles.css',
   './js/config.js',
   './js/auth.js',

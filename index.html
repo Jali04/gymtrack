@@ -3,12 +3,28 @@
 
 <head>
   <script>
+    // Debug flag: append ?debug=1 to the URL (or set localStorage 'dscpln_debug')
+    // to surface raw errors as alerts. For end users, errors are logged only.
+    window.__DSCPLN_DEBUG__ = /[?&]debug=1/.test(location.search) ||
+      localStorage.getItem('dscpln_debug') === '1';
+
+    function _reportError(label, detail) {
+      console.error('[DSCPLN] ' + label + ':', detail);
+      if (window.__DSCPLN_DEBUG__) {
+        alert(label + '\n' + detail);
+      } else if (typeof showToast === 'function') {
+        // Non-blocking, user-friendly notice (scripts load after this handler,
+        // so showToast may not exist yet during very early boot errors).
+        try { showToast('⚠️ Es ist ein Fehler aufgetreten.'); } catch (e) {}
+      }
+    }
+
     window.onerror = function (msg, url, line, col, error) {
       if (msg === "Script error." || !url || (line === 0 && col === 0)) {
         console.warn("Ignored cross-origin script error:", msg, url, line, col);
         return true;
       }
-      alert("JS Error: " + msg + "\nFile: " + url + "\nLine: " + line + ":" + col);
+      _reportError('JS Error', msg + '\nFile: ' + url + '\nLine: ' + line + ':' + col);
       return false;
     };
     window.onunhandledrejection = function (event) {
@@ -17,16 +33,22 @@
         console.warn("Ignored ServiceWorker promise rejection:", event.reason);
         return;
       }
-      alert("Promise Rejection: " + event.reason);
+      _reportError('Promise Rejection', reason);
     };
   </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DSCPLN">
+  <meta name="theme-color" content="#0a0a0a">
   <meta name="version" content="4.42">
   <title>DSCPLN</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
     rel="stylesheet">
@@ -36,12 +58,11 @@
 <body>
 
   <!-- ===== SPLASH ===== -->
-  <div id="splashScreen">
+  <div id="splashScreen" onclick="enterApp()" role="button" tabindex="-1" aria-label="Weiter zur App">
     <div class="splash-inner">
       <div class="splash-logo">DSCPLN</div>
       <div class="splash-divider"></div>
       <div class="splash-quote" id="splashQuote"></div>
-      <button class="splash-btn" onclick="enterApp()">ENTER</button>
     </div>
   </div>
 
@@ -125,7 +146,7 @@
       <div class="rest-config-card">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <div class="rest-config-title" id="lblRestConfig">Satztpause</div>
+            <div class="rest-config-title" id="lblRestConfig">Satzpause</div>
             <div class="rest-config-sub" id="lblRestSub">Countdown nach jedem Satz</div>
           </div>
           <label class="toggle">
@@ -1524,6 +1545,19 @@
       <div class="modal-title" id="infoModalTitle" style="margin-bottom:12px;">Info</div>
       <div id="infoModalText" style="font-size:14px;color:var(--text);line-height:1.5;margin-bottom:20px;"></div>
       <button class="btn btn-primary" onclick="closeModal('infoModal')">Verstanden</button>
+    </div>
+  </div>
+
+  <!-- Confirm Dialog (replaces native confirm()) -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="confirm-title" id="confirmModalTitle">Bestätigen</div>
+      <div class="confirm-text" id="confirmModalText"></div>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary" id="confirmModalNo" type="button">Abbrechen</button>
+        <button class="btn btn-danger" id="confirmModalYes" type="button">Bestätigen</button>
+      </div>
     </div>
   </div>
 

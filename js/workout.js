@@ -200,8 +200,8 @@ function _renderQuickStartTemplates() {
   `;
 }
 
-function deleteLogWorkout(id) {
-  if (!confirm(t('confirmDeleteWorkout'))) return;
+async function deleteLogWorkout(id) {
+  if (!await showConfirm(t('confirmDeleteWorkout'))) return;
   db.workouts = db.workouts.filter(w => w.id !== id);
   save();
   renderLog();
@@ -427,13 +427,13 @@ function unlinkSuperset(idx, silent) {
   }
 }
 
-function finishWorkout() {
+async function finishWorkout() {
   const cw = db.currentWorkout;
   if (!cw) return;
   const hasEntries = e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0);
-  if (!cw.exercises.some(hasEntries)) { alert(t('minOneSet')); return; }
+  if (!cw.exercises.some(hasEntries)) { showAlert(t('minOneSet')); return; }
   const emptyCount = cw.exercises.filter(e => !hasEntries(e)).length;
-  if (emptyCount > 0 && !confirm(`${emptyCount} ${t('finishEmptyWarn')}`)) return;
+  if (emptyCount > 0 && !await showConfirm(`${emptyCount} ${t('finishEmptyWarn')}`, { danger: false, confirmText: t('done') })) return;
   cw.exercises = cw.exercises.filter(hasEntries);
   cw.endTime   = Date.now();
 
@@ -546,8 +546,8 @@ function closeWorkoutSummary() {
   if (w) _checkTemplateUpdates(w);
 }
 
-function cancelWorkout() {
-  if (!confirm(t('confirmCancelWorkout'))) return;
+async function cancelWorkout() {
+  if (!await showConfirm(t('confirmCancelWorkout'), { confirmText: t('cancelWorkout') })) return;
   db.currentWorkout = null;
   stopTimer();
   swReset();
@@ -706,7 +706,7 @@ function _saveSwLog() {
   const tNote = state.swNote.trim();
   
   if (tVal === 'gymlab' || tVal === 'newex') {
-    alert("Bitte ein gültiges Ziel wählen.");
+    showAlert("Bitte ein gültiges Ziel wählen.");
     return;
   }
   
@@ -907,7 +907,7 @@ function addExerciseToWorkout(exId) {
     window._swapIdx    = null;
     const cw = db.currentWorkout;
     if (!cw || idx === null || idx === undefined || !cw.exercises[idx]) return;
-    if (cw.exercises.some((e, j) => j !== idx && e.exId === exId)) { alert(t('alreadyAdded')); return; }
+    if (cw.exercises.some((e, j) => j !== idx && e.exId === exId)) { showAlert(t('alreadyAdded')); return; }
     const entry = cw.exercises[idx];
     entry.exId = exId;
     delete entry.isCustom;
@@ -943,7 +943,7 @@ function addExerciseToWorkout(exId) {
   }
   // Edit-past-workout mode
   if (window._pickerMode === 'edit') {
-    if (editingWorkoutCopy.exercises.find(e => e.exId === exId)) { alert(t('alreadyAdded')); return; }
+    if (editingWorkoutCopy.exercises.find(e => e.exId === exId)) { showAlert(t('alreadyAdded')); return; }
     editingWorkoutCopy.exercises.push({ exId, sets: [] });
     window._pickerMode = null;
     closeModal('exercisePickerModal');
@@ -953,7 +953,7 @@ function addExerciseToWorkout(exId) {
   }
   // Normal mode
   if (!db.currentWorkout) return;
-  if (db.currentWorkout.exercises.find(e => e.exId === exId)) { alert(t('alreadyAdded')); return; }
+  if (db.currentWorkout.exercises.find(e => e.exId === exId)) { showAlert(t('alreadyAdded')); return; }
   db.currentWorkout.exercises.push({ exId, sets: [] });
   save();
   closeModal('exercisePickerModal');
@@ -1175,7 +1175,7 @@ function saveSets() {
     }
   });
 
-  if (sets.length === 0) { alert(t('minValidSet')); return; }
+  if (sets.length === 0) { showAlert(t('minValidSet')); return; }
 
   // Edit-past-workout mode
   if (currentWorkoutExIdx === null && typeof editWorkoutSetIdx !== 'undefined' && editWorkoutSetIdx !== null) {

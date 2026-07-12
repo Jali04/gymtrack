@@ -56,6 +56,61 @@ function closeModal(id) {
   }
 }
 
+/* ---- Styled confirm / alert (replace native confirm()/alert()) ---- */
+let _confirmResolver = null;
+
+function showConfirm(message, opts = {}) {
+  // Returns a Promise<boolean>. Usage: if (!await showConfirm(msg)) return;
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirmModal');
+    // Fallback to native confirm if the styled modal isn't in the DOM.
+    if (!modal) { resolve(window.confirm(message)); return; }
+
+    const titleEl = document.getElementById('confirmModalTitle');
+    const textEl  = document.getElementById('confirmModalText');
+    const yesBtn  = document.getElementById('confirmModalYes');
+    const noBtn   = document.getElementById('confirmModalNo');
+
+    const danger = opts.danger !== false; // destructive by default
+    titleEl.textContent = opts.title || t('confirmTitle');
+    textEl.textContent  = message || '';
+    yesBtn.textContent  = opts.confirmText || t(danger ? 'confirmDeleteYes' : 'confirmYes');
+    noBtn.textContent   = opts.cancelText || t('confirmNo');
+    yesBtn.className     = 'btn ' + (danger ? 'btn-danger' : 'btn-primary');
+
+    // Resolve exactly once, then tear down listeners.
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      _confirmResolver = null;
+      yesBtn.removeEventListener('click', onYes);
+      noBtn.removeEventListener('click', onNo);
+      modal.removeEventListener('click', onBackdrop);
+      closeModal('confirmModal');
+      try { haptic(result ? 'medium' : 'light'); } catch (e) {}
+      resolve(result);
+    };
+    const onYes = () => finish(true);
+    const onNo  = () => finish(false);
+    const onBackdrop = (e) => { if (e.target === modal) finish(false); };
+
+    _confirmResolver = onNo; // let a global "back"/escape cancel it
+
+    yesBtn.addEventListener('click', onYes);
+    noBtn.addEventListener('click', onNo);
+    modal.addEventListener('click', onBackdrop);
+
+    openModal('confirmModal');
+  });
+}
+
+// Non-blocking replacement for alert() — informational toast.
+function showAlert(message) {
+  if (typeof showToast === 'function') showToast(message);
+  else window.alert(message);
+}
+
 function closeSubModal(id) {
   closeModal(id);
   if (typeof editingWorkoutCopy !== 'undefined' && editingWorkoutCopy && isEditOpen()) {
@@ -336,11 +391,11 @@ function _mergeImportedDb(imported) {
 
 async function doImport() {
   const raw = document.getElementById('importText').value.trim();
-  if (!raw) { alert(t('enterExportCode')); return; }
+  if (!raw) { showAlert(t('enterExportCode')); return; }
   try {
     const imported = await decompressPayload(raw);
     _mergeImportedDb(imported);
-  } catch(e) { alert(t('importError')); }
+  } catch(e) { showAlert(t('importError')); }
 }
 
 async function importFromFile(event) {
@@ -360,7 +415,7 @@ async function importFromFile(event) {
     try { imported = JSON.parse(text); }
     catch { imported = JSON.parse(decodeURIComponent(escape(atob(text.trim())))); }
     _mergeImportedDb(imported);
-  } catch(e) { alert(t('importError')); }
+  } catch(e) { showAlert(t('importError')); }
   event.target.value = '';
 }
 

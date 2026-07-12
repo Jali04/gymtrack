@@ -137,7 +137,8 @@ body {
   background-attachment: fixed;
   color: var(--text);
   min-height: 100dvh;
-  padding-bottom: 96px;
+  /* Clear the floating bottom-nav plus the iPhone home-indicator */
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
   overscroll-behavior: none;
 }
 body.light-mode {
@@ -148,7 +149,9 @@ body.light-mode {
 /* ---- HEADER ---- */
 .header {
   background: var(--bg);
-  padding: 54px 20px 16px;
+  padding: 16px 20px 16px;
+  /* Push the header below the status bar / notch (black-translucent overlays it) */
+  padding-top: calc(env(safe-area-inset-top, 38px) + 16px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -218,7 +221,7 @@ body.light-mode .header-btn:hover {
 /* ---- NAV ---- */
 .nav {
   position: fixed;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 32px);
@@ -1343,7 +1346,7 @@ body.modal-open {
 
 #restTimerOverlay {
   position: fixed;
-  bottom: 82px;
+  bottom: calc(82px + env(safe-area-inset-bottom));
   left: 12px;
   right: 12px;
   background: var(--surface);
@@ -3301,6 +3304,49 @@ body.light-mode .filter-chip.active {
 .autocomplete-suggestion:hover {
   background: rgba(255, 255, 255, 0.05);
   color: var(--accent);
+}
+
+/* =============================================
+   C1 — Accessibility: allow pinch-zoom (maximum-scale removed from viewport)
+   and stop iOS from auto-zooming when focusing an input. Safari only zooms
+   when the focused control's font-size is < 16px, so every text-entry control
+   is forced to >=16px. !important beats the inline font-size styles some
+   compact inputs carry. Non-text controls are excluded so layouts are untouched.
+   ============================================= */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="submit"]):not([type="button"]),
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* =============================================
+   A4 — Styled confirm dialog (replaces native confirm())
+   ============================================= */
+#confirmModal .modal {
+  padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  max-width: 400px;
+}
+.confirm-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.confirm-text {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 22px;
+  white-space: pre-line;
+}
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+.confirm-actions .btn {
+  flex: 1;
+  margin: 0;
 }
 
 

@@ -262,10 +262,10 @@ function saveTemplate() {
   const typeEl = document.getElementById('tmplType');
   const type = typeEl ? typeEl.value : 'training';
   
-  if (!name) { alert(t('enterName')); return; }
-  
+  if (!name) { showAlert(t('enterName')); return; }
+
   // If it's a rest day, we don't necessarily NEED exercise IDs.
-  if (type === 'training' && tmplExercises.length === 0) { alert(t('minOneExercise')); return; }
+  if (type === 'training' && tmplExercises.length === 0) { showAlert(t('minOneExercise')); return; }
   
   if (editingTemplateId) {
     const tmpl = db.templates.find(x => String(x.id) === String(editingTemplateId));
@@ -279,8 +279,8 @@ function saveTemplate() {
   showToast(t('save') + ' ✓');
 }
 
-function deleteTemplate() {
-  if (!confirm(t('confirmDeleteTmpl'))) return;
+async function deleteTemplate() {
+  if (!await showConfirm(t('confirmDeleteTmpl'))) return;
   db.templates = db.templates.filter(x => String(x.id) !== String(editingTemplateId));
   save();
   closeModal('templateModal');

@@ -149,7 +149,7 @@ function quitProgram() {
   showToast('Programm beendet');
 }
 
-function startNextProgramDay() {
+async function startNextProgramDay() {
   if (!db.activeProgram || db.currentWorkout) return;
   const prog = db.programs.find(x => String(x.id) === String(db.activeProgram.id));
   if (!prog || !prog.schedule) return;
@@ -158,18 +158,18 @@ function startNextProgramDay() {
   const todayTplId = prog.schedule[todayDayIndex];
   
   if (!todayTplId) {
-    alert('Heute ist ein Ruhetag! Kein Workout geplant.');
+    showAlert('Heute ist ein Ruhetag! Kein Workout geplant.');
     return;
   }
-  
+
   const tpl = db.templates.find(x => String(x.id) === String(todayTplId));
   if (!tpl) {
-    alert('Die Vorlage für heute wurde gelöscht.');
+    showAlert('Die Vorlage für heute wurde gelöscht.');
     return;
   }
-  
+
   if (tpl.type === 'couch' || tpl.type === 'rest') {
-     if(!confirm(`Heute ist als "${tpl.type === 'rest' ? 'Active Rest' : 'Couch Potato'}" markiert. Dennoch ein Training dafür dokumentieren?`)) {
+     if(!await showConfirm(`Heute ist als "${tpl.type === 'rest' ? 'Active Rest' : 'Couch Potato'}" markiert. Dennoch ein Training dafür dokumentieren?`, { danger: false, confirmText: 'Ja' })) {
        return;
      }
   }
@@ -255,7 +255,7 @@ function openEditProgram(id) {
 
 function saveProgram() {
   const name = document.getElementById('progName').value.trim();
-  if (!name) return alert('Name fehlt');
+  if (!name) return showAlert('Name fehlt');
   
   const daySelects = document.querySelectorAll('.prog-day-select');
   const schedule = {};
@@ -269,7 +269,7 @@ function saveProgram() {
     }
   });
   
-  if (!hasWorkout) return alert('Mindestens ein Tag muss eine Vorlage haben');
+  if (!hasWorkout) return showAlert('Mindestens ein Tag muss eine Vorlage haben');
   
   if (currentProgId) {
     const p = db.programs.find(x => String(x.id) === String(currentProgId));
@@ -291,18 +291,17 @@ function saveProgram() {
   updateActiveProgramBanner();
 }
 
-function deleteProgram() {
+async function deleteProgram() {
   if (!currentProgId) return;
-  if (confirm('Programm wirklich löschen?')) {
-    db.programs = db.programs.filter(x => String(x.id) !== String(currentProgId));
-    if (db.activeProgram && String(db.activeProgram.id) === String(currentProgId)) {
-      db.activeProgram = null;
-    }
-    save();
-    closeModal('programModal');
-    renderPrograms();
-    updateActiveProgramBanner();
+  if (!await showConfirm('Programm wirklich löschen?')) return;
+  db.programs = db.programs.filter(x => String(x.id) !== String(currentProgId));
+  if (db.activeProgram && String(db.activeProgram.id) === String(currentProgId)) {
+    db.activeProgram = null;
   }
+  save();
+  closeModal('programModal');
+  renderPrograms();
+  updateActiveProgramBanner();
 }
 
 async function openProgramShare(id) {

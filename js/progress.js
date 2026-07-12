@@ -20,7 +20,7 @@ function saveMeasurement() {
   const bf = parseFloat(bfRaw.replace(',', '.'));
   
   if (isNaN(w)) {
-    alert(t('invalidInput') || 'Ungültige Eingabe');
+    showAlert(t('invalidInput') || 'Ungültige Eingabe');
     return;
   }
   
@@ -128,12 +128,11 @@ function renderMeasurements() {
   chart.innerHTML = _buildLineChart(points, { width: 320, height: 140, color: 'var(--accent)' });
 }
 
-function deleteMeasurement(id) {
-  if (confirm(t('confirmDel') || 'Eintrag löschen?')) {
-    db.measurements = db.measurements.filter(m => m.id !== id);
-    save();
-    renderProgress();
-  }
+async function deleteMeasurement(id) {
+  if (!await showConfirm(t('confirmDel') || 'Eintrag löschen?')) return;
+  db.measurements = db.measurements.filter(m => m.id !== id);
+  save();
+  renderProgress();
 }
 
 function requestPicsAccess() {
@@ -368,14 +367,13 @@ function openPic(id) {
   openModal('viewPicModal');
 }
 
-function deleteCurrentPic() {
+async function deleteCurrentPic() {
   if (!activePicId) return;
-  if (confirm(t('confirmDel') || 'Foto löschen?')) {
-    db.progressPics = db.progressPics.filter(x => x.id !== activePicId);
-    save();
-    closeModal('viewPicModal');
-    renderProgressPics();
-  }
+  if (!await showConfirm(t('confirmDel') || 'Foto löschen?')) return;
+  db.progressPics = db.progressPics.filter(x => x.id !== activePicId);
+  save();
+  closeModal('viewPicModal');
+  renderProgressPics();
 }
 
 function renderMilestones() {
