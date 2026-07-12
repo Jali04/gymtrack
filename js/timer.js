@@ -509,7 +509,7 @@ function _saveHiitLog() {
     const tVal = targets[i];
     const tNote = notes[i].trim();
     if (tVal === 'gymlab' || tVal === 'newex') {
-      alert("Bitte ein gültiges Ziel wählen.");
+      showAlert("Bitte ein gültiges Ziel wählen.");
       return;
     }
     const setObj = { ...baseSet, rounds: roundsArr[i], totalSec: roundsArr[i] * (hiitState.workSec + hiitState.restSec) };

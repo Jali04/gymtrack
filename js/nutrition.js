@@ -762,7 +762,7 @@ window.recalcFoodModalMacros = recalcFoodModalMacros;
 function saveLoggedFood() {
   const name = document.getElementById('nutriFoodName').value.trim();
   if (!name) {
-    alert(lang === 'de' ? 'Bitte gib einen Namen ein.' : 'Please enter a name.');
+    showAlert(lang === 'de' ? 'Bitte gib einen Namen ein.' : 'Please enter a name.');
     return;
   }
 
@@ -847,11 +847,11 @@ function saveLoggedFood() {
 }
 window.saveLoggedFood = saveLoggedFood;
 
-function deleteLoggedFood() {
+async function deleteLoggedFood() {
   if (!editingLoggedFoodId) return;
 
   const confirmMsg = lang === 'de' ? 'Diesen Eintrag wirklich löschen?' : 'Delete this entry?';
-  if (!confirm(confirmMsg)) return;
+  if (!await showConfirm(confirmMsg)) return;
 
   const logs = db.nutritionLog || [];
   const index = logs.findIndex(l => l.id === editingLoggedFoodId);
@@ -1035,7 +1035,7 @@ function calculateAiGoals() {
   const goal = document.getElementById('calcGoal').value;
 
   if (!weight || !height || !age) {
-    alert(lang === 'de' ? 'Bitte gib Gewicht, Größe und Alter ein.' : 'Please enter weight, height, and age.');
+    showAlert(lang === 'de' ? 'Bitte gib Gewicht, Größe und Alter ein.' : 'Please enter weight, height, and age.');
     return;
   }
 
@@ -1087,7 +1087,7 @@ function calculateAiGoals() {
   toggleGoalsCalculator();
   if (typeof haptic === 'function') haptic('success');
   
-  alert(lang === 'de' 
+  showAlert(lang === 'de' 
     ? `Empfehlungen berechnet!\nKalorien: ${targetCal} kcal\nProtein: ${targetProt}g\nKohlenhydrate: ${targetCarb}g\nFett: ${targetFat}g` 
     : `Recommendations calculated!\nCalories: ${targetCal} kcal\nProtein: ${targetProt}g\nCarbs: ${targetCarb}g\nFat: ${targetFat}g`
   );
@@ -1208,7 +1208,7 @@ window.closeBarcodeScanner = closeBarcodeScanner;
 function lookupBarcodeDirect() {
   const code = document.getElementById('manualBarcodeVal').value.trim();
   if (!code) {
-    alert(lang === 'de' ? 'Bitte gib einen Barcode ein.' : 'Please enter a barcode.');
+    showAlert(lang === 'de' ? 'Bitte gib einen Barcode ein.' : 'Please enter a barcode.');
     return;
   }
   closeModal('barcodeScannerModal');
@@ -1267,14 +1267,14 @@ async function lookupBarcode(barcode) {
       showToast(isDe ? 'Produkt erfolgreich geladen!' : 'Product loaded successfully!');
       if (typeof haptic === 'function') haptic('success');
     } else {
-      alert(isDe 
+      showAlert(isDe 
         ? `Produkt nicht gefunden (Code: ${barcode}). Bitte trage die Nährwerte manuell ein.` 
         : `Product not found (Code: ${barcode}). Please enter values manually.`
       );
     }
   } catch(e) {
     console.error("Failed to lookup barcode", e);
-    alert(isDe 
+    showAlert(isDe 
       ? 'Fehler bei der Produktsuche. Netzwerkverbindung prüfen.' 
       : 'Product search failed. Check network connection.'
     );
@@ -1415,7 +1415,7 @@ window.openEditLibraryFood = openEditLibraryFood;
 function saveLibraryFood() {
   const name = document.getElementById('libFoodName').value.trim();
   if (!name) {
-    alert(lang === 'de' ? 'Bitte gib einen Namen ein.' : 'Please enter a name.');
+    showAlert(lang === 'de' ? 'Bitte gib einen Namen ein.' : 'Please enter a name.');
     return;
   }
 
@@ -1447,7 +1447,7 @@ function saveLibraryFood() {
     // Check duplicate name
     const exists = db.foodLibrary.some(f => f.name.toLowerCase() === name.toLowerCase());
     if (exists) {
-      alert(lang === 'de' 
+      showAlert(lang === 'de' 
         ? 'Ein Lebensmittel mit diesem Namen existiert bereits.' 
         : 'A food with this name already exists.'
       );
@@ -1475,7 +1475,7 @@ function saveLibraryFood() {
 }
 window.saveLibraryFood = saveLibraryFood;
 
-function deleteLibraryFood(id, event) {
+async function deleteLibraryFood(id, event) {
   if (event) {
     event.stopPropagation(); // prevent opening the edit modal
   }
@@ -1485,12 +1485,12 @@ function deleteLibraryFood(id, event) {
   if (!item) return;
 
   if (!item.isCustom) {
-    alert(lang === 'de' ? 'Standard-Lebensmittel können nicht gelöscht werden.' : 'Standard foods cannot be deleted.');
+    showAlert(lang === 'de' ? 'Standard-Lebensmittel können nicht gelöscht werden.' : 'Standard foods cannot be deleted.');
     return;
   }
 
   const confirmMsg = t('libFoodConfirmDelete') || (lang === 'de' ? 'Lebensmittel wirklich aus der Bibliothek löschen?' : 'Really delete this food from library?');
-  if (!confirm(confirmMsg)) return;
+  if (!await showConfirm(confirmMsg)) return;
 
   db.foodLibrary = library.filter(f => f.id !== id);
   save();

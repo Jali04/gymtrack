@@ -53,9 +53,22 @@ const SPLASH_QUOTES = [
   "Focus on your goal. Don't look in any direction but ahead."
 ];
 
+let _splashDismissed = false;
+let _splashAutoTimer = null;
+
 function initSplash() {
   const el = document.getElementById('splashScreen');
   if (!el) return;
+
+  // Skip the splash entirely when a workout is already running \u2014 the user was
+  // likely just kicked out of the app mid-training (iOS PWAs get killed a lot)
+  // and needs to get straight back to logging, not tap through a splash.
+  if (typeof db !== 'undefined' && db && db.currentWorkout) {
+    _splashDismissed = true;
+    el.style.display = 'none';
+    if (typeof checkOnboardingStatus === 'function') checkOnboardingStatus();
+    return;
+  }
 
   // Select quote randomly instead of daily so it changes on every load
   const randomIndex = Math.floor(Math.random() * SPLASH_QUOTES.length);
@@ -63,12 +76,22 @@ function initSplash() {
 
   // Make splash visible on every app load
   el.style.display = 'flex';
+
+  // Auto-dismiss after a short beat \u2014 no button, no tap required. Tapping the
+  // splash (enterApp) still skips it immediately.
+  _splashAutoTimer = setTimeout(enterApp, 1100);
 }
 
 function enterApp() {
+  if (_splashDismissed) return;
+  _splashDismissed = true;
+  if (_splashAutoTimer) { clearTimeout(_splashAutoTimer); _splashAutoTimer = null; }
+
   const el = document.getElementById('splashScreen');
-  el.classList.add('fade-out');
-  setTimeout(() => { el.style.display = 'none'; }, 620);
-  try { haptic('medium'); } catch(e) {}
+  if (el) {
+    el.classList.add('fade-out');
+    setTimeout(() => { el.style.display = 'none'; }, 620);
+  }
+  try { haptic('light'); } catch(e) {}
   if (typeof checkOnboardingStatus === 'function') checkOnboardingStatus();
 }

@@ -912,7 +912,7 @@ function importAiPayload(payloadB64, buttonId) {
     }
   } catch(e) {
     console.error("Failed to import AI payload", e);
-    alert(lang === 'de' ? 'Import fehlgeschlagen.' : 'Import failed.');
+    showAlert(lang === 'de' ? 'Import fehlgeschlagen.' : 'Import failed.');
   }
 }
 
@@ -1110,9 +1110,9 @@ async function sendAiMessage() {
 }
 
 // Clear active chat history
-function clearAiChat() {
+async function clearAiChat() {
   const isDe = (lang === 'de');
-  if (!confirm(isDe ? 'Chatverlauf wirklich löschen?' : 'Really delete chat history?')) return;
+  if (!await showConfirm(isDe ? 'Chatverlauf wirklich löschen?' : 'Really delete chat history?')) return;
   
   const welcome = isDe
     ? 'Hallo! Ich bin dein persönlicher KI-Coach. Ich unterstütze dich bei deinem Training, deiner Ernährung und deinen Supplements. Wie kann ich dir heute helfen?'
@@ -1377,7 +1377,7 @@ function saveAiOnboardKey() {
   const isDe = (lang === 'de');
   
   if (!key) {
-    alert(isDe ? 'Bitte gib einen gültigen API-Key ein.' : 'Please enter a valid API key.');
+    showAlert(isDe ? 'Bitte gib einen gültigen API-Key ein.' : 'Please enter a valid API key.');
     return;
   }
   
@@ -1665,11 +1665,11 @@ function selectChat(chatId) {
   updateSendButtonState();
 }
 
-function deleteChat(chatId, event) {
+async function deleteChat(chatId, event) {
   if (event) event.stopPropagation();
-  
+
   const isDe = (lang === 'de');
-  if (!confirm(isDe ? 'Diesen Chat wirklich löschen?' : 'Really delete this chat?')) return;
+  if (!await showConfirm(isDe ? 'Diesen Chat wirklich löschen?' : 'Really delete this chat?')) return;
   
   delete aiChats[chatId];
   localStorage.setItem('gym_ai_chats', JSON.stringify(aiChats));

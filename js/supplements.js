@@ -529,7 +529,7 @@ function _toggleFreqDay(d) {
 
 function saveSupplement() {
   const name = document.getElementById('suppName').value.trim();
-  if (!name) { alert(t('enterName')); return; }
+  if (!name) { showAlert(t('enterName')); return; }
   const dosage = parseFloat(document.getElementById('suppDosage').value) || 1;
   const newSupplySize = parseFloat(document.getElementById('suppSupplySize').value) || 0;
 
@@ -573,9 +573,9 @@ function saveSupplement() {
   haptic('success');
 }
 
-function deleteSupplement() {
+async function deleteSupplement() {
   if (!editingSuppId) return;
-  if (!confirm(t('suppConfirmDelete'))) return;
+  if (!await showConfirm(t('suppConfirmDelete'))) return;
   db.supplements = db.supplements.filter(x => x.id !== editingSuppId);
   db.supplementLog = db.supplementLog.filter(l => l.supId !== editingSuppId);
   save();
