@@ -517,7 +517,9 @@ async function syncTable(table, userId) {
 
   // Update local DB memory
   db[localKey] = mergedArray;
-  localStorage.setItem('gymdb', JSON.stringify(db));
+  // Route through the quota-safe persister so pulled photos migrate to IndexedDB
+  if (typeof _persistDb === 'function') _persistDb();
+  else localStorage.setItem('gymdb', JSON.stringify(db));
 
   // Push updates to remote in background
   if (upsertQueue.length > 0) {

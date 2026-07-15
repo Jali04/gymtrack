@@ -43,7 +43,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DSCPLN">
   <meta name="theme-color" content="#0a0a0a">
-  <meta name="version" content="4.43">
+  <meta name="version" content="4.44">
   <title>DSCPLN</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
@@ -52,7 +52,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4.43">
+  <link rel="stylesheet" href="css/styles.css?v=4.44">
 </head>
 
 <body>
@@ -972,6 +972,15 @@
       <textarea id="exportText" readonly
         style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;"></textarea>
 
+      <!-- Auto-Backup (E3) -->
+      <div class="settings-row-item" id="autoBackupRow" style="margin-bottom:12px;">
+        <div class="settings-row-info">
+          <div class="settings-row-label" id="lblAutoBackup">Automatisches Backup</div>
+          <div class="settings-row-desc" id="autoBackupStatus">Noch kein Auto-Backup</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btnRestoreAutoBackup" onclick="restoreAutoBackup()" style="color:var(--accent);">Wiederherstellen</button>
+      </div>
+
       <!-- Export section -->
       <div
         style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;"
@@ -1598,6 +1607,19 @@
     </div>
   </div>
 
+  <!-- Forgotten workout dialog (B6) -->
+  <div class="modal-overlay" id="forgottenWorkoutModal">
+    <div class="modal" style="padding:22px 20px calc(20px + env(safe-area-inset-bottom));">
+      <div class="confirm-title" id="forgottenWorkoutTitle">Training noch aktiv?</div>
+      <div class="confirm-text" id="forgottenWorkoutInfo"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="_forgottenFinish()" id="btnForgottenFinish" style="margin:0;">Beenden &amp; speichern</button>
+        <button class="btn btn-secondary" onclick="_forgottenResume()" id="btnForgottenResume" style="margin:0;">Fortsetzen</button>
+        <button class="btn btn-danger" onclick="_forgottenDiscard()" id="btnForgottenDiscard" style="margin:0;">Verwerfen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm Dialog (replaces native confirm()) -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal">
@@ -1871,11 +1893,11 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-  <script src="js/db.js?v=4.43"></script>
-  <script src="js/i18n.js?v=4.43"></script>
-  <script src="js/modals.js?v=4.43"></script>
+  <script src="js/db.js?v=4.44"></script>
+  <script src="js/i18n.js?v=4.44"></script>
+  <script src="js/modals.js?v=4.44"></script>
   <script src="js/nav.js?v=4.41"></script>
-  <script src="js/workout.js?v=4.43"></script>
+  <script src="js/workout.js?v=4.44"></script>
   <script src="js/exercises.js?v=4.31"></script>
   <script src="js/history.js?v=4.31"></script>
   <script src="js/stats.js?v=4.31"></script>
@@ -1883,23 +1905,23 @@
   <script src="js/calendar.js?v=4.31"></script>
   <script src="js/editWorkout.js?v=4.31"></script>
   <script src="js/timer.js?v=4.43"></script>
-  <script src="js/ui.js?v=4.43"></script>
+  <script src="js/ui.js?v=4.44"></script>
   <script src="js/wakelock.js?v=4.43"></script>
   <script src="js/splash.js?v=4.31"></script>
-  <script src="js/progress.js?v=4.31"></script>
+  <script src="js/progress.js?v=4.44"></script>
   <script src="js/programs.js?v=4.43"></script>
   <script src="js/supplements.js?v=4.31"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/nutrition.js?v=4.34"></script>
   <script src="js/tools.js?v=4.31"></script>
   <script src="js/guide.js?v=4.34"></script>
   <script src="js/achievements.js?v=4.41"></script>
-  <script src="js/app.js?v=4.43"></script>
+  <script src="js/app.js?v=4.44"></script>
   <script src="js/aiCoach.js?v=4.31"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.6"></script>
   <script src="js/config.js?v=4.31"></script>
   <script src="js/auth.js?v=4.31"></script>
-  <script src="js/sync.js?v=4.34"></script>
+  <script src="js/sync.js?v=4.44"></script>
 
 </body>
 

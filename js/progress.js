@@ -59,17 +59,15 @@ function handlePicUpload(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      
-      db.progressPics.push({
-        id: uid(),
-        date: new Date().toISOString(),
-        dataUrl: dataUrl
-      });
+
+      const entry = { id: uid(), date: new Date().toISOString(), dataUrl: dataUrl };
+      db.progressPics.push(entry);
       // Sort desc
       db.progressPics.sort((a,b) => new Date(b.date) - new Date(a.date));
-      save();
-      renderProgressPics();
-      showToast(t('savedToast') || 'Zing!');
+      // Write bytes to IndexedDB first (confirmed), then persist the slim blob.
+      const done = () => { save(); renderProgressPics(); showToast(t('savedToast') || 'Zing!'); };
+      if (typeof photoStorePut === 'function') photoStorePut(entry).then(done);
+      else done();
     };
     img.src = e.target.result;
   };
@@ -341,9 +339,14 @@ function renderProgressPics() {
     let itemsHtml = db.progressPics.map(p => {
       const d = new Date(p.date);
       const dateStr = `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
+      // dataUrl may still be loading from IndexedDB — show a placeholder tile
+      // (the gallery re-renders once hydration finishes).
+      const inner = p.dataUrl
+        ? `<img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover;">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;">⏳</div>`;
       return `
         <div style="position:relative;width:100%;aspect-ratio:3/4;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--surface2);" onclick="openPic('${p.id}')">
-          <img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover;">
+          ${inner}
           <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);padding:6px;font-size:11px;text-align:center;font-weight:600;backdrop-filter:blur(4px);">${dateStr}</div>
         </div>
       `;
@@ -358,6 +361,7 @@ let activePicId = null;
 function openPic(id) {
   const p = db.progressPics.find(x => x.id === id);
   if (!p) return;
+  if (!p.dataUrl) { showToast('⏳ Foto wird geladen …'); return; }
   activePicId = id;
   
   const d = new Date(p.date);
@@ -370,7 +374,9 @@ function openPic(id) {
 async function deleteCurrentPic() {
   if (!activePicId) return;
   if (!await showConfirm(t('confirmDel') || 'Foto löschen?')) return;
-  db.progressPics = db.progressPics.filter(x => x.id !== activePicId);
+  const delId = activePicId;
+  db.progressPics = db.progressPics.filter(x => x.id !== delId);
+  if (typeof photoStoreDelete === 'function') photoStoreDelete(delId);
   save();
   closeModal('viewPicModal');
   renderProgressPics();

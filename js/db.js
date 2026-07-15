@@ -63,6 +63,241 @@ const DEFAULT_EXERCISES = [
 ];
 if (db.exercises.length === 0) { db.exercises = DEFAULT_EXERCISES; }
 
+/* =============================================
+   A7 — Media store (IndexedDB) + quota-safe persistence
+   Progress photos are heavy (JPEG DataURLs). Keeping them in the single
+   `gymdb` localStorage blob blows the ~5 MB quota and makes save() throw —
+   which could lose the running workout. We keep the photo bytes in IndexedDB
+   and store only lightweight {id,date} in the localStorage blob.
+
+   DATA-SAFETY INVARIANT: a photo's dataUrl is only stripped from the
+   localStorage blob once it is CONFIRMED written to IndexedDB (_idbPhotoIds).
+   Until then it stays inline, so the bytes are never in zero stores.
+   If IndexedDB is unavailable, nothing is ever confirmed → everything stays
+   inline exactly like before (safe fallback).
+   ============================================= */
+let _idbPhotoIds   = new Set();   // photo ids confirmed present in IndexedDB
+let _quotaWarned   = false;
+let _photoDbPromise = null;
+let _photosReadyResolve;
+const _photosReady = new Promise(res => { _photosReadyResolve = res; });
+function _ensurePhotosReady() { return _photosReady; }
+
+function _photoDbOpen() {
+  if (_photoDbPromise) return _photoDbPromise;
+  _photoDbPromise = new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined' || !indexedDB) { reject(new Error('no-idb')); return; }
+    let req;
+    try { req = indexedDB.open('dscpln_media', 2); } catch (e) { reject(e); return; }
+    req.onupgradeneeded = () => {
+      const idb = req.result;
+      if (!idb.objectStoreNames.contains('photos'))  idb.createObjectStore('photos',  { keyPath: 'id' });
+      if (!idb.objectStoreNames.contains('backups')) idb.createObjectStore('backups', { keyPath: 'id' }); // E3
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error || new Error('idb-open-failed'));
+  });
+  return _photoDbPromise;
+}
+function _photoStore(mode) {
+  return _photoDbOpen().then(idb => idb.transaction('photos', mode).objectStore('photos'));
+}
+function _photoPut(rec) {
+  return _photoStore('readwrite').then(store => new Promise((res, rej) => {
+    const r = store.put(rec); r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+  }));
+}
+function _photoDelete(id) {
+  return _photoStore('readwrite').then(store => new Promise((res, rej) => {
+    const r = store.delete(id); r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+  }));
+}
+function _photoGetAll() {
+  return _photoStore('readonly').then(store => new Promise((res, rej) => {
+    const r = store.getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error);
+  }));
+}
+
+// Public: persist one photo to IndexedDB and mark it confirmed.
+function photoStorePut(entry) {
+  return _photoPut({ id: entry.id, date: entry.date, dataUrl: entry.dataUrl, note: entry.note || null })
+    .then(() => { _idbPhotoIds.add(entry.id); })
+    .catch(e => { console.warn('[Photos] IDB put failed, keeping inline:', e && e.message); });
+}
+function photoStoreDelete(id) {
+  _idbPhotoIds.delete(id);
+  return _photoDelete(id).catch(e => console.warn('[Photos] IDB delete failed:', e && e.message));
+}
+
+// Copy any not-yet-confirmed inline photos (fresh uploads, sync pulls, imports)
+// into IndexedDB. Fire-and-forget; confirmation flips them to slim on next save.
+function _reconcilePhotos() {
+  if (!db.progressPics || !db.progressPics.length) return;
+  db.progressPics.forEach(p => {
+    if (p && p.dataUrl && !_idbPhotoIds.has(p.id)) {
+      _photoPut({ id: p.id, date: p.date, dataUrl: p.dataUrl, note: p.note || null })
+        .then(() => { _idbPhotoIds.add(p.id); })
+        .catch(() => { /* stays inline — safe */ });
+    }
+  });
+}
+
+// Serialize db for localStorage, stripping dataUrl only for photos confirmed in IDB.
+function _serializeDb() {
+  if (!db.progressPics || !db.progressPics.length) return JSON.stringify(db);
+  const slimPics = db.progressPics.map(p => {
+    if (p && p.dataUrl && _idbPhotoIds.has(p.id)) {
+      const { dataUrl, ...rest } = p;
+      return rest;
+    }
+    return p;
+  });
+  const clone = Object.assign({}, db, { progressPics: slimPics });
+  return JSON.stringify(clone);
+}
+
+function _isQuotaError(e) {
+  return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+                 e.code === 22 || e.code === 1014);
+}
+
+// Central persistence — quota-safe. All gymdb writes go through here.
+function _persistDb() {
+  _reconcilePhotos();
+  try {
+    localStorage.setItem('gymdb', _serializeDb());
+    _quotaWarned = false;
+    return true;
+  } catch (e) {
+    if (_isQuotaError(e)) {
+      console.error('[Storage] localStorage quota exceeded:', e);
+      if (!_quotaWarned && typeof showToast === 'function') {
+        showToast('⚠️ Speicher fast voll — bitte ein Backup erstellen (Einstellungen).');
+        _quotaWarned = true;
+      }
+    } else {
+      console.error('[Storage] save failed:', e);
+    }
+    return false;
+  }
+}
+
+// One-time boot: open IDB, hydrate in-memory dataUrls, migrate legacy inline
+// photos into IDB, then slim the localStorage blob. Never destructive.
+async function _initPhotoStore() {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      try {
+        const already = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+        if (!already) navigator.storage.persist().catch(() => {});
+      } catch (e) { /* ignore */ }
+    }
+    let stored = [];
+    try { stored = await _photoGetAll(); }
+    catch (e) { _photoDbPromise = null; stored = []; }
+    const map = new Map(stored.map(r => [r.id, r]));
+    stored.forEach(r => _idbPhotoIds.add(r.id));
+
+    (db.progressPics || []).forEach(p => {
+      if (!p) return;
+      if (!p.dataUrl && map.has(p.id)) {
+        p.dataUrl = map.get(p.id).dataUrl;              // hydrate migrated photo into memory
+      } else if (p.dataUrl && !_idbPhotoIds.has(p.id)) { // legacy inline photo -> migrate to IDB
+        _photoPut({ id: p.id, date: p.date, dataUrl: p.dataUrl, note: p.note || null })
+          .then(() => { _idbPhotoIds.add(p.id); _persistDb(); })
+          .catch(() => {});
+      }
+    });
+
+    _persistDb(); // slim now-confirmed inline photos out of the localStorage blob
+    if (typeof renderProgressPics === 'function') { try { renderProgressPics(); } catch (e) {} }
+  } catch (e) {
+    console.warn('[Photos] init failed:', e && e.message);
+  } finally {
+    if (_photosReadyResolve) _photosReadyResolve();
+  }
+}
+
+/* =============================================
+   E3 — Silent automatic local backup (IndexedDB)
+   A self-contained snapshot (incl. photos) is stored in IndexedDB weekly and
+   after every 5th workout. Protects against the A7 quota / Safari-eviction
+   scenarios and is restorable from Settings.
+   ============================================= */
+const _AUTOBACKUP_META_KEY = 'dscpln_autobackup_meta';
+
+function _backupTx(mode) {
+  return _photoDbOpen().then(idb => idb.transaction('backups', mode).objectStore('backups'));
+}
+function _backupSave(rec) {
+  return _backupTx('readwrite').then(store => new Promise((res, rej) => {
+    const r = store.put(rec); r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+  }));
+}
+function _backupGet(id) {
+  return _backupTx('readonly').then(store => new Promise((res, rej) => {
+    const r = store.get(id); r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error);
+  }));
+}
+
+function getAutoBackupMeta() {
+  try { return JSON.parse(localStorage.getItem(_AUTOBACKUP_META_KEY) || 'null') || null; }
+  catch (e) { return null; }
+}
+
+// force = true bypasses the weekly interval (used after every 5th workout).
+async function maybeAutoBackup(force) {
+  try {
+    const meta = getAutoBackupMeta();
+    const now  = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const due  = !!force || !meta || !meta.ts || (now - meta.ts) > weekMs;
+    if (!due) return;
+    if (typeof _ensurePhotosReady === 'function') await _ensurePhotosReady();
+    const json = JSON.stringify(db); // full, self-contained (photos hydrated in memory)
+    await _backupSave({ id: 'auto', ts: now, workoutCount: (db.workouts || []).length, size: json.length, json });
+    localStorage.setItem(_AUTOBACKUP_META_KEY, JSON.stringify({ ts: now, workouts: (db.workouts || []).length, size: json.length }));
+    console.log('[Backup] Auto-backup stored', new Date(now).toISOString());
+    if (typeof _refreshAutoBackupUI === 'function') _refreshAutoBackupUI();
+  } catch (e) {
+    console.warn('[Backup] auto-backup failed:', e && e.message);
+  }
+}
+
+async function restoreAutoBackup() {
+  let rec;
+  try { rec = await _backupGet('auto'); } catch (e) { rec = null; }
+  if (!rec || !rec.json) {
+    if (typeof showToast === 'function') showToast('Kein Auto-Backup vorhanden.');
+    return;
+  }
+  const when = new Date(rec.ts).toLocaleString(typeof lang !== 'undefined' && lang === 'en' ? 'en-GB' : 'de-DE');
+  const proceed = (typeof showConfirm === 'function')
+    ? await showConfirm(`Auto-Backup (${when}) wiederherstellen? Deine aktuellen lokalen Daten werden ersetzt.`,
+        { confirmText: (typeof t === 'function' ? (t('restore') || 'Wiederherstellen') : 'Wiederherstellen') })
+    : window.confirm('Restore backup from ' + when + '?');
+  if (!proceed) return;
+
+  let imported;
+  try { imported = JSON.parse(rec.json); }
+  catch (e) { if (typeof showToast === 'function') showToast('Backup beschädigt.'); return; }
+
+  db = imported;
+  // Move restored photos into IndexedDB first so the slim blob fits the quota.
+  _idbPhotoIds = new Set();
+  if (Array.isArray(db.progressPics)) {
+    for (const p of db.progressPics) {
+      if (p && p.dataUrl && typeof photoStorePut === 'function') {
+        try { await photoStorePut(p); } catch (e) { /* keeps inline */ }
+      }
+    }
+  }
+  try { runMigrations(db); } catch (e) {}
+  _persistDb();
+  if (typeof showToast === 'function') showToast('✓ Backup wiederhergestellt');
+  setTimeout(() => location.reload(), 400);
+}
+
 const SCHEMA_VERSION = 4;
 
 const MIGRATIONS = {
@@ -198,7 +433,7 @@ function runMigrations(data) {
 
 // Run migrations on startup
 if (runMigrations(db)) {
-  localStorage.setItem('gymdb', JSON.stringify(db));
+  _persistDb();
 }
 
 // Startup migrations for supplements and logs
@@ -239,13 +474,19 @@ if (!localStorage.getItem('supp_sync_fix_v1')) {
 }
 
 if (dbNeedsSave) {
-  localStorage.setItem('gymdb', JSON.stringify(db));
+  _persistDb();
 }
+
+// Boot the media store (async, non-blocking). Migrates photos to IndexedDB
+// and slims the localStorage blob once they are safely stored.
+_initPhotoStore();
+// Weekly silent auto-backup (E3). Deferred so it never blocks first paint.
+setTimeout(() => { try { maybeAutoBackup(false); } catch (e) {} }, 3000);
 
 function save() {
   runMigrations(db);
-  localStorage.setItem('gymdb', JSON.stringify(db));
-  
+  _persistDb();
+
   if (typeof syncProfileUpdate === 'function') {
     syncProfileUpdate();
   }

@@ -6,7 +6,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v4.43';
+const CACHE_VERSION = 'v4.44';
 const CACHE_NAME = `dscpln-static-${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [
@@ -47,8 +47,8 @@ const ASSETS_TO_CACHE = [
   './js/aiCoach.js',
   'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap',
   'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-  'https://unpkg.com/html5-qrcode'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.6',
+  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
 ];
 
 let _restNotifTimeout = null;

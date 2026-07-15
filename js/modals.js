@@ -166,6 +166,7 @@ function openSettingsHub() {
   if (wl) wl.checked = !(db.settings && db.settings.wakeLock === false);
   const rs = document.getElementById('settingRestSound');
   if (rs) rs.checked = !(db.restTimer && db.restTimer.sound === false);
+  if (typeof _refreshAutoBackupUI === 'function') _refreshAutoBackupUI();
   openModal('settingsHubModal');
 }
 
@@ -180,6 +181,8 @@ function copyExport() {
 }
 
 async function exportAsFile() {
+  // Ensure photo dataUrls are hydrated back into db so the backup includes them.
+  if (typeof _ensurePhotosReady === 'function') await _ensurePhotosReady();
   const json = JSON.stringify(db);
   const date = new Date().toISOString().split('T')[0];
   try {
@@ -209,6 +212,7 @@ function _triggerDownload(blob, filename) {
 
 async function shareToNotes() {
   // Prepare backup code first (fills hidden textarea)
+  if (typeof _ensurePhotosReady === 'function') await _ensurePhotosReady();
   const payload = await compressPayload(db);
   document.getElementById('exportText').value = payload;
 
@@ -376,6 +380,17 @@ function _mergeImportedDb(imported) {
   if (imported.measurements) {
     if (!db.measurements) db.measurements = [];
     imported.measurements.forEach(m => { if (!db.measurements.find(x => x.id === m.id)) db.measurements.push(m); });
+  }
+  // Progress photos: restore image bytes into IndexedDB so they survive and
+  // don't bloat the localStorage blob. (Previously photos were dropped on import.)
+  if (imported.progressPics) {
+    if (!db.progressPics) db.progressPics = [];
+    imported.progressPics.forEach(p => {
+      if (!p || db.progressPics.find(x => x.id === p.id)) return;
+      db.progressPics.push(p);
+      if (p.dataUrl && typeof photoStorePut === 'function') photoStorePut(p);
+    });
+    db.progressPics.sort((a, b) => new Date(b.date) - new Date(a.date));
   }
   if (imported.supplements) {
     if (!db.supplements) db.supplements = [];
