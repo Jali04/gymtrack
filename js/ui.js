@@ -115,6 +115,25 @@ function flashWorkoutComplete() {
   flash.addEventListener('animationend', () => flash.remove());
 }
 
+/* ---- Training settings toggles ---- */
+function toggleWakeLockSetting(checked) {
+  if (!db.settings) db.settings = {};
+  db.settings.wakeLock = checked;
+  save();
+  if (typeof applyWakeLockSetting === 'function') applyWakeLockSetting();
+  haptic('light');
+  showToast(checked ? t('wakeLockOn') : t('wakeLockOff'));
+}
+
+function toggleRestSoundSetting(checked) {
+  const cfg = (typeof _getRestCfg === 'function') ? _getRestCfg() : (db.restTimer = db.restTimer || {});
+  cfg.sound = checked;
+  save();
+  haptic('light');
+  if (checked && typeof _restBeep === 'function') _restBeep(880, 0.08); // audible confirmation
+  showToast(checked ? t('restSoundOn') : t('restSoundOff'));
+}
+
 /* ---- Dark / Light Theme Toggle ---- */
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');

@@ -161,6 +161,11 @@ async function decompressPayload(code) {
 
 /* ---- Export / Import ---- */
 function openSettingsHub() {
+  // Sync training-setting toggles with current db state
+  const wl = document.getElementById('settingWakeLock');
+  if (wl) wl.checked = !(db.settings && db.settings.wakeLock === false);
+  const rs = document.getElementById('settingRestSound');
+  if (rs) rs.checked = !(db.restTimer && db.restTimer.sound === false);
   openModal('settingsHubModal');
 }
 

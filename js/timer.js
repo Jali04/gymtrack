@@ -206,6 +206,7 @@ function _hiitBegin() {
   _hiitStartPhase('work');
   haptic('medium');
   _hiitUpdateBtn('pause');
+  if (typeof requestWakeLock === 'function') requestWakeLock();
   _saveHiitState();
 }
 
@@ -213,6 +214,7 @@ function _hiitPause() {
   clearInterval(hiitState.interval);
   hiitState.interval = null;
   _hiitUpdateBtn('resume');
+  if (typeof refreshWakeLock === 'function') refreshWakeLock();
   _saveHiitState();
 }
 
@@ -221,6 +223,7 @@ function _hiitResume() {
   _hiitTick();
   hiitState.interval = setInterval(_hiitTick, 250);
   _hiitUpdateBtn('pause');
+  if (typeof requestWakeLock === 'function') requestWakeLock();
   _saveHiitState();
 }
 
@@ -231,6 +234,7 @@ function _hiitStop() {
   hiitState.phase        = 'idle';
   hiitState.elapsed      = 0;
   hiitState.startTs      = null;
+  if (typeof refreshWakeLock === 'function') refreshWakeLock();
   _saveHiitState();
 }
 
@@ -303,6 +307,7 @@ function _hiitNextRound() {
     hiitState.phase = 'done';
     clearInterval(hiitState.interval);
     hiitState.interval = null;
+    if (typeof refreshWakeLock === 'function') refreshWakeLock();
     _hiitRenderDisplay();
     _hiitUpdateBtn('start');
     haptic('success');

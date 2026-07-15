@@ -258,10 +258,12 @@ function renderActiveWorkout() {
       const catClass = getCatClass(type);
 
     const hiits    = e.hiitSets || [];
-    let setsHtml = _renderSetBadges(e.sets, type);
     const hiitBadges  = hiits.map(_hiitBadge).join('');
     const timerBadge  = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
-    if (!setsHtml && !hiitBadges && !e.timerSec) setsHtml = `<span style="color:var(--muted);font-size:13px;">${t('noEntries')}</span>`;
+    const extraBadges = (hiitBadges || timerBadge)
+      ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${hiitBadges}${timerBadge}</div>`
+      : '';
+    const inlineEditor = _renderInlineSetEditor(e, i, type);
 
     // Superset indicator
     const hasSS = !!e.supersetGroup;
@@ -297,12 +299,13 @@ function renderActiveWorkout() {
           <button class="close-btn" onclick="event.stopPropagation();removeWorkoutExercise(${i})">✕</button>
         </div>
       </div>
-      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}${hiitBadges}${timerBadge}</div>
+      ${inlineEditor}
+      ${extraBadges}
       ${e.note ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
         ${ssBtn}
         <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="openLogSets(${i})">
-          ${e.sets.length > 0 ? t('editSets') : t('enterSets')}
+          ${t('detailsNote')}
         </button>
         ${persistBtn}
       </div>
@@ -311,6 +314,226 @@ function renderActiveWorkout() {
 
   initRipples();
   _updateWorkoutLiveStats();
+  if (typeof refreshWakeLock === 'function') refreshWakeLock();
+}
+
+/* ---- Inline set editor (A2) ---- */
+function _we(i) {
+  return db.currentWorkout && db.currentWorkout.exercises ? db.currentWorkout.exercises[i] : null;
+}
+function _exType(we) {
+  if (!we) return 'strength';
+  const ex = getEx(we.exId);
+  return we.isCustom ? getCatType(we.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+}
+function _parseNum(v) {
+  if (v == null) return null;
+  const n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+function _setHasData(s) {
+  if (!s) return false;
+  if (s.minutes != null && s.minutes !== '') return Number(s.minutes) > 0;
+  if ('km' in s || 'pace' in s || (s.time != null && !('reps' in s))) {
+    return Number(s.km) > 0 || !!(s.time && String(s.time).trim());
+  }
+  return s.reps != null && s.reps !== '' && Number(s.reps) > 0;
+}
+function _lastPerf(we) {
+  if (!we || !db.currentWorkout) return null;
+  return we.isCustom
+    ? getLastCustomPerformance(we.customName, we.customCategory, db.currentWorkout.id)
+    : getLastPerformance(we.exId, db.currentWorkout.id);
+}
+
+function _renderInlineSetEditor(e, i, type) {
+  if (!Array.isArray(e.sets)) e.sets = [];
+  const lp    = _lastPerf(e);
+  const lpSet = k => (lp && lp.sets && lp.sets[k]) ? lp.sets[k] : null;
+  const restSec = e.restSec || _getRestCfg().sec;
+  const restM = Math.floor(restSec / 60), restS = (restSec % 60).toString().padStart(2, '0');
+  const restCustom = !!e.restSec;
+
+  // Column header
+  let head;
+  if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>RPE</span><span>✓</span><span></span></div>`;
+  else if (type === 'stretch') head = `<div class="il-head il-stretch"><span>#</span><span>${t('colMin')}</span><span>✓</span><span></span></div>`;
+  else head = `<div class="il-head"><span>#</span><span></span><span>${t('kg')}</span><span>${t('reps')}</span><span>RPE</span><span>✓</span><span></span></div>`;
+
+  const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Warmup', 'D': t('setDropTitle') || 'Drop' };
+  const typeLabel = st => t('set' + (st === 'N' ? 'Normal' : st === 'W' ? 'Warmup' : 'Drop')) || st;
+
+  const rows = e.sets.map((s, k) => {
+    const done = !!s.done;
+    const g = lpSet(k);
+    const typeBtn = st => `<button class="il-type" data-type="${st}" style="color:${TYPE_COLORS[st]};" title="${titles[st]}" onclick="_cycleInlineSetType(${i},${k},this)">${typeLabel(st)}</button>`;
+    const done_cb = `<label class="il-done"><input type="checkbox" ${done ? 'checked' : ''} onchange="toggleSetDone(${i},${k},this.checked)"><span class="il-check">✓</span></label>`;
+    const rm = `<button class="il-rm" title="${t('removeSet') || 'Entfernen'}" onclick="removeInlineSet(${i},${k})">✕</button>`;
+    if (type === 'cardio') {
+      return `<div class="il-row il-cardio${done ? ' done' : ''}">
+        <span class="il-num">${k + 1}</span>
+        ${typeBtn(s.type || 'N')}
+        <input class="il-in" type="text" inputmode="decimal" value="${s.km != null ? s.km : ''}" placeholder="${g && g.km != null ? g.km : '0'}" onchange="inlineSet(${i},${k},'km',this.value)">
+        <input class="il-in" type="text" inputmode="numeric" value="${s.time != null ? s.time : ''}" placeholder="${g && g.time ? g.time : '0:00'}" onchange="inlineSet(${i},${k},'time',this.value)">
+        <span class="il-pace" id="ilpace-${i}-${k}">${s.pace || '–'}</span>
+        <input class="il-in il-rpe" type="text" inputmode="numeric" value="${s.rpe != null ? s.rpe : ''}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
+        ${done_cb}${rm}
+      </div>`;
+    } else if (type === 'stretch') {
+      return `<div class="il-row il-stretch${done ? ' done' : ''}">
+        <span class="il-num">${k + 1}</span>
+        <input class="il-in" type="text" inputmode="decimal" value="${s.minutes != null ? s.minutes : ''}" placeholder="${g && g.minutes != null ? g.minutes : '2'}" onchange="inlineSet(${i},${k},'minutes',this.value)">
+        ${done_cb}${rm}
+      </div>`;
+    }
+    return `<div class="il-row${done ? ' done' : ''}">
+      <span class="il-num">${k + 1}</span>
+      ${typeBtn(s.type || 'N')}
+      <input class="il-in" type="text" inputmode="decimal" value="${s.weight != null ? s.weight : ''}" placeholder="${g && g.weight != null ? g.weight : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
+      <input class="il-in" type="text" inputmode="numeric" value="${s.reps != null ? s.reps : ''}" placeholder="${g && g.reps != null ? g.reps : '0'}" onchange="inlineSet(${i},${k},'reps',this.value)">
+      <input class="il-in il-rpe" type="text" inputmode="numeric" value="${s.rpe != null ? s.rpe : ''}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
+      ${done_cb}${rm}
+    </div>`;
+  }).join('');
+
+  // "Last time" summary line with a one-tap apply
+  let lastLine = '';
+  if (lp && lp.sets && lp.sets.length) {
+    lastLine = `<div class="il-last"><span class="il-last-txt">${t('lastPerf') || 'Letztes Mal'}: ${_lastPerfShort(lp.sets, type)}</span>
+      <button class="il-apply" onclick="applyLastPerformance(${i})">${t('applyLast')}</button></div>`;
+  }
+
+  const restCtl = type === 'stretch' ? '' : `<div class="il-rest">
+      <span class="il-rest-lbl">⏱ ${t('restLabel') || 'Pause'}</span>
+      <button class="il-rest-adj" onclick="adjustExerciseRest(${i},-15)">−</button>
+      <span class="il-rest-val${restCustom ? ' custom' : ''}">${restM}:${restS}</span>
+      <button class="il-rest-adj" onclick="adjustExerciseRest(${i},15)">+</button>
+    </div>`;
+
+  return `<div class="il-editor">
+    ${lastLine}
+    ${e.sets.length ? head + rows : `<div class="il-empty">${t('noSetsYet') || 'Noch keine Sätze'}</div>`}
+    <div class="il-actions">
+      <button class="il-add" onclick="addInlineSet(${i})">+ ${t('set') || 'Satz'}</button>
+      ${restCtl}
+    </div>
+  </div>`;
+}
+
+function _lastPerfShort(sets, type) {
+  if (!sets || !sets.length) return '';
+  const s = sets[0];
+  if (type === 'cardio') return `${s.km || 0}km ${s.time || ''}`.trim();
+  if (type === 'stretch') return `${s.minutes || 0} ${t('colMin')}`;
+  return `${s.weight != null ? s.weight : 0}kg × ${s.reps != null ? s.reps : 0}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
+}
+
+function inlineSet(i, k, field, value) {
+  const we = _we(i); if (!we || !we.sets[k]) return;
+  const s = we.sets[k];
+  if (field === 'weight' || field === 'km' || field === 'minutes') s[field] = _parseNum(value);
+  else if (field === 'reps') { const n = parseInt(String(value).replace(',', '.'), 10); s.reps = isNaN(n) ? null : n; }
+  else if (field === 'rpe') s.rpe = _parseNum(value);
+  else if (field === 'time') { s.time = String(value).trim(); _recalcInlinePace(i, k); }
+  save();
+  _updateWorkoutLiveStats();
+}
+
+function _recalcInlinePace(i, k) {
+  const we = _we(i); if (!we || !we.sets[k]) return;
+  const s = we.sets[k];
+  const km = Number(s.km), timeStr = s.time || '';
+  let pace = '–';
+  if (km > 0 && timeStr.includes(':')) {
+    const parts = timeStr.split(':');
+    const totalMins = (parseInt(parts[0] || 0) || 0) + ((parseInt(parts[1] || 0) || 0) / 60);
+    if (totalMins > 0) {
+      const p = totalMins / km, pm = Math.floor(p), ps = Math.round((p - pm) * 60).toString().padStart(2, '0');
+      pace = `${pm}:${ps}`;
+    }
+  }
+  s.pace = pace === '–' ? '' : pace;
+  const el = document.getElementById(`ilpace-${i}-${k}`);
+  if (el) el.textContent = pace;
+}
+
+function _cycleInlineSetType(i, k, btn) {
+  const we = _we(i); if (!we || !we.sets[k]) return;
+  const types = ['N', 'W', 'D'];
+  const cur = we.sets[k].type || 'N';
+  const next = types[(types.indexOf(cur) + 1) % types.length];
+  we.sets[k].type = next;
+  btn.dataset.type = next;
+  btn.style.color = TYPE_COLORS[next];
+  btn.textContent = t('set' + (next === 'N' ? 'Normal' : next === 'W' ? 'Warmup' : 'Drop')) || next;
+  save();
+  haptic('light');
+}
+
+function addInlineSet(i) {
+  const we = _we(i); if (!we) return;
+  if (!Array.isArray(we.sets)) we.sets = [];
+  const type = _exType(we);
+  const prev = we.sets[we.sets.length - 1];
+  let s;
+  if (type === 'cardio')      s = { type: prev ? (prev.type || 'N') : 'N', km: null, time: '', pace: '', rpe: null, done: false };
+  else if (type === 'stretch') s = { minutes: null, done: false };
+  else                         s = { type: prev ? (prev.type || 'N') : 'N', weight: prev ? (prev.weight ?? null) : null, reps: prev ? (prev.reps ?? null) : null, rpe: null, done: false };
+  we.sets.push(s);
+  save();
+  renderActiveWorkout();
+  // Focus the first input of the new row for immediate typing
+  const rows = document.querySelectorAll('#workoutExercises .exercise-card')[i];
+  if (rows) {
+    const inputs = rows.querySelectorAll('.il-row:last-child .il-in');
+    if (inputs && inputs[0]) inputs[0].focus();
+  }
+  haptic('light');
+}
+
+function removeInlineSet(i, k) {
+  const we = _we(i); if (!we || !Array.isArray(we.sets)) return;
+  we.sets.splice(k, 1);
+  save();
+  renderActiveWorkout();
+  haptic('light');
+}
+
+function toggleSetDone(i, k, checked) {
+  const we = _we(i); if (!we || !we.sets[k]) return;
+  we.sets[k].done = checked;
+  save();
+  renderActiveWorkout();
+  if (checked) {
+    haptic('success');
+    startRestTimer(i);
+  } else {
+    haptic('light');
+  }
+}
+
+function adjustExerciseRest(i, delta) {
+  const we = _we(i); if (!we) return;
+  const base = we.restSec || _getRestCfg().sec;
+  we.restSec = Math.max(15, Math.min(600, base + delta));
+  save();
+  renderActiveWorkout();
+  haptic('light');
+}
+
+function applyLastPerformance(i) {
+  const we = _we(i); if (!we) return;
+  const lp = _lastPerf(we);
+  if (!lp || !lp.sets || !lp.sets.length) return;
+  we.sets = lp.sets.map(s => {
+    const c = Object.assign({}, s);
+    delete c.done;
+    return Object.assign(c, { done: false });
+  });
+  save();
+  renderActiveWorkout();
+  haptic('success');
+  showToast(t('appliedLast') || '✓');
 }
 
 function _updateWorkoutLiveStats() {
@@ -321,6 +544,7 @@ function _updateWorkoutLiveStats() {
   let setCount = 0, volume = 0;
   (cw.exercises || []).forEach(e => {
     (e.sets || []).forEach(s => {
+      if (!_setHasData(s)) return;
       setCount++;
       volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
     });
@@ -430,6 +654,8 @@ function unlinkSuperset(idx, silent) {
 async function finishWorkout() {
   const cw = db.currentWorkout;
   if (!cw) return;
+  // Drop empty inline set rows the user never filled in before evaluating entries.
+  cw.exercises.forEach(e => { if (Array.isArray(e.sets)) e.sets = e.sets.filter(_setHasData); });
   const hasEntries = e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0);
   if (!cw.exercises.some(hasEntries)) { showAlert(t('minOneSet')); return; }
   const emptyCount = cw.exercises.filter(e => !hasEntries(e)).length;
@@ -443,6 +669,8 @@ async function finishWorkout() {
   db.currentWorkout = null;
   stopTimer();
   swReset();
+  skipRestTimer();
+  if (typeof refreshWakeLock === 'function') refreshWakeLock();
   save();
   document.getElementById('activeWorkout').style.display = 'none';
   document.getElementById('quickStart').style.display    = 'block';
@@ -551,6 +779,8 @@ async function cancelWorkout() {
   db.currentWorkout = null;
   stopTimer();
   swReset();
+  skipRestTimer();
+  if (typeof refreshWakeLock === 'function') refreshWakeLock();
   save();
   document.getElementById('activeWorkout').style.display = 'none';
   document.getElementById('quickStart').style.display    = 'block';
@@ -1267,12 +1497,44 @@ let restTimerInterval = null;
 let restTimerSec      = 0;
 let restTimerMax      = 90;
 let restTimerEndAt    = 0; // timestamp when rest ends (background-safe)
+let _restLastSec      = null; // for once-per-second audio/haptic ticks
 
 /* ---- Rest Timer Config ---- */
 function _getRestCfg() {
   if (!db.restTimer) db.restTimer = { enabled: true, sec: 90 };
+  if (typeof db.restTimer.sound === 'undefined') db.restTimer.sound = true;
   return db.restTimer;
 }
+
+/* ---- Audio cues (WebAudio; ignores the ringer/mute switch on some devices) ---- */
+let _restAudioCtx = null;
+function _getAudioCtx() {
+  if (_restAudioCtx) return _restAudioCtx;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) _restAudioCtx = new AC();
+  } catch (e) { _restAudioCtx = null; }
+  return _restAudioCtx;
+}
+function _restBeep(freq, dur, force) {
+  if (!force && _getRestCfg().sound === false) return;
+  const ctx = _getAudioCtx();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    const now = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.28, now + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + (dur || 0.12));
+    o.connect(g); g.connect(ctx.destination);
+    o.start(now); o.stop(now + (dur || 0.12) + 0.02);
+  } catch (e) { /* ignore */ }
+}
+function _restTick()    { _restBeep(660, 0.07); }
+function _restEndChime() { _restBeep(880, 0.14); setTimeout(() => _restBeep(1320, 0.18), 130); }
 
 function _renderRestConfig() {
   const cfg     = _getRestCfg();
@@ -1309,15 +1571,27 @@ function _requestNotifPermission() {
   }
 }
 
-function startRestTimer() {
+function startRestTimer(exIdx) {
   const cfg = _getRestCfg();
   if (!cfg.enabled) return;
   _requestNotifPermission();
 
+  // Per-exercise rest duration overrides the global default (B1).
+  let sec = cfg.sec;
+  if (typeof exIdx === 'number') {
+    const we = _we(exIdx);
+    if (we && we.restSec) sec = we.restSec;
+  }
+
+  // Unlock audio within this user-gesture call chain (set ✓ tap).
+  const ac = _getAudioCtx();
+  if (ac && ac.state === 'suspended') { try { ac.resume(); } catch (e) {} }
+
   clearInterval(restTimerInterval);
-  restTimerMax   = cfg.sec;
-  restTimerEndAt = Date.now() + cfg.sec * 1000;
-  restTimerSec   = cfg.sec;
+  restTimerMax   = sec;
+  restTimerEndAt = Date.now() + sec * 1000;
+  restTimerSec   = sec;
+  _restLastSec   = sec;
 
   const overlay = document.getElementById('restTimerOverlay');
   if (!overlay) return;
@@ -1326,24 +1600,30 @@ function startRestTimer() {
 
   // Schedule SW notification for Android / installed PWA users
   if (typeof _postSwMsg === 'function') {
-    _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: cfg.sec * 1000 });
+    _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: sec * 1000 });
   }
 
   restTimerInterval = setInterval(() => {
-    restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
-    if (restTimerSec <= 3 && restTimerSec > 0) haptic('light');
-    if (restTimerSec <= 0) {
+    const s = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+    restTimerSec = s;
+    if (s !== _restLastSec) {
+      _restLastSec = s;
+      if (s <= 3 && s > 0) { haptic('light'); _restTick(); }
+    }
+    if (s <= 0) {
       clearInterval(restTimerInterval);
       restTimerInterval = null;
       restTimerEndAt    = 0;
       overlay.style.display = 'none';
+      _closeRestFullscreen();
       if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
       haptic('success');
+      _restEndChime();
       showToast('✓ ' + t('restDone'));
       return;
     }
     _updateRestDisplay();
-  }, 500);
+  }, 250);
 }
 
 window.updateGlobalExNote = function(exId, val) {
@@ -1365,6 +1645,7 @@ document.addEventListener('visibilitychange', () => {
         restTimerEndAt    = 0;
         const overlay = document.getElementById('restTimerOverlay');
         if (overlay) overlay.style.display = 'none';
+        _closeRestFullscreen();
         if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
         haptic('success');
         showToast('✓ ' + t('restDone'));
@@ -1396,9 +1677,13 @@ function _renderStreakBanner() {
 
 function extendRestTimer(sec) {
   if (!restTimerEndAt) return;
-  restTimerEndAt += sec * 1000;
-  restTimerMax   += sec;
+  // Guard the −15s button from driving the timer to/below zero.
+  const remaining = Math.round((restTimerEndAt - Date.now()) / 1000);
+  const applied   = Math.max(5, remaining + sec) - remaining; // never below 5s left
+  restTimerEndAt += applied * 1000;
+  if (applied > 0) restTimerMax += applied; // keep the arc proportional when extending
   restTimerSec = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+  _restLastSec = restTimerSec;
   if (typeof _postSwMsg === 'function') {
     _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
     _postSwMsg({ type: 'SCHEDULE_REST_NOTIF', delayMs: restTimerEndAt - Date.now() });
@@ -1414,26 +1699,43 @@ function skipRestTimer() {
   if (typeof _postSwMsg === 'function') _postSwMsg({ type: 'CANCEL_REST_NOTIF' });
   const overlay = document.getElementById('restTimerOverlay');
   if (overlay) overlay.style.display = 'none';
+  _closeRestFullscreen();
   haptic('light');
+}
+
+function _fmtRest(sec) {
+  if (sec >= 60) {
+    const m = Math.floor(sec / 60);
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+  return String(sec);
 }
 
 function _updateRestDisplay() {
   const el = document.getElementById('restTimerCount');
-  if (el) {
-    if (restTimerSec >= 60) {
-      const m = Math.floor(restTimerSec / 60);
-      const s = (restTimerSec % 60).toString().padStart(2, '0');
-      el.textContent = `${m}:${s}`;
-    } else {
-      el.textContent = restTimerSec;
-    }
-  }
+  if (el) el.textContent = _fmtRest(restTimerSec);
+  const pct = Math.max(0, Math.min(1, restTimerSec / (restTimerMax || 90)));
   const arc = document.getElementById('restTimerArc');
-  if (arc) {
-    const pct = restTimerSec / (restTimerMax || 90);
-    const c   = 2 * Math.PI * 26;
-    arc.style.strokeDashoffset = c * (1 - pct);
-  }
+  if (arc) arc.style.strokeDashoffset = (2 * Math.PI * 26) * (1 - pct);
+  // Fullscreen mirror
+  const fsCount = document.getElementById('restFsCount');
+  if (fsCount) fsCount.textContent = _fmtRest(restTimerSec);
+  const fsArc = document.getElementById('restFsArc');
+  if (fsArc) fsArc.style.strokeDashoffset = (2 * Math.PI * 130) * (1 - pct);
+}
+
+/* ---- Fullscreen rest countdown (B1) ---- */
+function openRestFullscreen() {
+  if (!restTimerEndAt) return;
+  const fs = document.getElementById('restFullscreen');
+  if (!fs) return;
+  fs.style.display = 'flex';
+  _updateRestDisplay();
+}
+function _closeRestFullscreen() {
+  const fs = document.getElementById('restFullscreen');
+  if (fs) fs.style.display = 'none';
 }
 
 /* ---- Template Exercise Persistence ---- */
