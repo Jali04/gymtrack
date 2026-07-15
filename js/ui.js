@@ -115,6 +115,24 @@ function flashWorkoutComplete() {
   flash.addEventListener('animationend', () => flash.remove());
 }
 
+/* ---- Auto-backup status (E3) ---- */
+function _refreshAutoBackupUI() {
+  const statusEl = document.getElementById('autoBackupStatus');
+  const btn = document.getElementById('btnRestoreAutoBackup');
+  if (!statusEl) return;
+  const meta = (typeof getAutoBackupMeta === 'function') ? getAutoBackupMeta() : null;
+  if (meta && meta.ts) {
+    const loc = (typeof lang !== 'undefined' && lang === 'en') ? 'en-GB' : 'de-DE';
+    const when = new Date(meta.ts).toLocaleString(loc, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const prefix = (typeof lang !== 'undefined' && lang === 'en') ? 'Last auto-backup: ' : 'Letztes Auto-Backup: ';
+    statusEl.textContent = prefix + when;
+    if (btn) btn.disabled = false;
+  } else {
+    statusEl.textContent = (typeof lang !== 'undefined' && lang === 'en') ? 'No auto-backup yet' : 'Noch kein Auto-Backup';
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+  }
+}
+
 /* ---- Training settings toggles ---- */
 function toggleWakeLockSetting(checked) {
   if (!db.settings) db.settings = {};

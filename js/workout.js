@@ -35,6 +35,7 @@ function renderLog() {
     if (pageTitle) pageTitle.style.display = 'none';
     renderActiveWorkout();
     startTimer();
+    _checkForgottenWorkout();
     return;
   }
   if (pageTitle) pageTitle.style.display = '';
@@ -536,6 +537,108 @@ function applyLastPerformance(i) {
   showToast(t('appliedLast') || '✓');
 }
 
+/* ---- B6: Forgotten-workout detection (checked once per app start) ---- */
+let _forgottenChecked = false;
+const _FORGOTTEN_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function _cwStartMs(cw) {
+  if (!cw || cw.startTime == null) return 0;
+  return typeof cw.startTime === 'string' ? new Date(cw.startTime).getTime() : cw.startTime;
+}
+
+function _checkForgottenWorkout() {
+  if (_forgottenChecked) return;
+  _forgottenChecked = true;
+  const cw = db.currentWorkout;
+  if (!cw) return;
+  const start = _cwStartMs(cw);
+  if (!start) return;
+  const ageMs = Date.now() - start;
+  if (ageMs < _FORGOTTEN_AGE_MS) return;
+
+  const hrs = Math.floor(ageMs / 3600000);
+  const info = document.getElementById('forgottenWorkoutInfo');
+  if (info) {
+    info.textContent = lang === 'en'
+      ? `Your workout has been running for about ${hrs} h. Did you forget to finish it?`
+      : `Dein Training läuft seit etwa ${hrs} h. Hast du vergessen, es zu beenden?`;
+  }
+  // Localize the buttons/title for EN users
+  if (lang === 'en') {
+    const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    set('forgottenWorkoutTitle', 'Workout still active?');
+    set('btnForgottenFinish', 'Finish & save');
+    set('btnForgottenResume', 'Resume');
+    set('btnForgottenDiscard', 'Discard');
+  }
+  openModal('forgottenWorkoutModal');
+}
+
+function _forgottenResume() {
+  closeModal('forgottenWorkoutModal');
+  haptic('light');
+}
+
+async function _forgottenDiscard() {
+  if (!await showConfirm(lang === 'en' ? 'Discard this workout? This cannot be undone.' : 'Training wirklich verwerfen? Das kann nicht rückgängig gemacht werden.')) return;
+  closeModal('forgottenWorkoutModal');
+  db.currentWorkout = null;
+  stopTimer();
+  swReset();
+  skipRestTimer();
+  if (typeof refreshWakeLock === 'function') refreshWakeLock();
+  save();
+  document.getElementById('activeWorkout').style.display = 'none';
+  document.getElementById('quickStart').style.display    = 'block';
+  renderLog();
+  haptic('light');
+}
+
+function _forgottenFinish() {
+  closeModal('forgottenWorkoutModal');
+  const cw = db.currentWorkout;
+  if (!cw) return;
+  cw.exercises.forEach(e => { if (Array.isArray(e.sets)) e.sets = e.sets.filter(_setHasData); });
+  const hasEntries = e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0);
+
+  // Nothing was actually logged — just discard silently.
+  if (!cw.exercises.some(hasEntries)) {
+    db.currentWorkout = null;
+    stopTimer(); swReset(); skipRestTimer();
+    if (typeof refreshWakeLock === 'function') refreshWakeLock();
+    save();
+    document.getElementById('activeWorkout').style.display = 'none';
+    document.getElementById('quickStart').style.display    = 'block';
+    renderLog();
+    showToast(lang === 'en' ? 'Empty workout discarded' : 'Leeres Training verworfen');
+    return;
+  }
+
+  cw.exercises = cw.exercises.filter(hasEntries);
+  // We don't track per-set timestamps, so estimate a sane end time instead of
+  // the real (huge) elapsed span: ~3 min per logged set, clamped 15 min–3 h.
+  const start    = _cwStartMs(cw);
+  const setCount = cw.exercises.reduce((a, e) => a + (Array.isArray(e.sets) ? e.sets.length : 0), 0);
+  const estMs    = Math.min(3 * 3600000, Math.max(15 * 60000, setCount * 180000));
+  cw.endTime     = start + estMs;
+
+  const summary = _buildWorkoutSummary(cw);
+  db.workouts.push(cw);
+  db.currentWorkout = null;
+  stopTimer(); swReset(); skipRestTimer();
+  if (typeof refreshWakeLock === 'function') refreshWakeLock();
+  if (typeof maybeAutoBackup === 'function' && (db.workouts.length % 5 === 0)) maybeAutoBackup(true);
+  save();
+  document.getElementById('activeWorkout').style.display = 'none';
+  document.getElementById('quickStart').style.display    = 'block';
+  renderLog();
+  renderHistory();
+  haptic('success');
+  flashWorkoutComplete();
+  _pendingFinishedWorkout = cw;
+  _showWorkoutSummary(summary);
+}
+
 function _updateWorkoutLiveStats() {
   const el = document.getElementById('workoutLiveStats');
   if (!el) return;
@@ -678,6 +781,11 @@ async function finishWorkout() {
   renderHistory();
   haptic('success');
   flashWorkoutComplete();
+
+  // Silent auto-backup after every 5th completed workout (E3).
+  if (typeof maybeAutoBackup === 'function' && (db.workouts.length % 5 === 0)) {
+    maybeAutoBackup(true);
+  }
 
   // Show the summary; the template-update check runs when it is closed
   _pendingFinishedWorkout = cw;
