@@ -33,6 +33,8 @@ if (!db.weekStatus) db.weekStatus = { weekKey: 0, mode: 'normal' };
 if (!db.supplements) db.supplements = [];
 if (!db.supplementLog) db.supplementLog = [];
 if (!db.customCategories) db.customCategories = {};
+if (!db.settings) db.settings = {};
+if (typeof db.settings.wakeLock === 'undefined') db.settings.wakeLock = true;
 if (!db.nutritionGoals) db.nutritionGoals = { calories: 2000, protein: 150, carbs: 200, fat: 70 };
 if (!db.nutritionLog) db.nutritionLog = [];
 const DEFAULT_FOODS = [

@@ -3320,6 +3320,153 @@ select {
 }
 
 /* =============================================
+   A2 — Inline set logging on exercise cards
+   ============================================= */
+.il-editor { margin-top: 10px; }
+.il-last {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 8px; padding: 6px 10px;
+  background: rgba(200,241,53,0.05); border: 1px solid rgba(200,241,53,0.18);
+  border-radius: 10px;
+}
+.il-last-txt { font-size: 12px; color: var(--muted); }
+.il-apply {
+  flex-shrink: 0; background: rgba(200,241,53,0.12); border: 1px solid rgba(200,241,53,0.35);
+  color: var(--accent); font-size: 12px; font-weight: 700; padding: 5px 10px;
+  border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.il-apply:active { transform: scale(0.95); }
+
+.il-head, .il-row {
+  display: grid;
+  grid-template-columns: 20px 38px 1fr 1fr 40px 32px 26px;
+  gap: 6px; align-items: center;
+}
+.il-head.il-cardio, .il-row.il-cardio {
+  grid-template-columns: 18px 32px 1fr 1fr 1fr 34px 30px 22px;
+}
+.il-head.il-stretch, .il-row.il-stretch {
+  grid-template-columns: 20px 1fr 32px 26px;
+}
+.il-head {
+  margin-bottom: 4px; padding: 0 2px;
+}
+.il-head span {
+  font-size: 10px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.4px; text-align: center; font-weight: 600;
+}
+.il-row { margin-bottom: 6px; }
+.il-num { font-size: 13px; color: var(--muted); text-align: center; }
+.il-in {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 4px; color: var(--text); text-align: center; width: 100%;
+  outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: 'DM Sans', sans-serif; -webkit-appearance: none;
+}
+.il-in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,241,53,0.08); }
+.il-in::placeholder { color: var(--muted); opacity: 0.55; }
+.il-rpe { opacity: 0.9; }
+.il-pace {
+  font-size: 12px; color: var(--muted); text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.il-type {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 0; font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent;
+}
+.il-type:active { transform: scale(0.94); }
+
+/* per-set done checkbox */
+.il-done { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.il-done input { position: absolute; opacity: 0; width: 0; height: 0; }
+.il-check {
+  width: 30px; height: 30px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  color: transparent; font-size: 15px; font-weight: 800;
+  transition: all 0.15s ease;
+}
+.il-done input:checked + .il-check {
+  background: var(--accent); border-color: var(--accent); color: #0a0a0a;
+  box-shadow: var(--glow);
+}
+.il-done input:focus-visible + .il-check { outline: 2px solid var(--accent); outline-offset: 2px; }
+.il-rm {
+  background: none; border: none; color: var(--muted); font-size: 15px;
+  cursor: pointer; padding: 4px; line-height: 1; -webkit-tap-highlight-color: transparent;
+}
+.il-rm:active { color: var(--accent2); }
+
+/* completed row */
+.il-row.done .il-in { border-color: rgba(200,241,53,0.35); background: rgba(200,241,53,0.05); }
+.il-row.done .il-num { color: var(--accent); font-weight: 700; }
+
+.il-empty { font-size: 13px; color: var(--muted); padding: 6px 2px 8px; }
+
+.il-actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.il-add {
+  background: rgba(200,241,53,0.08); border: 1px dashed rgba(200,241,53,0.4);
+  color: var(--accent); font-size: 13px; font-weight: 700; padding: 8px 14px;
+  border-radius: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.il-add:active { transform: scale(0.96); }
+.il-rest {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: auto;
+  font-size: 12px; color: var(--muted);
+}
+.il-rest-lbl { font-size: 12px; color: var(--muted); }
+.il-rest-adj {
+  width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); font-size: 15px; font-weight: 700;
+  cursor: pointer; line-height: 1; -webkit-tap-highlight-color: transparent;
+}
+.il-rest-adj:active { transform: scale(0.9); }
+.il-rest-val { min-width: 34px; text-align: center; font-weight: 700; color: var(--text); }
+.il-rest-val.custom { color: var(--accent); }
+
+/* =============================================
+   B1 — Rest timer: tap-to-fullscreen + fullscreen countdown
+   ============================================= */
+.rest-tap-zone {
+  display: flex; align-items: center; gap: 14px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#restFullscreen {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(8,8,8,0.96);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 20px);
+  animation: pageIn 0.2s ease;
+}
+.rest-fs-inner { display: flex; flex-direction: column; align-items: center; gap: 26px; width: 100%; max-width: 360px; }
+.rest-fs-label {
+  font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 3px;
+}
+.rest-fs-ring { position: relative; width: min(300px, 78vw); aspect-ratio: 1; }
+.rest-fs-ring svg { width: 100%; height: 100%; }
+.rest-fs-count {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: clamp(64px, 22vw, 96px);
+  color: var(--accent); line-height: 1;
+}
+.rest-fs-actions { display: flex; gap: 12px; }
+.rest-fs-btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-size: 16px; font-weight: 700; padding: 14px 20px; border-radius: 14px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent;
+}
+.rest-fs-btn.accent { background: rgba(200,241,53,0.12); border-color: rgba(200,241,53,0.4); color: var(--accent); }
+.rest-fs-btn:active { transform: scale(0.95); }
+.rest-fs-close {
+  background: none; border: none; color: var(--muted); font-size: 14px; font-weight: 600;
+  cursor: pointer; padding: 8px; font-family: 'DM Sans', sans-serif;
+}
+
+/* =============================================
    A4 — Styled confirm dialog (replaces native confirm())
    ============================================= */
 #confirmModal .modal {

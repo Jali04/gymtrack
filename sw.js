@@ -6,7 +6,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v4.42';
+const CACHE_VERSION = 'v4.43';
 const CACHE_NAME = `dscpln-static-${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [
@@ -35,6 +35,7 @@ const ASSETS_TO_CACHE = [
   './js/editWorkout.js',
   './js/timer.js',
   './js/ui.js',
+  './js/wakelock.js',
   './js/splash.js',
   './js/progress.js',
   './js/programs.js',
