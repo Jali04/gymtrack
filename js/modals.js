@@ -203,6 +203,8 @@ function openSettingsHub() {
   if (wl) wl.checked = !(db.settings && db.settings.wakeLock === false);
   const rs = document.getElementById('settingRestSound');
   if (rs) rs.checked = !(db.restTimer && db.restTimer.sound === false);
+  const rir = document.getElementById('settingRir');
+  if (rir) rir.checked = !!(db.settings && db.settings.rir);
   if (typeof _refreshAutoBackupUI === 'function') _refreshAutoBackupUI();
   openModal('settingsHubModal');
 }

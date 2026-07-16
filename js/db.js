@@ -37,6 +37,7 @@ if (!db.settings) db.settings = {};
 if (typeof db.settings.wakeLock === 'undefined') db.settings.wakeLock = true;
 if (typeof db.settings.barWeight === 'undefined') db.settings.barWeight = 20;
 if (!Array.isArray(db.settings.plates)) db.settings.plates = [25, 20, 15, 10, 5, 2.5, 1.25];
+if (typeof db.settings.rir === 'undefined') db.settings.rir = false;
 if (!db.nutritionGoals) db.nutritionGoals = { calories: 2000, protein: 150, carbs: 200, fat: 70 };
 if (!db.nutritionLog) db.nutritionLog = [];
 const DEFAULT_FOODS = [

@@ -171,6 +171,15 @@ function toggleWakeLockSetting(checked) {
   showToast(checked ? t('wakeLockOn') : t('wakeLockOff'));
 }
 
+function toggleRirSetting(checked) {
+  if (!db.settings) db.settings = {};
+  db.settings.rir = checked;
+  save();
+  haptic('light');
+  if (typeof renderActiveWorkout === 'function' && db.currentWorkout) renderActiveWorkout();
+  showToast(checked ? (lang === 'en' ? 'Showing RIR' : 'Zeige RIR') : (lang === 'en' ? 'Showing RPE' : 'Zeige RPE'));
+}
+
 function toggleRestSoundSetting(checked) {
   const cfg = (typeof _getRestCfg === 'function') ? _getRestCfg() : (db.restTimer = db.restTimer || {});
   cfg.sound = checked;

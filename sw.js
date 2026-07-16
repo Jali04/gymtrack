@@ -6,7 +6,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v4.47';
+const CACHE_VERSION = 'v4.48';
 const CACHE_NAME = `dscpln-static-${CACHE_VERSION}`;
 
 const ASSETS_TO_CACHE = [

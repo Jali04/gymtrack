@@ -275,6 +275,12 @@ function _hiitTick() {
     const dur   = hiitState.phase === 'work' ? hiitState.workSec : hiitState.restSec;
     const spent = (now - hiitState.startTs) / 1000;
     hiitState.remaining = Math.max(0, dur - spent);
+    // B9: audio ticks in the final 3 seconds of a phase.
+    const secLeft = Math.ceil(hiitState.remaining);
+    if (secLeft !== hiitState._lastSecLeft) {
+      hiitState._lastSecLeft = secLeft;
+      if (secLeft <= 3 && secLeft > 0 && typeof _restTick === 'function') _restTick();
+    }
     if (hiitState.remaining <= 0) {
       clearInterval(hiitState.interval);
       hiitState.interval = null;
@@ -287,6 +293,9 @@ function _hiitTick() {
 
 function _hiitPhaseEnd() {
   haptic('success');
+  hiitState._lastSecLeft = null;
+  // B9: a distinct two-tone cue on each phase change.
+  if (typeof _restBeep === 'function') { _restBeep(520, 0.1); setTimeout(() => _restBeep(780, 0.12), 110); }
   const isAmrap = hiitState.mode === 'amrap';
   if (isAmrap) return;
 
@@ -311,6 +320,7 @@ function _hiitNextRound() {
     _hiitRenderDisplay();
     _hiitUpdateBtn('start');
     haptic('success');
+    if (typeof _restEndChime === 'function') _restEndChime(); // B9: completion cue
     showToast('🏆 ' + t('hiitDone'));
     if (typeof db !== 'undefined' && db.currentWorkout) {
       setTimeout(openHiitLogModal, 800);

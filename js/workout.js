@@ -443,6 +443,12 @@ function _lastPerf(we) {
     : getLastPerformance(we.exId, db.currentWorkout.id);
 }
 
+// F3: some lifters think in RIR (Reps in Reserve) = 10 − RPE. Stored value is
+// always RPE; RIR mode only changes what's shown/entered.
+function _rirMode() { return !!(db.settings && db.settings.rir); }
+function _rpeToInput(rpe) { if (rpe == null) return ''; return _rirMode() ? (10 - rpe) : rpe; }
+function _rpeGhost(rpe) { if (rpe == null) return '–'; return String(_rirMode() ? (10 - rpe) : rpe); }
+
 function _renderInlineSetEditor(e, i, type) {
   if (!Array.isArray(e.sets)) e.sets = [];
   const lp    = _lastPerf(e);
@@ -452,10 +458,11 @@ function _renderInlineSetEditor(e, i, type) {
   const restCustom = !!e.restSec;
 
   // Column header
+  const rpeLbl = _rirMode() ? 'RIR' : 'RPE';
   let head;
-  if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>RPE</span><span>✓</span><span></span></div>`;
+  if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else if (type === 'stretch') head = `<div class="il-head il-stretch"><span>#</span><span>${t('colMin')}</span><span>✓</span><span></span></div>`;
-  else head = `<div class="il-head"><span>#</span><span></span><span>${t('kg')}</span><span>${t('reps')}</span><span>RPE</span><span>✓</span><span></span></div>`;
+  else head = `<div class="il-head"><span>#</span><span></span><span>${t('kg')}</span><span>${t('reps')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
 
   const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Warmup', 'D': t('setDropTitle') || 'Drop' };
   const typeLabel = st => t('set' + (st === 'N' ? 'Normal' : st === 'W' ? 'Warmup' : 'Drop')) || st;
@@ -473,7 +480,7 @@ function _renderInlineSetEditor(e, i, type) {
         <input class="il-in" type="text" inputmode="decimal" value="${s.km != null ? s.km : ''}" placeholder="${g && g.km != null ? g.km : '0'}" onchange="inlineSet(${i},${k},'km',this.value)">
         <input class="il-in" type="text" inputmode="numeric" value="${s.time != null ? s.time : ''}" placeholder="${g && g.time ? g.time : '0:00'}" onchange="inlineSet(${i},${k},'time',this.value)">
         <span class="il-pace" id="ilpace-${i}-${k}">${s.pace || '–'}</span>
-        <input class="il-in il-rpe" type="text" inputmode="numeric" value="${s.rpe != null ? s.rpe : ''}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
+        <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
         ${done_cb}${rm}
       </div>`;
     } else if (type === 'stretch') {
@@ -488,7 +495,7 @@ function _renderInlineSetEditor(e, i, type) {
       ${typeBtn(s.type || 'N')}
       <input class="il-in" type="text" inputmode="decimal" value="${s.weight != null ? s.weight : ''}" placeholder="${g && g.weight != null ? g.weight : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
       <input class="il-in" type="text" inputmode="numeric" value="${s.reps != null ? s.reps : ''}" placeholder="${g && g.reps != null ? g.reps : '0'}" onchange="inlineSet(${i},${k},'reps',this.value)">
-      <input class="il-in il-rpe" type="text" inputmode="numeric" value="${s.rpe != null ? s.rpe : ''}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
+      <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
       ${done_cb}${rm}
     </div>`;
   }).join('');
@@ -514,8 +521,15 @@ function _renderInlineSetEditor(e, i, type) {
     const e1chip = e1 > 0
       ? `<span class="il-e1rm" title="Epley 1RM-Schätzung">≈ e1RM <b>${e1} kg</b></span>`
       : '';
+    // F5: offer warm-up sets when there's a heavy work set and no warm-ups yet.
+    const topWork = Math.max(0, ...(e.sets || []).filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
+    const hasWarmup = (e.sets || []).some(s => s.type === 'W');
+    const warmBtn = (!hasWarmup && topWork >= 40)
+      ? `<button class="il-plate" onclick="suggestWarmup(${i})">🔥 ${lang === 'en' ? 'Warm-up' : 'Aufwärmen'}</button>`
+      : '';
     e1rmRow = `<div class="il-e1rm-row">
       ${e1chip}
+      ${warmBtn}
       <button class="il-plate" onclick="openPlateCalcFor(${i})">🧮 ${lang === 'en' ? 'Plates' : 'Scheiben'}</button>
     </div>`;
   }
@@ -529,6 +543,29 @@ function _renderInlineSetEditor(e, i, type) {
     </div>
     ${e1rmRow}
   </div>`;
+}
+
+// F5: prepend warm-up sets (40/60/80% of the top work weight) as "W" sets.
+function _round25(x) { return Math.round(x / 2.5) * 2.5; }
+function suggestWarmup(i) {
+  const we = _we(i); if (!we) return;
+  if (_exType(we) !== 'strength') return;
+  let top = 0, reps = 8;
+  (we.sets || []).forEach(s => {
+    if (s.type !== 'W') { const w = Number(s.weight) || 0; if (w > top) { top = w; reps = Number(s.reps) || reps; } }
+  });
+  if (top <= 0) return;
+  const warm = [0.4, 0.6, 0.8].map(p => ({
+    type: 'W',
+    weight: Math.max(2.5, _round25(top * p)),
+    reps: Math.max(3, Math.round(reps * 0.7)),
+    rpe: null, done: false
+  }));
+  we.sets = warm.concat(we.sets);
+  save();
+  renderActiveWorkout();
+  haptic('light');
+  showToast(lang === 'en' ? '🔥 Warm-up sets added' : '🔥 Aufwärmsätze hinzugefügt');
 }
 
 // Best Epley e1RM across a set list (ignoring warm-up sets).
@@ -569,7 +606,11 @@ function inlineSet(i, k, field, value) {
   const s = we.sets[k];
   if (field === 'weight' || field === 'km' || field === 'minutes') s[field] = _parseNum(value);
   else if (field === 'reps') { const n = parseInt(String(value).replace(',', '.'), 10); s.reps = isNaN(n) ? null : n; }
-  else if (field === 'rpe') s.rpe = _parseNum(value);
+  else if (field === 'rpe') {
+    const n = _parseNum(value);
+    // In RIR mode the input is Reps-in-Reserve; convert to stored RPE (= 10 − RIR).
+    s.rpe = (n == null) ? null : Math.max(0, Math.min(10, _rirMode() ? (10 - n) : n));
+  }
   else if (field === 'time') { s.time = String(value).trim(); _recalcInlinePace(i, k); }
   save();
   _updateWorkoutLiveStats();
@@ -1047,6 +1088,12 @@ function _showWorkoutSummary(s) {
     stat('📊', s.setCount, t('sets')) +
     stat('⚖️', `${Math.round(s.volume).toLocaleString(loc)} kg`, t('summaryVolume'));
 
+  // B6: allow correcting the recorded duration (e.g. a forgotten stop).
+  const durValEl = document.getElementById('summaryDurVal');
+  if (durValEl) durValEl.textContent = `${s.durMin} min`;
+  const durLbl = document.getElementById('lblSummaryDurEdit');
+  if (durLbl) durLbl.textContent = lang === 'en' ? 'Duration' : 'Dauer';
+
   const prSec = document.getElementById('summaryPrSection');
   if (s.prs.length > 0) {
     prSec.style.display = 'block';
@@ -1104,6 +1151,20 @@ function _showWorkoutSummary(s) {
   if (s.prs.length > 0 && typeof confetti === 'function') {
     setTimeout(() => confetti({ particleCount: 90, spread: 70, origin: { y: 0.7 }, zIndex: 3000 }), 250);
   }
+}
+
+// B6: adjust the finished workout's end time (duration) from the summary.
+function adjustSummaryDuration(deltaMin) {
+  const w = _pendingFinishedWorkout;
+  if (!w) return;
+  const start = typeof w.startTime === 'string' ? new Date(w.startTime).getTime() : w.startTime;
+  const curMin = Math.max(1, Math.round(((w.endTime || start) - start) / 60000));
+  const newMin = Math.max(1, Math.min(600, curMin + deltaMin));
+  w.endTime = start + newMin * 60000;
+  save();
+  const el = document.getElementById('summaryDurVal');
+  if (el) el.textContent = `${newMin} min`;
+  haptic('light');
 }
 
 function closeWorkoutSummary() {
@@ -1670,7 +1731,7 @@ function addSetRow(data) {
     const km = data ? data.km : '', time = data ? data.time : '', pace = data ? data.pace : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
       ${typeBtn}
-      <input class="set-input" type="number" placeholder="0.0" value="${km}" inputmode="decimal" oninput="recalcPace(this.parentElement)"/>
+      <input class="set-input" type="text" placeholder="0.0" value="${km}" inputmode="decimal" oninput="recalcPace(this.parentElement)"/>
       <input class="set-input" type="text" placeholder="0:00" value="${time}" inputmode="numeric" oninput="recalcPace(this.parentElement)"/>
       <input class="set-input pace-display" type="text" placeholder="–" value="${pace}"/>
       ${rpeInput}
@@ -1679,15 +1740,15 @@ function addSetRow(data) {
     row.className = 'set-row stretch-row';
     const min = data ? data.minutes : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
-      <input class="set-input" type="number" placeholder="2" value="${min}" inputmode="decimal" step="0.5" min="0.5"/>
+      <input class="set-input" type="text" placeholder="2" value="${min}" inputmode="decimal"/>
       ${rmBtn}`;
   } else {
     row.className = 'set-row';
     const w = data ? data.weight : '', r = data ? data.reps : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
       ${typeBtn}
-      <input class="set-input" type="number" placeholder="0" value="${w}" inputmode="decimal"/>
-      <input class="set-input" type="number" placeholder="0" value="${r}" inputmode="numeric"/>
+      <input class="set-input" type="text" placeholder="0" value="${w}" inputmode="decimal"/>
+      <input class="set-input" type="text" placeholder="0" value="${r}" inputmode="numeric"/>
       ${rpeInput}
       ${rmBtn}`;
   }
@@ -1697,7 +1758,7 @@ function addSetRow(data) {
 
 function recalcPace(row) {
   const inputs  = row.querySelectorAll('.set-input');
-  const km      = parseFloat(inputs[0].value);
+  const km      = parseFloat(String(inputs[0].value).replace(',', '.'));
   const timeStr = inputs[1].value.trim();
   const paceInput = inputs[2];
   if (!km || !timeStr || !timeStr.includes(':')) { paceInput.value = '–'; return; }
@@ -1732,14 +1793,16 @@ function saveSets() {
     if (rpeInput && rpeInput.value) rpe = parseFloat(rpeInput.value);
 
     const inputs = row.querySelectorAll('.set-input:not(.set-rpe)');
+    // B7: accept a comma decimal separator (German keyboards) so "82,5" isn't lost.
+    const pf = el => parseFloat(String(el.value).replace(',', '.'));
     if (type === 'cardio') {
-      const km = parseFloat(inputs[0].value), time = inputs[1].value.trim(), pace = inputs[2].value.trim();
+      const km = pf(inputs[0]), time = inputs[1].value.trim(), pace = inputs[2].value.trim();
       if (km > 0 || time || pace) sets.push({ type: sType, rpe, km: km||0, time, pace });
     } else if (type === 'stretch') {
-      const minutes = parseFloat(inputs[0].value);
+      const minutes = pf(inputs[0]);
       if (minutes > 0) sets.push({ minutes });
     } else {
-      const weight = parseFloat(inputs[0].value), reps = parseInt(inputs[1].value);
+      const weight = pf(inputs[0]), reps = parseInt(String(inputs[1].value).replace(',', '.'), 10);
       if (!isNaN(weight) && !isNaN(reps) && reps > 0) sets.push({ type: sType, rpe, weight, reps });
     }
   });
