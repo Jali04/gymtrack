@@ -13,10 +13,16 @@ function isTimerLogOpen() {
          document.getElementById('logTimerModal').classList.contains('open');
 }
 
+// C3 — back-button / history integration.
+// Each opened modal pushes a history entry so the Android/browser Back button
+// (or back-swipe) closes the top-most modal instead of exiting the PWA.
+let _modalPopSuppress = false;
+
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  
+  const wasOpen = el.classList.contains('open');
+
   // Dynamic Z-Index for nested modals
   const openModals = document.querySelectorAll('.modal-overlay.open');
   let maxZ = 1000;
@@ -24,20 +30,26 @@ function openModal(id) {
     const z = parseInt(window.getComputedStyle(m).zIndex, 10);
     if (!isNaN(z) && z > maxZ) maxZ = z;
   });
-  
+
   el.style.zIndex = maxZ + 1;
   el.classList.add('open');
 
   // Prevent background scrolling
   document.body.classList.add('modal-open');
+
+  // Push a history entry only when the modal newly opens.
+  if (!wasOpen) {
+    try { history.pushState({ dscplnModal: id }, ''); } catch (e) {}
+  }
 }
 
-function closeModal(id) {
+function closeModal(id, fromPop) {
   const el = document.getElementById(id);
   if (!el) return;
+  const wasOpen = el.classList.contains('open');
   el.classList.remove('open');
   el.style.zIndex = '';
-  
+
   if (id === 'addExerciseModal') {
     window._openedFromPicker = false;
   }
@@ -54,7 +66,32 @@ function closeModal(id) {
   if (openModals.length === 0) {
     document.body.classList.remove('modal-open');
   }
+
+  // Balance the history entry we pushed on open — unless this close was itself
+  // triggered by the Back button (popstate). Guard on our own state so we can
+  // never accidentally navigate the PWA away.
+  if (wasOpen && !fromPop && !_modalPopSuppress &&
+      history.state && history.state.dscplnModal) {
+    _modalPopSuppress = true;
+    try { history.back(); } catch (e) { _modalPopSuppress = false; }
+  }
 }
+
+window.addEventListener('popstate', () => {
+  // A close we initiated via history.back() — consume and reset the flag.
+  if (_modalPopSuppress) { _modalPopSuppress = false; return; }
+  // Back pressed with a modal open → close the top-most one (consume the pop).
+  const open = document.querySelectorAll('.modal-overlay.open');
+  if (!open.length) return;
+  let top = null, maxZ = -Infinity;
+  open.forEach(m => {
+    const z = parseInt(window.getComputedStyle(m).zIndex, 10) || 0;
+    if (z >= maxZ) { maxZ = z; top = m; }
+  });
+  if (!top) return;
+  if (typeof SUB_MODALS !== 'undefined' && SUB_MODALS.includes(top.id)) closeSubModal(top.id, true);
+  else closeModal(top.id, true);
+});
 
 /* ---- Styled confirm / alert (replace native confirm()/alert()) ---- */
 let _confirmResolver = null;
@@ -111,8 +148,8 @@ function showAlert(message) {
   else window.alert(message);
 }
 
-function closeSubModal(id) {
-  closeModal(id);
+function closeSubModal(id, fromPop) {
+  closeModal(id, fromPop);
   if (typeof editingWorkoutCopy !== 'undefined' && editingWorkoutCopy && isEditOpen()) {
     if (id === 'logSetsModal') editWorkoutSetIdx = null;
     if (id === 'exercisePickerModal') window._pickerMode = null;
