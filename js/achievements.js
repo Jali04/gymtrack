@@ -278,6 +278,62 @@ function calcStreak() {
   return streak;
 }
 
+/* ─────────────────────────────────────────────
+   C6 — Week-based streak (doesn't punish rest days)
+   A day-streak (calcStreak) breaks after a single rest day, which pushes
+   people to train 7×/week. Instead we count consecutive weeks that hit a
+   user-defined weekly goal. The current week never breaks the streak while
+   it is still in progress, and a paused week (sick/vacation via weekStatus)
+   doesn't break it either.
+   ───────────────────────────────────────────── */
+function getWeeklyGoal() {
+  const g = db.settings && db.settings.weeklyGoal;
+  return (typeof g === 'number' && g >= 1) ? Math.min(14, g) : 3;
+}
+function setWeeklyGoal(delta) {
+  if (!db.settings) db.settings = {};
+  db.settings.weeklyGoal = Math.max(1, Math.min(14, getWeeklyGoal() + delta));
+  save();
+  if (typeof _renderStreakBanner === 'function') _renderStreakBanner();
+  if (typeof _updateQuickMetrics === 'function') _updateQuickMetrics();
+  if (typeof haptic === 'function') haptic('light');
+}
+function _weekKeyOf(ts) {
+  const d = new Date(ts); d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // Monday-based
+  return d.getTime();
+}
+function _prevWeekKey(k) {
+  const d = new Date(k); d.setDate(d.getDate() - 7); d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+function _weeklyWorkoutCounts() {
+  const map = new Map();
+  (db.workouts || []).forEach(w => {
+    const ts = w.startTime || w.date;
+    if (!ts) return;
+    const k = _weekKeyOf(ts);
+    map.set(k, (map.get(k) || 0) + 1);
+  });
+  return map;
+}
+function weeklyWorkoutsThisWeek() {
+  return _weeklyWorkoutCounts().get(_currentWeekKey()) || 0;
+}
+function calcWeeklyStreak() {
+  const goal   = getWeeklyGoal();
+  const counts = _weeklyWorkoutCounts();
+  let streak = 0;
+  let wk = _currentWeekKey();
+  // Current week: count it if the goal is already met; if still in progress
+  // (or a paused week), don't break — just start counting from last week.
+  if ((counts.get(wk) || 0) >= goal) streak++;
+  wk = _prevWeekKey(wk);
+  while ((counts.get(wk) || 0) >= goal) { streak++; wk = _prevWeekKey(wk); }
+  return streak;
+}
+
 /* Remove count-based achievements whose threshold is no longer met */
 function revokeCountAchievements() {
   const totalWorkouts = db.workouts.length;

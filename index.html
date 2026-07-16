@@ -43,7 +43,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DSCPLN">
   <meta name="theme-color" content="#0a0a0a">
-  <meta name="version" content="4.44">
+  <meta name="version" content="4.45">
   <title>DSCPLN</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
@@ -52,7 +52,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4.44">
+  <link rel="stylesheet" href="css/styles.css?v=4.45">
 </head>
 
 <body>
@@ -129,7 +129,7 @@
         </div>
         <div class="metric-card" onclick="openAchievements()" role="button" tabindex="0" aria-label="Erfolge und Ränge öffnen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAchievements();}" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px; cursor: pointer;">
           <div style="font-size: 18px; margin-bottom: 4px; line-height: 1;">🔥</div>
-          <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Streak</div>
+          <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Wochen 🔥</div>
           <div style="font-size: 15px; font-weight: 700; font-family: 'Orbitron', sans-serif; color: var(--accent); margin-top: 2px;" id="lblMetricStreak">0</div>
         </div>
         <div class="metric-card" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px;">
@@ -142,6 +142,8 @@
       <div id="weekStatusWidget" style="margin-bottom:16px;"></div>
       <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
       <div id="quickStartTemplates" style="display:none;"></div>
+      <!-- Recent workouts (B2) -->
+      <div id="recentWorkouts" style="display:none;"></div>
       <!-- Rest Timer Config -->
       <div class="rest-config-card">
         <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -384,6 +386,8 @@
       <div style="display:flex;flex-direction:column;gap:12px;">
         <button class="btn btn-primary" onclick="closeModal('startOptionsModal');openNewWorkout()"
           id="btnStartEmpty">Leeres Training</button>
+        <button class="btn btn-secondary" id="btnStartRepeatLast" style="display:none;"
+          onclick="repeatLastWorkout()">🔁 Letztes Training wiederholen</button>
         <button class="btn btn-secondary"
           onclick="closeModal('startOptionsModal');showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))"
           id="btnStartTemplate">Aus Vorlage</button>
@@ -1895,9 +1899,9 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <script src="js/db.js?v=4.44"></script>
   <script src="js/i18n.js?v=4.44"></script>
-  <script src="js/modals.js?v=4.44"></script>
+  <script src="js/modals.js?v=4.45"></script>
   <script src="js/nav.js?v=4.41"></script>
-  <script src="js/workout.js?v=4.44"></script>
+  <script src="js/workout.js?v=4.45"></script>
   <script src="js/exercises.js?v=4.31"></script>
   <script src="js/history.js?v=4.31"></script>
   <script src="js/stats.js?v=4.31"></script>
@@ -1915,8 +1919,8 @@
   <script src="js/nutrition.js?v=4.34"></script>
   <script src="js/tools.js?v=4.31"></script>
   <script src="js/guide.js?v=4.34"></script>
-  <script src="js/achievements.js?v=4.41"></script>
-  <script src="js/app.js?v=4.44"></script>
+  <script src="js/achievements.js?v=4.45"></script>
+  <script src="js/app.js?v=4.45"></script>
   <script src="js/aiCoach.js?v=4.31"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.6"></script>
   <script src="js/config.js?v=4.31"></script>

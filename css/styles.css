@@ -3320,6 +3320,41 @@ select {
 }
 
 /* =============================================
+   C6 — Weekly goal stepper + B2 recent-workouts list
+   ============================================= */
+.wk-goal-btn {
+  width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); font-size: 15px; font-weight: 700;
+  line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.wk-goal-btn:active { transform: scale(0.9); }
+
+.recent-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 18px 0 8px;
+}
+.recent-all {
+  background: none; border: none; color: var(--accent); font-size: 12px;
+  font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.recent-wo {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 8px; cursor: pointer; text-align: left;
+  font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.recent-wo:active { transform: scale(0.99); border-color: var(--accent); }
+.recent-wo-main { flex: 1; min-width: 0; }
+.recent-wo-name {
+  font-weight: 600; font-size: 15px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.recent-wo-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.recent-wo-arrow { color: var(--muted); font-size: 20px; flex-shrink: 0; }
+
+/* =============================================
    A2 — Inline set logging on exercise cards
    ============================================= */
 .il-editor { margin-top: 10px; }

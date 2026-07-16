@@ -43,6 +43,7 @@ function renderLog() {
   document.getElementById('activeWorkout').style.display = 'none';
   _renderRestConfig();
   _renderQuickStartTemplates();
+  _renderRecentWorkouts();
   _renderStreakBanner();
   if (typeof renderWeekStatusBanner === 'function') renderWeekStatusBanner();
 
@@ -167,7 +168,7 @@ function _updateQuickMetrics() {
   if (!elTrophies || !elStreak || !elWorkouts7d) return;
 
   elTrophies.textContent = typeof calcTrophies === 'function' ? calcTrophies() : 0;
-  elStreak.textContent = typeof calcStreak === 'function' ? calcStreak() : 0;
+  elStreak.textContent = typeof calcWeeklyStreak === 'function' ? calcWeeklyStreak() : (typeof calcStreak === 'function' ? calcStreak() : 0);
 
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const count = (db.workouts || []).filter(w => {
@@ -175,6 +176,55 @@ function _updateQuickMetrics() {
     return d && d >= sevenDaysAgo;
   }).length;
   elWorkouts7d.textContent = count;
+}
+
+/* ---- B2: Recent workouts list ---- */
+function _renderRecentWorkouts() {
+  const c = document.getElementById('recentWorkouts');
+  if (!c) return;
+  const ws = [...(db.workouts || [])]
+    .sort((a, b) => (b.startTime || b.date || 0) - (a.startTime || a.date || 0))
+    .slice(0, 4);
+  if (ws.length === 0) { c.style.display = 'none'; c.innerHTML = ''; return; }
+
+  const loc = lang === 'en' ? 'en-GB' : 'de-DE';
+  const rows = ws.map(w => {
+    const ts = w.startTime || w.date;
+    const d  = new Date(ts);
+    const dateStr = d.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short' });
+    const tmpl = w.templateId ? (db.templates || []).find(x => String(x.id) === String(w.templateId)) : null;
+    const name = tmpl ? tmpl.name : (lang === 'en' ? 'Free workout' : 'Freies Training');
+    let sets = 0, vol = 0;
+    (w.exercises || []).forEach(e => (e.sets || []).forEach(s => {
+      sets++; vol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    }));
+    const endTs  = w.endTime || ts;
+    const durMin = Math.max(0, Math.round((endTs - ts) / 60000));
+    const durStr = durMin >= 60 ? `${Math.floor(durMin / 60)}h ${durMin % 60}m` : `${durMin}m`;
+    const volStr = vol > 0 ? ` · ${Math.round(vol).toLocaleString(loc)} kg` : '';
+    return `<button class="recent-wo" onclick="_openRecentWorkout('${w.id}')">
+      <div class="recent-wo-main">
+        <div class="recent-wo-name">${name}</div>
+        <div class="recent-wo-meta">${dateStr} · ${durStr} · ${sets} ${t('sets') || 'Sätze'}${volStr}</div>
+      </div>
+      <div class="recent-wo-arrow">›</div>
+    </button>`;
+  }).join('');
+
+  c.style.display = 'block';
+  c.innerHTML = `
+    <div class="recent-header">
+      <span class="qs-label" style="margin:0;">${lang === 'en' ? 'Recent workouts' : 'Letzte Trainings'}</span>
+      <button class="recent-all" onclick="showPage('progress', document.querySelector('.nav-btn[data-page=progress]'))">${lang === 'en' ? 'Show all' : 'Alle anzeigen'}</button>
+    </div>
+    ${rows}`;
+}
+
+function _openRecentWorkout(id) {
+  const w = (db.workouts || []).find(x => x.id === id);
+  if (!w) return;
+  const d = new Date(w.startTime || w.date);
+  if (typeof openCalDay === 'function') openCalDay(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function _renderQuickStartTemplates() {
@@ -218,7 +268,35 @@ function openStartOptionsModal() {
   } else {
     btnProg.style.display = 'none';
   }
+  const btnRepeat = document.getElementById('btnStartRepeatLast');
+  if (btnRepeat) btnRepeat.style.display = (db.workouts && db.workouts.length) ? 'block' : 'none';
   openModal('startOptionsModal');
+}
+
+// B3: start a fresh workout from the last one's exercises + supersets (no sets).
+function repeatLastWorkout() {
+  const last = [...(db.workouts || [])]
+    .sort((a, b) => (b.startTime || b.date || 0) - (a.startTime || a.date || 0))[0];
+  if (!last) { showToast(lang === 'en' ? 'No previous workout' : 'Kein vorheriges Training'); return; }
+  closeModal('startOptionsModal');
+  const exercises = (last.exercises || []).map(e => {
+    const ne = { exId: e.exId, sets: [] };
+    if (e.isCustom) { ne.isCustom = true; ne.customName = e.customName; ne.customCategory = e.customCategory; }
+    if (e.supersetGroup) ne.supersetGroup = e.supersetGroup;
+    if (e.restSec) ne.restSec = e.restSec;
+    return ne;
+  });
+  db.currentWorkout = {
+    id: uid(), date: Date.now(), startTime: Date.now(),
+    exercises, templateId: last.templateId || null
+  };
+  save();
+  document.getElementById('quickStart').style.display    = 'none';
+  document.getElementById('activeWorkout').style.display = 'block';
+  renderActiveWorkout();
+  startTimer();
+  haptic('medium');
+  showToast(lang === 'en' ? 'Last workout loaded' : 'Letztes Training geladen');
 }
 
 function openNewWorkout() {
@@ -1772,15 +1850,41 @@ document.addEventListener('visibilitychange', () => {
 function _renderStreakBanner() {
   const banner = document.getElementById('streakBanner');
   if (!banner) return;
-  const streak = typeof calcStreak === 'function' ? calcStreak() : 0;
-  if (streak >= 2) {
-    const msgs = ['', '', '2 Tage am Stück – weiter so!', '3 Tage Streak – Feuer! 🔥', '4 Tage – du bist nicht aufzuhalten!', '5 Tage Streak – Maschine!'];
-    const msg = msgs[Math.min(streak, msgs.length - 1)] || `${streak} Tage Streak – unglaublich!`;
-    banner.style.display = 'block';
-    banner.innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(200,241,53,0.08);border:1px solid rgba(200,241,53,0.25);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;color:var(--accent);">🔥 ${streak}-Tage-Streak &mdash; ${msg}</div>`;
-  } else {
-    banner.style.display = 'none';
-  }
+  const de   = lang !== 'en';
+  const goal = typeof getWeeklyGoal === 'function' ? getWeeklyGoal() : 3;
+  const done = typeof weeklyWorkoutsThisWeek === 'function' ? weeklyWorkoutsThisWeek() : 0;
+  const streak = typeof calcWeeklyStreak === 'function' ? calcWeeklyStreak() : 0;
+  const pct  = Math.min(1, done / goal);
+  const met  = done >= goal;
+
+  const streakChip = streak >= 1
+    ? `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(200,241,53,0.1);border:1px solid rgba(200,241,53,0.3);border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;color:var(--accent);">🔥 ${streak}${de ? '-Wochen-Streak' : ' week streak'}</span>`
+    : `<span style="font-size:12px;color:var(--muted);">${de ? 'Noch keine Wochen-Streak' : 'No week streak yet'}</span>`;
+
+  const goalLabel = de ? 'Wochenziel' : 'Weekly goal';
+  const progLabel = met
+    ? (de ? 'Ziel erreicht! 💪' : 'Goal reached! 💪')
+    : `${done}/${goal} ${de ? 'diese Woche' : 'this week'}`;
+
+  banner.style.display = 'block';
+  banner.innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;text-align:left;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        ${streakChip}
+        <div style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">${goalLabel}</span>
+          <button class="wk-goal-btn" onclick="setWeeklyGoal(-1)" aria-label="-">−</button>
+          <span style="min-width:16px;text-align:center;font-weight:700;font-size:14px;">${goal}</span>
+          <button class="wk-goal-btn" onclick="setWeeklyGoal(1)" aria-label="+">+</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;height:8px;background:var(--surface2);border-radius:6px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round(pct * 100)}%;background:${met ? 'var(--accent)' : 'var(--accent2)'};border-radius:6px;transition:width .3s;"></div>
+        </div>
+        <span style="font-size:12px;font-weight:600;color:${met ? 'var(--accent)' : 'var(--muted)'};white-space:nowrap;">${progLabel}</span>
+      </div>
+    </div>`;
 }
 
 function extendRestTimer(sec) {
