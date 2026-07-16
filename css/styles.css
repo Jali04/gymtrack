@@ -3255,6 +3255,17 @@ body.light-mode .filter-chip.active {
   padding: 0 8px;
   line-height: 1;
 }
+.food-section-copy-btn {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0.75;
+  -webkit-tap-highlight-color: transparent;
+}
+.food-section-copy-btn:active { transform: scale(0.9); opacity: 1; }
 
 /* Food Log Item */
 .food-log-item {
@@ -3439,6 +3450,26 @@ select {
 .il-row.done .il-num { color: var(--accent); font-weight: 700; }
 
 .il-empty { font-size: 13px; color: var(--muted); padding: 6px 2px 8px; }
+
+/* e1RM + plate-calc row (B8) */
+.il-e1rm-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.il-e1rm { font-size: 12px; color: var(--muted); }
+.il-e1rm b { color: var(--accent); font-weight: 700; }
+.il-plate {
+  margin-left: auto; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; font-weight: 600; padding: 6px 10px;
+  border-radius: 9px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.il-plate:active { transform: scale(0.95); }
+
+/* Exercise-graph metric toggle (C5) */
+.exg-metric-btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+  font-size: 13px; font-weight: 600; padding: 7px 16px; border-radius: 10px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent;
+}
+.exg-metric-btn.active { background: rgba(200,241,53,0.12); border-color: rgba(200,241,53,0.4); color: var(--accent); }
 
 .il-actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
 .il-add {

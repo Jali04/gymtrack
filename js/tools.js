@@ -2,16 +2,42 @@
    GYMTRACK — Rechner & Tools
    ============================================= */
 
+function _plateCfg() {
+  if (!db.settings) db.settings = {};
+  if (typeof db.settings.barWeight === 'undefined') db.settings.barWeight = 20;
+  if (!Array.isArray(db.settings.plates) || !db.settings.plates.length) db.settings.plates = [25, 20, 15, 10, 5, 2.5, 1.25];
+  return db.settings;
+}
+
 function openToolsModal() {
   document.getElementById('tool1RmWeight').value = '';
   document.getElementById('tool1RmReps').value = '';
   document.getElementById('tool1RmResult').textContent = '— kg';
-  
+
+  const cfg = _plateCfg();
   document.getElementById('toolPlateTarget').value = '';
-  document.getElementById('toolPlateBar').value = '20';
+  document.getElementById('toolPlateBar').value = cfg.barWeight;
+  const platesInput = document.getElementById('toolPlateAvail');
+  if (platesInput) platesInput.value = cfg.plates.join(', ');
   document.getElementById('toolPlateResult').innerHTML = `<span style="color:var(--muted);font-size:13px;">${t('plateEnterTarget') || 'Geben Sie ein Zielgewicht ein'}</span>`;
-  
+
   openModal('toolsModal');
+}
+
+// Persist the configurable bar weight + available plates.
+function savePlateSettings() {
+  const cfg = _plateCfg();
+  const barEl = document.getElementById('toolPlateBar');
+  const bar = parseFloat((barEl.value || '').replace(',', '.'));
+  if (!isNaN(bar) && bar > 0) cfg.barWeight = bar;
+  const platesEl = document.getElementById('toolPlateAvail');
+  if (platesEl) {
+    const arr = platesEl.value.split(/[,\s]+/).map(x => parseFloat(x.replace(',', '.')))
+      .filter(n => !isNaN(n) && n > 0).sort((a, b) => b - a);
+    if (arr.length) cfg.plates = arr;
+  }
+  save();
+  calculatePlates();
 }
 
 function calculate1Rm() {
@@ -55,7 +81,7 @@ function calculatePlates() {
   }
   
   let remainder = (target - bar) / 2;
-  const availablePlates = [25, 20, 15, 10, 5, 2.5, 1.25];
+  const availablePlates = _plateCfg().plates.slice().sort((a, b) => b - a);
   const platesUsed = [];
   
   for (let plate of availablePlates) {

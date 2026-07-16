@@ -347,8 +347,13 @@ function renderActiveWorkout() {
     // Superset indicator
     const hasSS = !!e.supersetGroup;
     const ssPartner = hasSS ? cw.exercises.findIndex((x, j) => j !== i && x.supersetGroup === e.supersetGroup) : -1;
+    let ssPartnerName = '';
+    if (hasSS && ssPartner !== -1) {
+      const pe = cw.exercises[ssPartner];
+      ssPartnerName = pe.isCustom ? pe.customName : (getEx(pe.exId) ? getEx(pe.exId).name : '');
+    }
     const ssLabel = hasSS
-      ? `<span style="background:rgba(200,241,53,0.15);border:1px solid rgba(200,241,53,0.4);border-radius:6px;font-size:10px;padding:2px 6px;color:var(--accent);font-weight:700;margin-left:6px;">⟨ SS ⟩</span>`
+      ? `<span style="background:rgba(200,241,53,0.15);border:1px solid rgba(200,241,53,0.4);border-radius:6px;font-size:10px;padding:2px 6px;color:var(--accent);font-weight:700;margin-left:6px;">⟨ SS ⟩${ssPartnerName ? ' · ' + ssPartnerName : ''}</span>`
       : '';
     const ssBtn = hasSS
       ? `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;color:var(--accent2);" onclick="unlinkSuperset(${i})">🔗 Superset lösen</button>`
@@ -489,6 +494,19 @@ function _renderInlineSetEditor(e, i, type) {
       <button class="il-rest-adj" onclick="adjustExerciseRest(${i},15)">+</button>
     </div>`;
 
+  // B8: e1RM estimate + plate calculator, strength only.
+  let e1rmRow = '';
+  if (type === 'strength') {
+    const e1 = _bestE1rm(e.sets);
+    const e1chip = e1 > 0
+      ? `<span class="il-e1rm" title="Epley 1RM-Schätzung">≈ e1RM <b>${e1} kg</b></span>`
+      : '';
+    e1rmRow = `<div class="il-e1rm-row">
+      ${e1chip}
+      <button class="il-plate" onclick="openPlateCalcFor(${i})">🧮 ${lang === 'en' ? 'Plates' : 'Scheiben'}</button>
+    </div>`;
+  }
+
   return `<div class="il-editor">
     ${lastLine}
     ${e.sets.length ? head + rows : `<div class="il-empty">${t('noSetsYet') || 'Noch keine Sätze'}</div>`}
@@ -496,7 +514,33 @@ function _renderInlineSetEditor(e, i, type) {
       <button class="il-add" onclick="addInlineSet(${i})">+ ${t('set') || 'Satz'}</button>
       ${restCtl}
     </div>
+    ${e1rmRow}
   </div>`;
+}
+
+// Best Epley e1RM across a set list (ignoring warm-up sets).
+function _bestE1rm(sets) {
+  let best = 0;
+  (sets || []).forEach(s => {
+    if (s.type === 'W') return;
+    const w = Number(s.weight), r = Number(s.reps);
+    if (w > 0 && r > 0) {
+      const e = w * (1 + r / 30);
+      if (e > best) best = e;
+    }
+  });
+  return best ? Math.round(best) : 0;
+}
+
+// Open the plate calculator prefilled with this exercise's heaviest set.
+function openPlateCalcFor(i) {
+  const we = _we(i);
+  let target = 0;
+  if (we) (we.sets || []).forEach(s => { const w = Number(s.weight); if (w > target) target = w; });
+  openToolsModal();
+  const tEl = document.getElementById('toolPlateTarget');
+  if (tEl && target > 0) { tEl.value = target; if (typeof calculatePlates === 'function') calculatePlates(); }
+  haptic('light');
 }
 
 function _lastPerfShort(sets, type) {
@@ -578,6 +622,23 @@ function removeInlineSet(i, k) {
   haptic('light');
 }
 
+// B4: within a superset, the rest timer starts only after the LAST member's
+// set; earlier members show a "Weiter mit B" hint so you flow A→B→rest.
+function _nextSupersetPartnerName(i) {
+  const cw = db.currentWorkout;
+  const e = cw && cw.exercises[i];
+  if (!e || !e.supersetGroup) return null;
+  const members = cw.exercises
+    .map((x, idx) => ({ x, idx }))
+    .filter(o => o.x.supersetGroup === e.supersetGroup)
+    .map(o => o.idx)
+    .sort((a, b) => a - b);
+  const pos = members.indexOf(i);
+  if (pos === -1 || pos === members.length - 1) return null; // last member → rest
+  const ne = cw.exercises[members[pos + 1]];
+  return ne.isCustom ? ne.customName : (getEx(ne.exId) ? getEx(ne.exId).name : '?');
+}
+
 function toggleSetDone(i, k, checked) {
   const we = _we(i); if (!we || !we.sets[k]) return;
   we.sets[k].done = checked;
@@ -585,7 +646,13 @@ function toggleSetDone(i, k, checked) {
   renderActiveWorkout();
   if (checked) {
     haptic('success');
-    startRestTimer(i);
+    const partner = _nextSupersetPartnerName(i);
+    if (partner) {
+      // Superset continues — don't rest yet, cue the next exercise.
+      showToast((lang === 'en' ? '→ Next: ' : '→ Weiter mit ') + partner);
+    } else {
+      startRestTimer(i);
+    }
   } else {
     haptic('light');
   }
@@ -904,13 +971,31 @@ function _buildWorkoutSummary(cw) {
     if (!e.isCustom && e.exId) {
       const ex = getEx(e.exId);
       if (ex && getCatType(ex.category) === 'strength') {
+        // Weight PR
         const maxNow = Math.max(0, ...(e.sets || []).filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
         const prior  = _getHistoricalMaxWeight(e.exId, cw.id);
-        if (prior > 0 && maxNow > prior) prs.push({ name: ex.name, weight: maxNow, prior });
+        if (prior > 0 && maxNow > prior) prs.push({ name: ex.name, kind: 'weight', value: maxNow, prior });
+        // e1RM PR (captures rep progress at the same/lower weight)
+        const e1Now   = _bestE1rm(e.sets);
+        const e1Prior = _getHistoricalBestE1rm(e.exId, cw.id);
+        if (e1Prior > 0 && e1Now > e1Prior) prs.push({ name: ex.name, kind: 'e1rm', value: e1Now, prior: e1Prior });
       }
     }
   });
   return { durMin, exCount: cw.exercises.length, setCount, volume, prs };
+}
+
+function _getHistoricalBestE1rm(exId, excludeWorkoutId) {
+  let best = 0;
+  (db.workouts || []).forEach(w => {
+    if (w.id === excludeWorkoutId || !w.exercises) return;
+    w.exercises.forEach(e => {
+      if (e.isCustom || e.exId !== exId || !e.sets) return;
+      const b = _bestE1rm(e.sets);
+      if (b > best) best = b;
+    });
+  });
+  return best;
 }
 
 function _showWorkoutSummary(s) {
@@ -937,13 +1022,33 @@ function _showWorkoutSummary(s) {
   if (s.prs.length > 0) {
     prSec.style.display = 'block';
     prSec.innerHTML = `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);margin-bottom:8px;">🏆 ${t('summaryPRs')}</div>` +
-      s.prs.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(200,241,53,0.06);border:1px solid rgba(200,241,53,0.25);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
-        <span style="font-weight:600;font-size:14px;">${p.name}</span>
-        <span style="font-size:13px;color:var(--accent);font-weight:700;">${p.prior} → ${p.weight} kg</span>
-      </div>`).join('');
+      s.prs.map(p => {
+        const tag = p.kind === 'e1rm' ? ' e1RM' : '';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(200,241,53,0.06);border:1px solid rgba(200,241,53,0.25);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+        <span style="font-weight:600;font-size:14px;">${p.name}${p.kind === 'e1rm' ? ` <span style="font-size:10px;color:var(--muted);text-transform:uppercase;">e1RM</span>` : ''}</span>
+        <span style="font-size:13px;color:var(--accent);font-weight:700;">${p.prior} → ${p.value} kg${tag && p.kind === 'e1rm' ? '' : ''}</span>
+      </div>`;
+      }).join('');
   } else {
     prSec.style.display = 'none';
     prSec.innerHTML = '';
+  }
+
+  // D3: connect the two app halves — remind about remaining protein today.
+  const protHint = document.getElementById('summaryProteinHint');
+  if (protHint) {
+    const p = (typeof _proteinRemainingToday === 'function') ? _proteinRemainingToday() : null;
+    if (p && p.remaining > 0) {
+      const de = lang !== 'en';
+      protHint.style.display = 'block';
+      protHint.innerHTML = `<div style="display:flex;align-items:center;gap:10px;background:rgba(155,92,246,0.08);border:1px solid rgba(155,92,246,0.28);border-radius:12px;padding:10px 12px;">
+        <span style="font-size:20px;">🥤</span>
+        <div style="font-size:13px;color:var(--text);">${de ? `Heute noch <b>${p.remaining} g Protein</b> offen (${p.consumed}/${p.goal} g).` : `<b>${p.remaining} g protein</b> left today (${p.consumed}/${p.goal} g).`}</div>
+      </div>`;
+    } else {
+      protHint.style.display = 'none';
+      protHint.innerHTML = '';
+    }
   }
 
   openModal('workoutSummaryModal');
