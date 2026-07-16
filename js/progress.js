@@ -455,7 +455,61 @@ function renderMilestones() {
 }
 let _progressTemplateFilter = null;
 
+// C5: this-week training volume grouped by muscle group (exercise category).
+function renderWeeklyVolume() {
+  const host = document.getElementById('weeklyVolumeSection');
+  if (!host) return;
+  const de = lang !== 'en';
+  // Monday-based current week start
+  const wkStart = (typeof _currentWeekKey === 'function')
+    ? _currentWeekKey()
+    : (() => { const d = new Date(); d.setHours(0,0,0,0); const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return d.getTime(); })();
+
+  const vol = {}; // category -> volume
+  (db.workouts || []).forEach(w => {
+    const ts = w.startTime || w.date;
+    if (!ts || ts < wkStart) return;
+    (w.exercises || []).forEach(e => {
+      const ex = e.isCustom ? null : getEx(e.exId);
+      const cat = e.isCustom ? (e.customCategory || 'Sonstige') : (ex ? ex.category : 'Sonstige');
+      if (getCatType(cat) !== 'strength') return;
+      let v = 0;
+      (e.sets || []).forEach(s => { v += (Number(s.weight) || 0) * (Number(s.reps) || 0); });
+      if (v > 0) vol[cat] = (vol[cat] || 0) + v;
+    });
+  });
+
+  const entries = Object.entries(vol).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    host.innerHTML = `<div class="prog-cat-group" style="padding:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">${de ? 'Wochenvolumen pro Muskelgruppe' : 'Weekly volume per muscle group'}</div>
+      <div style="font-size:13px;color:var(--muted);">${de ? 'Diese Woche noch kein Kraft-Volumen.' : 'No strength volume this week yet.'}</div>
+    </div>`;
+    return;
+  }
+  const max = entries[0][1];
+  const loc = de ? 'de-DE' : 'en-GB';
+  const rows = entries.map(([cat, v]) => {
+    const label = (t('cats') && t('cats')[cat]) ? t('cats')[cat] : cat;
+    const pct = Math.max(4, Math.round((v / max) * 100));
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="font-weight:600;">${label}</span>
+        <span style="color:var(--muted);">${Math.round(v).toLocaleString(loc)} kg</span>
+      </div>
+      <div style="height:8px;background:var(--surface2);border-radius:6px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:6px;"></div>
+      </div>
+    </div>`;
+  }).join('');
+  host.innerHTML = `<div class="prog-cat-group" style="padding:14px;">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">${de ? 'Wochenvolumen pro Muskelgruppe' : 'Weekly volume per muscle group'}</div>
+    ${rows}
+  </div>`;
+}
+
 function renderExerciseProgressTracker() {
+  renderWeeklyVolume();
   const progList  = document.getElementById('exerciseProgressTracker');
   if(!progList) return;
   const activeExs = db.exercises.filter(ex => db.workouts.some(w => w.exercises.some(e => e.exId === ex.id)));
@@ -663,50 +717,54 @@ function _buildSparkline(values, type) {
   return `<svg width="${totalW}" height="${h}" viewBox="0 0 ${totalW} ${h}" style="display:block;">${bars}</svg>`;
 }
 
-window.openExGraph = function(exId) {
+let _exGraphMetric = 'weight';
+let _exGraphExId   = null;
+
+function setExGraphMetric(metric) {
+  _exGraphMetric = metric;
+  document.querySelectorAll('.exg-metric-btn').forEach(b => b.classList.toggle('active', b.dataset.metric === metric));
+  if (_exGraphExId) _renderExGraph();
+}
+
+function _renderExGraph() {
+  const exId = _exGraphExId;
   const ex = db.exercises.find(x => x.id === exId);
   if (!ex) return;
-  
   document.getElementById('exGraphTitle').textContent = ex.name;
   const chartContainer = document.getElementById('exGraphChart');
   chartContainer.innerHTML = '';
-  
-  // Collect max weight per workout date
+
   const dataPoints = [];
-  
-  // Loop oldest to newest
-  const sortedWorkouts = [...db.workouts].sort((a,b) => a.startTime - b.startTime);
-  
+  const sortedWorkouts = [...db.workouts].sort((a, b) => (a.startTime || a.date) - (b.startTime || b.date));
+
   sortedWorkouts.forEach(w => {
-    if(!w.exercises) return;
+    if (!w.exercises) return;
     const match = w.exercises.find(e => e.exId === exId);
-    if (match && match.sets && match.sets.length > 0) {
-      // Find max weight in this workout for this exercise ignoring W (Warmup) sets
-      let maxW = 0;
-      match.sets.forEach(s => {
-        if (s.type !== 'W' && s.weight > maxW) maxW = s.weight;
-      });
-      if (maxW > 0) {
-        dataPoints.push({
-          date: new Date(w.startTime),
-          weight: maxW
-        });
-      }
+    if (!match || !match.sets || match.sets.length === 0) return;
+    let val = 0;
+    if (_exGraphMetric === 'e1rm') {
+      val = (typeof _bestE1rm === 'function') ? _bestE1rm(match.sets) : 0;
+    } else {
+      match.sets.forEach(s => { if (s.type !== 'W' && s.weight > val) val = s.weight; });
     }
+    if (val > 0) dataPoints.push({ date: new Date(w.startTime || w.date), y: val });
   });
-  
+
   if (dataPoints.length < 2) {
-    chartContainer.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:13px;padding:40px 0;">Nicht genug Daten (min. 2)</div>`;
-    openModal('exGraphModal');
+    chartContainer.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:13px;padding:40px 0;">${lang === 'en' ? 'Not enough data (min. 2)' : 'Nicht genug Daten (min. 2)'}</div>`;
     return;
   }
-  
-  // Keep last 12 points
+
   const drawPoints = dataPoints.slice(-12);
-  const points = drawPoints.map(d => ({
-    x: `${d.date.getDate()}.${d.date.getMonth()+1}.`,
-    y: d.weight
-  }));
+  const points = drawPoints.map(d => ({ x: `${d.date.getDate()}.${d.date.getMonth() + 1}.`, y: d.y }));
   chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color: 'var(--accent)' });
+}
+
+window.openExGraph = function(exId) {
+  const ex = db.exercises.find(x => x.id === exId);
+  if (!ex) return;
+  _exGraphExId = exId;
+  _renderExGraph();
   openModal('exGraphModal');
 };
+window.setExGraphMetric = setExGraphMetric;

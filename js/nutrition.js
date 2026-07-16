@@ -22,6 +22,18 @@ function _dateKey(date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+// D3: grams of protein still open toward today's goal (null if goal unknown).
+function _proteinRemainingToday() {
+  const goal = db.nutritionGoals && Number(db.nutritionGoals.protein);
+  if (!goal || goal <= 0) return null;
+  const key = _todayKey();
+  const consumed = (db.nutritionLog || [])
+    .filter(l => l.date === key)
+    .reduce((a, l) => a + (Number(l.protein) || 0), 0);
+  return { goal, consumed: Math.round(consumed), remaining: Math.max(0, Math.round(goal - consumed)) };
+}
+window._proteinRemainingToday = _proteinRemainingToday;
+
 // ---------------------------------------------
 // SUBTAB ROUTING
 // ---------------------------------------------
@@ -139,7 +151,10 @@ function renderCalories() {
             }
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="openNutritionGoalsModal()" style="margin:0; font-family:'DM Sans', sans-serif; font-size:11px; font-weight:600; padding:6px 12px; border-radius:10px;">⚙️ Ziele</button>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="openQuickKcal()" style="margin:0; font-family:'DM Sans', sans-serif; font-size:11px; font-weight:600; padding:6px 12px; border-radius:10px; color:var(--accent);">⚡ ${isDe ? 'Quick kcal' : 'Quick kcal'}</button>
+          <button class="btn btn-secondary btn-sm" onclick="openNutritionGoalsModal()" style="margin:0; font-family:'DM Sans', sans-serif; font-size:11px; font-weight:600; padding:6px 12px; border-radius:10px;">⚙️ ${isDe ? 'Ziele' : 'Goals'}</button>
+        </div>
       </div>
 
       <div class="macro-bar-container" style="height:8px; margin-top:14px; margin-bottom:4px;">
@@ -200,7 +215,10 @@ function renderCalories() {
       <div class="food-list-section">
         <div class="food-section-header">
           <div class="food-section-title">${meal.title}</div>
-          <button class="food-section-add-btn" onclick="openNutritionFoodModal('${key}')">+</button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="food-section-copy-btn" title="${isDe ? 'Von gestern kopieren' : 'Copy from yesterday'}" onclick="copyMealFromPrevDay('${key}')">📋</button>
+            <button class="food-section-add-btn" onclick="openNutritionFoodModal('${key}')">+</button>
+          </div>
         </div>
     `;
 
@@ -243,6 +261,81 @@ function renderCalories() {
   `;
 }
 window.renderCalories = renderCalories;
+
+// D1: copy the previous day's entries for one meal into the current day.
+function copyMealFromPrevDay(mealKey) {
+  const isDe = (lang === 'de');
+  const prev = new Date(currentNutritionDate);
+  prev.setDate(prev.getDate() - 1);
+  const prevKey = _dateKey(prev);
+  const targetKey = _dateKey(currentNutritionDate);
+  const items = (db.nutritionLog || []).filter(l => l.date === prevKey && (l.timeOfDay || 'snack') === mealKey);
+  if (items.length === 0) {
+    showToast(isDe ? 'Gestern nichts in dieser Mahlzeit' : 'Nothing logged there yesterday');
+    return;
+  }
+  if (!db.nutritionLog) db.nutritionLog = [];
+  items.forEach(src => {
+    db.nutritionLog.push({
+      ...src,
+      id: uid(),
+      date: targetKey,
+      updated_at: Date.now()
+    });
+  });
+  save();
+  renderCalories();
+  if (typeof haptic === 'function') haptic('success');
+  showToast(isDe ? `${items.length}× von gestern kopiert` : `Copied ${items.length} from yesterday`);
+}
+window.copyMealFromPrevDay = copyMealFromPrevDay;
+
+// D1: quick-add a calories-only entry (optionally with protein).
+function openQuickKcal() {
+  const de = (lang === 'de');
+  document.getElementById('quickKcalCal').value = '';
+  document.getElementById('quickKcalProt').value = '';
+  document.getElementById('quickKcalName').value = '';
+  const mealSel = document.getElementById('quickKcalMeal');
+  if (mealSel) {
+    // Default to the meal matching the current time of day.
+    const h = new Date().getHours();
+    mealSel.value = h < 11 ? 'breakfast' : h < 15 ? 'lunch' : h < 21 ? 'dinner' : 'snack';
+  }
+  openModal('quickKcalModal');
+  setTimeout(() => { const el = document.getElementById('quickKcalCal'); if (el) el.focus(); }, 150);
+}
+window.openQuickKcal = openQuickKcal;
+
+function saveQuickKcal() {
+  const de = (lang === 'de');
+  const cal = parseFloat((document.getElementById('quickKcalCal').value || '').replace(',', '.'));
+  if (isNaN(cal) || cal <= 0) {
+    showAlert(de ? 'Bitte Kalorien eingeben.' : 'Please enter calories.');
+    return;
+  }
+  const prot = parseFloat((document.getElementById('quickKcalProt').value || '').replace(',', '.'));
+  const name = (document.getElementById('quickKcalName').value || '').trim() || (de ? 'Schnell-Eintrag' : 'Quick entry');
+  const meal = document.getElementById('quickKcalMeal').value || 'snack';
+  if (!db.nutritionLog) db.nutritionLog = [];
+  db.nutritionLog.push({
+    id: uid(),
+    date: _dateKey(currentNutritionDate),
+    timeOfDay: meal,
+    name,
+    calories: Math.round(cal),
+    protein: isNaN(prot) ? 0 : Math.round(prot * 10) / 10,
+    carbs: 0, fat: 0, grams: 0,
+    quickAdd: true,
+    updated_at: Date.now()
+  });
+  save();
+  closeModal('quickKcalModal');
+  renderCalories();
+  if (typeof haptic === 'function') haptic('success');
+  showToast(de ? '✓ Eingetragen' : '✓ Logged');
+}
+window.saveQuickKcal = saveQuickKcal;
 
 function changeNutritionDate(offset) {
   const d = new Date(currentNutritionDate);
@@ -640,6 +733,59 @@ function onFoodNameInput(val) {
   dropdown.style.display = 'block';
 }
 window.onFoodNameInput = onFoodNameInput;
+
+// D1: online text search against Open Food Facts (in addition to barcode).
+async function searchOpenFoodFacts() {
+  const de = (lang === 'de');
+  const input = document.getElementById('nutriFoodName');
+  const dropdown = document.getElementById('foodAutocompleteResults');
+  const query = (input.value || '').trim();
+  if (query.length < 2) { showToast(de ? 'Bitte Suchbegriff eingeben' : 'Enter a search term'); return; }
+  if (dropdown) {
+    dropdown.style.display = 'block';
+    dropdown.innerHTML = `<div class="autocomplete-suggestion" style="color:var(--muted);">${de ? '🌐 Suche online …' : '🌐 Searching …'}</div>`;
+  }
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&fields=product_name,product_name_de,product_name_en,brands,nutriments`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const products = (data && data.products) ? data.products : [];
+    const items = [];
+    products.forEach(p => {
+      const name = p.product_name_de || p.product_name || p.product_name_en;
+      if (!name) return;
+      const nut = p.nutriments || {};
+      let kcal = nut['energy-kcal_100g'] || nut['energy-kcal'] || 0;
+      if (!kcal && nut['energy_100g']) kcal = Math.round(nut['energy_100g'] / 4.184);
+      if (!kcal) return;
+      items.push({
+        name: p.brands ? `${name} (${String(p.brands).split(',')[0].trim()})` : name,
+        calories: Math.round(kcal),
+        protein: Math.round((nut.proteins_100g || nut.proteins || 0) * 10) / 10,
+        carbs: Math.round((nut.carbohydrates_100g || nut.carbohydrates || 0) * 10) / 10,
+        fat: Math.round((nut.fat_100g || nut.fat || 0) * 10) / 10,
+        servingSize: 100
+      });
+    });
+    if (!dropdown) return;
+    if (items.length === 0) {
+      dropdown.innerHTML = `<div class="autocomplete-suggestion" style="color:var(--muted);">${de ? 'Nichts gefunden' : 'No results'}</div>`;
+      return;
+    }
+    dropdown.innerHTML = items.slice(0, 15).map(item => {
+      const macrosStr = `${item.calories} kcal · ${item.protein}P · ${item.carbs}C · ${item.fat}F`;
+      const itemStr = btoa(unescape(encodeURIComponent(JSON.stringify(item))));
+      return `<div class="autocomplete-suggestion" onclick="selectAutocompleteFood('${itemStr}')">
+        <div style="font-weight:600;">${item.name}</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:2px;">${macrosStr} (100g) 🌐</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('OFF search failed', e);
+    if (dropdown) dropdown.innerHTML = `<div class="autocomplete-suggestion" style="color:var(--accent2);">${de ? 'Suche fehlgeschlagen (Netzwerk?)' : 'Search failed (network?)'}</div>`;
+  }
+}
+window.searchOpenFoodFacts = searchOpenFoodFacts;
 
 function selectAutocompleteFood(itemStr) {
   try {
@@ -1100,6 +1246,78 @@ window.calculateAiGoals = calculateAiGoals;
 let html5QrScanner = null;
 let barcodeScanTarget = 'nutrition'; // 'nutrition' or 'library'
 
+// D2: native BarcodeDetector state (preferred over the html5-qrcode CDN lib).
+let _nativeBarcodeStream = null;
+let _nativeBarcodeRAF = null;
+let _nativeBarcodeVideo = null;
+
+// Shared success handler for both native + html5-qrcode scanners.
+function _onBarcodeDetected(code) {
+  stopBarcodeScanner();
+  closeModal('barcodeScannerModal');
+  if (barcodeScanTarget === 'library') openModal('libraryFoodModal');
+  else openModal('nutritionFoodModal');
+  if (typeof haptic === 'function') haptic('success');
+  lookupBarcode(code);
+}
+
+// Try the native BarcodeDetector API. Returns true if it started scanning.
+async function _startNativeBarcodeScanner(statusEl) {
+  if (!('BarcodeDetector' in window) || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+  try {
+    let formats = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'];
+    try {
+      const supported = await window.BarcodeDetector.getSupportedFormats();
+      formats = formats.filter(f => supported.includes(f));
+      if (formats.length === 0) return false;
+    } catch (e) { /* use defaults */ }
+
+    const detector = new window.BarcodeDetector({ formats });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    _nativeBarcodeStream = stream;
+
+    const reader = document.getElementById('barcodeReader');
+    const video = document.createElement('video');
+    video.setAttribute('playsinline', 'true');
+    video.style.width = '100%';
+    video.style.height = '100%';
+    video.style.objectFit = 'cover';
+    if (reader) { reader.innerHTML = ''; reader.appendChild(video); }
+    _nativeBarcodeVideo = video;
+    video.srcObject = stream;
+    await video.play();
+
+    if (statusEl) {
+      statusEl.textContent = (lang === 'de') ? 'Kamera aktiv (nativ). Halte den Barcode in den Sucher.' : 'Camera active (native). Position the barcode.';
+      statusEl.style.color = 'var(--accent)';
+    }
+
+    const scan = async () => {
+      if (!_nativeBarcodeStream) return; // stopped
+      try {
+        const codes = await detector.detect(video);
+        if (codes && codes.length > 0 && codes[0].rawValue) {
+          _onBarcodeDetected(codes[0].rawValue);
+          return;
+        }
+      } catch (e) { /* transient detect error, keep looping */ }
+      _nativeBarcodeRAF = requestAnimationFrame(scan);
+    };
+    _nativeBarcodeRAF = requestAnimationFrame(scan);
+    return true;
+  } catch (e) {
+    console.warn('[Barcode] native detector failed, falling back:', e && e.message);
+    _stopNativeBarcode();
+    return false;
+  }
+}
+
+function _stopNativeBarcode() {
+  if (_nativeBarcodeRAF) { cancelAnimationFrame(_nativeBarcodeRAF); _nativeBarcodeRAF = null; }
+  if (_nativeBarcodeStream) { try { _nativeBarcodeStream.getTracks().forEach(t => t.stop()); } catch (e) {} _nativeBarcodeStream = null; }
+  if (_nativeBarcodeVideo) { try { _nativeBarcodeVideo.srcObject = null; } catch (e) {} _nativeBarcodeVideo = null; }
+}
+
 function openBarcodeScanner() {
   barcodeScanTarget = 'nutrition';
   _startBarcodeScannerWorkflow();
@@ -1126,53 +1344,40 @@ function _startBarcodeScannerWorkflow() {
     statusEl.style.color = 'var(--muted)';
   }
 
-  if (typeof Html5Qrcode === 'undefined') {
-    if (statusEl) {
-      statusEl.textContent = (lang === 'de') 
-        ? 'Scanner-Bibliothek konnte nicht geladen werden. Bitte gib den Code manuell ein.' 
-        : 'Scanner library load failed. Please enter the barcode manually.';
-      statusEl.style.color = 'var(--accent2)';
-    }
-    return;
-  }
+  setTimeout(async () => {
+    // Prefer the native BarcodeDetector (faster, no CDN); fall back to html5-qrcode.
+    const usedNative = await _startNativeBarcodeScanner(statusEl);
+    if (usedNative) return;
 
-  setTimeout(() => {
+    if (typeof Html5Qrcode === 'undefined') {
+      if (statusEl) {
+        statusEl.textContent = (lang === 'de')
+          ? 'Scanner-Bibliothek konnte nicht geladen werden. Bitte gib den Code manuell ein.'
+          : 'Scanner library load failed. Please enter the barcode manually.';
+        statusEl.style.color = 'var(--accent2)';
+      }
+      return;
+    }
+
     try {
       html5QrScanner = new Html5Qrcode("barcodeReader");
       html5QrScanner.start(
         { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 280, height: 160 }
-        },
-        (decodedText, decodedResult) => {
-          stopBarcodeScanner();
-          closeModal('barcodeScannerModal');
-          
-          if (barcodeScanTarget === 'library') {
-            openModal('libraryFoodModal');
-          } else {
-            openModal('nutritionFoodModal');
-          }
-          
-          if (typeof haptic === 'function') haptic('success');
-          lookupBarcode(decodedText);
-        },
-        (errorMessage) => {
-          // Scan in progress
-        }
+        { fps: 10, qrbox: { width: 280, height: 160 } },
+        (decodedText) => { _onBarcodeDetected(decodedText); },
+        () => { /* Scan in progress */ }
       ).then(() => {
         if (statusEl) {
-          statusEl.textContent = (lang === 'de') 
-            ? 'Kamera aktiv. Halte den Barcode im Sucher.' 
+          statusEl.textContent = (lang === 'de')
+            ? 'Kamera aktiv. Halte den Barcode im Sucher.'
             : 'Camera active. Position barcode in the viewfinder.';
           statusEl.style.color = 'var(--accent)';
         }
       }).catch(err => {
         console.error("Barcode start failed:", err);
         if (statusEl) {
-          statusEl.textContent = (lang === 'de') 
-            ? 'Kamerafehler. Bitte gib den Code manuell ein.' 
+          statusEl.textContent = (lang === 'de')
+            ? 'Kamerafehler. Bitte gib den Code manuell ein.'
             : 'Camera error. Please enter the barcode manually.';
           statusEl.style.color = 'var(--accent2)';
         }
@@ -1184,6 +1389,7 @@ function _startBarcodeScannerWorkflow() {
 }
 
 function stopBarcodeScanner() {
+  _stopNativeBarcode();
   if (html5QrScanner) {
     html5QrScanner.stop().then(() => {
       html5QrScanner = null;
