@@ -33,6 +33,7 @@ if (!db.weekStatus) db.weekStatus = { weekKey: 0, mode: 'normal' };
 if (!db.supplements) db.supplements = [];
 if (!db.supplementLog) db.supplementLog = [];
 if (!db.customCategories) db.customCategories = {};
+if (!db.exerciseFlags) db.exerciseFlags = {}; // F4: local-only per-exercise flags (bodyweight, …)
 if (!db.settings) db.settings = {};
 if (typeof db.settings.wakeLock === 'undefined') db.settings.wakeLock = true;
 if (typeof db.settings.barWeight === 'undefined') db.settings.barWeight = 20;
@@ -514,6 +515,29 @@ function uid() {
 
 function getEx(id) {
   return db.exercises.find(x => x.id === id);
+}
+
+// F4: bodyweight flag is kept in a local-only map (not in the synced exercises
+// array) so a cloud pull can never clobber it and no remote schema is needed.
+function isBodyweightEx(exId) {
+  return !!(db.exerciseFlags && db.exerciseFlags[exId] && db.exerciseFlags[exId].bodyweight);
+}
+function setBodyweightEx(exId, on) {
+  if (!exId) return;
+  if (!db.exerciseFlags) db.exerciseFlags = {};
+  if (on) db.exerciseFlags[exId] = Object.assign({}, db.exerciseFlags[exId], { bodyweight: true });
+  else if (db.exerciseFlags[exId]) delete db.exerciseFlags[exId].bodyweight;
+}
+
+// F4: most recent measured body weight (kg), 0 if none logged.
+function _latestBodyweight() {
+  if (!db.measurements || !db.measurements.length) return 0;
+  let best = null;
+  db.measurements.forEach(m => {
+    if (m.weight == null) return;
+    if (!best || new Date(m.date) > new Date(best.date)) best = m;
+  });
+  return best ? (Number(best.weight) || 0) : 0;
 }
 
 function getExName(id) {

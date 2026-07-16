@@ -150,8 +150,9 @@ function openAddExercise() {
   populateCategoryDropdown('Brust');
   
   document.getElementById('exNotes').value    = '';
+  const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = false;
   document.getElementById('deleteExBtn').style.display = 'none';
-  
+
   const container = document.getElementById('exerciseAiAnalysisContainer');
   if (container) container.style.display = 'none';
 
@@ -173,6 +174,7 @@ function openEditExercise(id) {
   populateCategoryDropdown(ex.category);
   
   document.getElementById('exNotes').value    = ex.notes || '';
+  const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = (typeof isBodyweightEx === 'function') && isBodyweightEx(id);
   document.getElementById('deleteExBtn').style.display = 'block';
   
   const customGroup = document.getElementById('customCategoryGroup');
@@ -220,13 +222,17 @@ async function saveExercise() {
     }
   }
   
+  const bwEl = document.getElementById('exBodyweight');
+  const bodyweight = !!(bwEl && bwEl.checked);
   let newId = null;
   if (editingExId) {
     const ex = getEx(editingExId);
     ex.name = name; ex.category = category; ex.notes = notes;
+    if (typeof setBodyweightEx === 'function') setBodyweightEx(editingExId, bodyweight);
   } else {
     newId = uid();
     db.exercises.push({ id: newId, name, category, notes });
+    if (typeof setBodyweightEx === 'function') setBodyweightEx(newId, bodyweight);
   }
   const context = window._openedFromPickerContext || (window._openedFromPicker ? 'workout' : null);
   window._openedFromPickerContext = null;

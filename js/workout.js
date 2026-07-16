@@ -856,11 +856,13 @@ function _updateWorkoutLiveStats() {
   const cw = db.currentWorkout;
   if (!cw) { el.textContent = ''; return; }
   let setCount = 0, volume = 0;
+  const bw = (typeof _latestBodyweight === 'function') ? _latestBodyweight() : 0;
   (cw.exercises || []).forEach(e => {
+    const add = (!e.isCustom && typeof isBodyweightEx === 'function' && isBodyweightEx(e.exId)) ? bw : 0; // F4
     (e.sets || []).forEach(s => {
       if (!_setHasData(s)) return;
       setCount++;
-      volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      volume += ((Number(s.weight) || 0) + add) * (Number(s.reps) || 0);
     });
   });
   if (setCount === 0) { el.textContent = ''; return; }
@@ -905,11 +907,11 @@ let _supersetLinkSource = null; // index of the exercise waiting to be linked
 function startSupersetLink(idx) {
   const cw = db.currentWorkout;
   if (!cw || cw.exercises.length < 2) {
-    showToast('Mindestens 2 Übungen für Superset nötig');
+    showToast(lang === 'en' ? 'Need at least 2 exercises for a superset' : 'Mindestens 2 Übungen für Superset nötig');
     return;
   }
   _supersetLinkSource = idx;
-  showToast('Tippe eine andere Übung an, um sie zu verknüpfen');
+  showToast(lang === 'en' ? 'Tap another exercise to link it' : 'Tippe eine andere Übung an, um sie zu verknüpfen');
   // Highlight all other cards as clickable targets
   const cards = document.querySelectorAll('#workoutExercises .exercise-card');
   cards.forEach((card, i) => {
@@ -948,7 +950,7 @@ function _finalizeSupersetLink(targetIdx) {
   save();
   renderActiveWorkout();
   haptic('success');
-  showToast('⟨ SS ⟩ Superset verknüpft');
+  showToast(lang === 'en' ? '⟨ SS ⟩ Superset linked' : '⟨ SS ⟩ Superset verknüpft');
 }
 
 function unlinkSuperset(idx, silent) {
@@ -963,7 +965,7 @@ function unlinkSuperset(idx, silent) {
   if (!silent) {
     renderActiveWorkout();
     haptic('light');
-    showToast('Superset gelöst');
+    showToast(lang === 'en' ? 'Superset unlinked' : 'Superset gelöst');
   }
 }
 
@@ -1033,10 +1035,12 @@ function _buildWorkoutSummary(cw) {
   const durMin  = Math.max(1, Math.round((cw.endTime - startTs) / 60000));
   let setCount = 0, volume = 0;
   const prs = [];
+  const _bw = (typeof _latestBodyweight === 'function') ? _latestBodyweight() : 0;
   cw.exercises.forEach(e => {
+    const _add = (!e.isCustom && typeof isBodyweightEx === 'function' && isBodyweightEx(e.exId)) ? _bw : 0; // F4
     (e.sets || []).forEach(s => {
       setCount++;
-      volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      volume += ((Number(s.weight) || 0) + _add) * (Number(s.reps) || 0);
     });
     if (!e.isCustom && e.exId) {
       const ex = getEx(e.exId);
@@ -1568,7 +1572,7 @@ function addExerciseToWorkout(exId) {
     closeHiitTimer();
     renderActiveWorkout();
     haptic('success');
-    showToast('⚡ HIIT gespeichert');
+    showToast(lang === 'en' ? '⚡ HIIT saved' : '⚡ HIIT gespeichert');
     return;
   }
   // Edit-past-workout mode

@@ -556,7 +556,7 @@ function _saveHiitLog() {
   closeHiitTimer();
   renderActiveWorkout();
   haptic('success');
-  showToast('⚡ HIIT gespeichert');
+  showToast(lang === 'en' ? '⚡ HIIT saved' : '⚡ HIIT gespeichert');
 }
 
 function _hiitUpdateBtn(state) {
