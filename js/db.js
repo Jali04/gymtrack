@@ -33,10 +33,12 @@ if (!db.weekStatus) db.weekStatus = { weekKey: 0, mode: 'normal' };
 if (!db.supplements) db.supplements = [];
 if (!db.supplementLog) db.supplementLog = [];
 if (!db.customCategories) db.customCategories = {};
+if (!db.exerciseFlags) db.exerciseFlags = {}; // F4: local-only per-exercise flags (bodyweight, …)
 if (!db.settings) db.settings = {};
 if (typeof db.settings.wakeLock === 'undefined') db.settings.wakeLock = true;
 if (typeof db.settings.barWeight === 'undefined') db.settings.barWeight = 20;
 if (!Array.isArray(db.settings.plates)) db.settings.plates = [25, 20, 15, 10, 5, 2.5, 1.25];
+if (typeof db.settings.rir === 'undefined') db.settings.rir = false;
 if (!db.nutritionGoals) db.nutritionGoals = { calories: 2000, protein: 150, carbs: 200, fat: 70 };
 if (!db.nutritionLog) db.nutritionLog = [];
 const DEFAULT_FOODS = [
@@ -294,7 +296,7 @@ async function restoreAutoBackup() {
       }
     }
   }
-  try { runMigrations(db); } catch (e) {}
+  try { runMigrations(db, true); } catch (e) {}
   _persistDb();
   if (typeof showToast === 'function') showToast('✓ Backup wiederhergestellt');
   setTimeout(() => location.reload(), 400);
@@ -408,7 +410,11 @@ const MIGRATIONS = {
   }
 };
 
-function runMigrations(data) {
+// F10: `full` runs the catch-up pass over ALL migrations — needed only on
+// startup and after import/merge (imported items may lack past migrations).
+// Regular save() passes full=false, so once db.version === SCHEMA_VERSION the
+// work is O(1) instead of O(n·migrations) on every single save.
+function runMigrations(data, full) {
   let currentVersion = data.version || 0;
   let changed = false;
 
@@ -423,18 +429,20 @@ function runMigrations(data) {
     }
   }
 
-  // Also run migrations for merged/imported datasets to handle missing migrations
-  for (let v = 1; v <= SCHEMA_VERSION; v++) {
-    if (MIGRATIONS[v](data)) {
-      changed = true;
+  // Catch-up pass for merged/imported datasets to handle missing migrations.
+  if (full) {
+    for (let v = 1; v <= SCHEMA_VERSION; v++) {
+      if (MIGRATIONS[v](data)) {
+        changed = true;
+      }
     }
   }
 
   return changed;
 }
 
-// Run migrations on startup
-if (runMigrations(db)) {
+// Run migrations on startup (full catch-up once).
+if (runMigrations(db, true)) {
   _persistDb();
 }
 
@@ -486,7 +494,7 @@ _initPhotoStore();
 setTimeout(() => { try { maybeAutoBackup(false); } catch (e) {} }, 3000);
 
 function save() {
-  runMigrations(db);
+  runMigrations(db); // fast path: no-op once already at SCHEMA_VERSION (F10)
   _persistDb();
 
   if (typeof syncProfileUpdate === 'function') {
@@ -507,6 +515,29 @@ function uid() {
 
 function getEx(id) {
   return db.exercises.find(x => x.id === id);
+}
+
+// F4: bodyweight flag is kept in a local-only map (not in the synced exercises
+// array) so a cloud pull can never clobber it and no remote schema is needed.
+function isBodyweightEx(exId) {
+  return !!(db.exerciseFlags && db.exerciseFlags[exId] && db.exerciseFlags[exId].bodyweight);
+}
+function setBodyweightEx(exId, on) {
+  if (!exId) return;
+  if (!db.exerciseFlags) db.exerciseFlags = {};
+  if (on) db.exerciseFlags[exId] = Object.assign({}, db.exerciseFlags[exId], { bodyweight: true });
+  else if (db.exerciseFlags[exId]) delete db.exerciseFlags[exId].bodyweight;
+}
+
+// F4: most recent measured body weight (kg), 0 if none logged.
+function _latestBodyweight() {
+  if (!db.measurements || !db.measurements.length) return 0;
+  let best = null;
+  db.measurements.forEach(m => {
+    if (m.weight == null) return;
+    if (!best || new Date(m.date) > new Date(best.date)) best = m;
+  });
+  return best ? (Number(best.weight) || 0) : 0;
 }
 
 function getExName(id) {

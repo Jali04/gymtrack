@@ -251,14 +251,27 @@ function _renderQuickStartTemplates() {
   `;
 }
 
-async function deleteLogWorkout(id) {
-  if (!await showConfirm(t('confirmDeleteWorkout'))) return;
-  db.workouts = db.workouts.filter(w => w.id !== id);
+function deleteLogWorkout(id) {
+  // A4: delete immediately with a 5s Undo instead of a blocking confirm.
+  const idx = (db.workouts || []).findIndex(w => w.id === id);
+  if (idx === -1) return;
+  const removed = db.workouts[idx];
+  db.workouts.splice(idx, 1);
   save();
   renderLog();
   if (typeof renderCalendar === 'function') renderCalendar();
   if (typeof renderStats === 'function') renderStats();
   haptic('light');
+  const restore = () => {
+    db.workouts.splice(Math.min(idx, db.workouts.length), 0, removed);
+    save();
+    renderLog();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderStats === 'function') renderStats();
+    showToast(lang === 'en' ? '✓ Restored' : '✓ Wiederhergestellt');
+  };
+  if (typeof showUndoToast === 'function') showUndoToast(lang === 'en' ? 'Workout deleted' : 'Training gelöscht', restore);
+  else showToast(lang === 'en' ? 'Workout deleted' : 'Training gelöscht');
 }
 
 function openStartOptionsModal() {
@@ -430,6 +443,12 @@ function _lastPerf(we) {
     : getLastPerformance(we.exId, db.currentWorkout.id);
 }
 
+// F3: some lifters think in RIR (Reps in Reserve) = 10 − RPE. Stored value is
+// always RPE; RIR mode only changes what's shown/entered.
+function _rirMode() { return !!(db.settings && db.settings.rir); }
+function _rpeToInput(rpe) { if (rpe == null) return ''; return _rirMode() ? (10 - rpe) : rpe; }
+function _rpeGhost(rpe) { if (rpe == null) return '–'; return String(_rirMode() ? (10 - rpe) : rpe); }
+
 function _renderInlineSetEditor(e, i, type) {
   if (!Array.isArray(e.sets)) e.sets = [];
   const lp    = _lastPerf(e);
@@ -439,10 +458,11 @@ function _renderInlineSetEditor(e, i, type) {
   const restCustom = !!e.restSec;
 
   // Column header
+  const rpeLbl = _rirMode() ? 'RIR' : 'RPE';
   let head;
-  if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>RPE</span><span>✓</span><span></span></div>`;
+  if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else if (type === 'stretch') head = `<div class="il-head il-stretch"><span>#</span><span>${t('colMin')}</span><span>✓</span><span></span></div>`;
-  else head = `<div class="il-head"><span>#</span><span></span><span>${t('kg')}</span><span>${t('reps')}</span><span>RPE</span><span>✓</span><span></span></div>`;
+  else head = `<div class="il-head"><span>#</span><span></span><span>${t('kg')}</span><span>${t('reps')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
 
   const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Warmup', 'D': t('setDropTitle') || 'Drop' };
   const typeLabel = st => t('set' + (st === 'N' ? 'Normal' : st === 'W' ? 'Warmup' : 'Drop')) || st;
@@ -460,7 +480,7 @@ function _renderInlineSetEditor(e, i, type) {
         <input class="il-in" type="text" inputmode="decimal" value="${s.km != null ? s.km : ''}" placeholder="${g && g.km != null ? g.km : '0'}" onchange="inlineSet(${i},${k},'km',this.value)">
         <input class="il-in" type="text" inputmode="numeric" value="${s.time != null ? s.time : ''}" placeholder="${g && g.time ? g.time : '0:00'}" onchange="inlineSet(${i},${k},'time',this.value)">
         <span class="il-pace" id="ilpace-${i}-${k}">${s.pace || '–'}</span>
-        <input class="il-in il-rpe" type="text" inputmode="numeric" value="${s.rpe != null ? s.rpe : ''}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
+        <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
         ${done_cb}${rm}
       </div>`;
     } else if (type === 'stretch') {
@@ -475,7 +495,7 @@ function _renderInlineSetEditor(e, i, type) {
       ${typeBtn(s.type || 'N')}
       <input class="il-in" type="text" inputmode="decimal" value="${s.weight != null ? s.weight : ''}" placeholder="${g && g.weight != null ? g.weight : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
       <input class="il-in" type="text" inputmode="numeric" value="${s.reps != null ? s.reps : ''}" placeholder="${g && g.reps != null ? g.reps : '0'}" onchange="inlineSet(${i},${k},'reps',this.value)">
-      <input class="il-in il-rpe" type="text" inputmode="numeric" value="${s.rpe != null ? s.rpe : ''}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
+      <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
       ${done_cb}${rm}
     </div>`;
   }).join('');
@@ -501,8 +521,15 @@ function _renderInlineSetEditor(e, i, type) {
     const e1chip = e1 > 0
       ? `<span class="il-e1rm" title="Epley 1RM-Schätzung">≈ e1RM <b>${e1} kg</b></span>`
       : '';
+    // F5: offer warm-up sets when there's a heavy work set and no warm-ups yet.
+    const topWork = Math.max(0, ...(e.sets || []).filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
+    const hasWarmup = (e.sets || []).some(s => s.type === 'W');
+    const warmBtn = (!hasWarmup && topWork >= 40)
+      ? `<button class="il-plate" onclick="suggestWarmup(${i})">🔥 ${lang === 'en' ? 'Warm-up' : 'Aufwärmen'}</button>`
+      : '';
     e1rmRow = `<div class="il-e1rm-row">
       ${e1chip}
+      ${warmBtn}
       <button class="il-plate" onclick="openPlateCalcFor(${i})">🧮 ${lang === 'en' ? 'Plates' : 'Scheiben'}</button>
     </div>`;
   }
@@ -516,6 +543,29 @@ function _renderInlineSetEditor(e, i, type) {
     </div>
     ${e1rmRow}
   </div>`;
+}
+
+// F5: prepend warm-up sets (40/60/80% of the top work weight) as "W" sets.
+function _round25(x) { return Math.round(x / 2.5) * 2.5; }
+function suggestWarmup(i) {
+  const we = _we(i); if (!we) return;
+  if (_exType(we) !== 'strength') return;
+  let top = 0, reps = 8;
+  (we.sets || []).forEach(s => {
+    if (s.type !== 'W') { const w = Number(s.weight) || 0; if (w > top) { top = w; reps = Number(s.reps) || reps; } }
+  });
+  if (top <= 0) return;
+  const warm = [0.4, 0.6, 0.8].map(p => ({
+    type: 'W',
+    weight: Math.max(2.5, _round25(top * p)),
+    reps: Math.max(3, Math.round(reps * 0.7)),
+    rpe: null, done: false
+  }));
+  we.sets = warm.concat(we.sets);
+  save();
+  renderActiveWorkout();
+  haptic('light');
+  showToast(lang === 'en' ? '🔥 Warm-up sets added' : '🔥 Aufwärmsätze hinzugefügt');
 }
 
 // Best Epley e1RM across a set list (ignoring warm-up sets).
@@ -556,7 +606,11 @@ function inlineSet(i, k, field, value) {
   const s = we.sets[k];
   if (field === 'weight' || field === 'km' || field === 'minutes') s[field] = _parseNum(value);
   else if (field === 'reps') { const n = parseInt(String(value).replace(',', '.'), 10); s.reps = isNaN(n) ? null : n; }
-  else if (field === 'rpe') s.rpe = _parseNum(value);
+  else if (field === 'rpe') {
+    const n = _parseNum(value);
+    // In RIR mode the input is Reps-in-Reserve; convert to stored RPE (= 10 − RIR).
+    s.rpe = (n == null) ? null : Math.max(0, Math.min(10, _rirMode() ? (10 - n) : n));
+  }
   else if (field === 'time') { s.time = String(value).trim(); _recalcInlinePace(i, k); }
   save();
   _updateWorkoutLiveStats();
@@ -616,10 +670,21 @@ function addInlineSet(i) {
 
 function removeInlineSet(i, k) {
   const we = _we(i); if (!we || !Array.isArray(we.sets)) return;
+  const removed = we.sets[k];
   we.sets.splice(k, 1);
   save();
   renderActiveWorkout();
   haptic('light');
+  // A4: offer a quick undo for an accidental set removal.
+  if (removed && _setHasData(removed) && typeof showUndoToast === 'function') {
+    showUndoToast(lang === 'en' ? 'Set removed' : 'Satz entfernt', () => {
+      const w2 = _we(i);
+      if (!w2 || !Array.isArray(w2.sets)) return;
+      w2.sets.splice(Math.min(k, w2.sets.length), 0, removed);
+      save();
+      renderActiveWorkout();
+    });
+  }
 }
 
 // B4: within a superset, the rest timer starts only after the LAST member's
@@ -770,6 +835,7 @@ function _forgottenFinish() {
   const summary = _buildWorkoutSummary(cw);
   db.workouts.push(cw);
   db.currentWorkout = null;
+  try { if (typeof checkAchievements === 'function') summary.newBadges = checkAchievements(cw, { silent: true }) || []; } catch (e) {}
   stopTimer(); swReset(); skipRestTimer();
   if (typeof refreshWakeLock === 'function') refreshWakeLock();
   if (typeof maybeAutoBackup === 'function' && (db.workouts.length % 5 === 0)) maybeAutoBackup(true);
@@ -790,11 +856,13 @@ function _updateWorkoutLiveStats() {
   const cw = db.currentWorkout;
   if (!cw) { el.textContent = ''; return; }
   let setCount = 0, volume = 0;
+  const bw = (typeof _latestBodyweight === 'function') ? _latestBodyweight() : 0;
   (cw.exercises || []).forEach(e => {
+    const add = (!e.isCustom && typeof isBodyweightEx === 'function' && isBodyweightEx(e.exId)) ? bw : 0; // F4
     (e.sets || []).forEach(s => {
       if (!_setHasData(s)) return;
       setCount++;
-      volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      volume += ((Number(s.weight) || 0) + add) * (Number(s.reps) || 0);
     });
   });
   if (setCount === 0) { el.textContent = ''; return; }
@@ -822,8 +890,10 @@ function startExerciseSwap(idx) {
 }
 
 function removeWorkoutExercise(idx) {
-  // If part of a superset, clean up the link
+  // F8: defensive guard — currentWorkout may have been cleared/finished.
+  if (!db.currentWorkout || !Array.isArray(db.currentWorkout.exercises)) return;
   const e = db.currentWorkout.exercises[idx];
+  if (!e) return;
   if (e.supersetGroup) unlinkSuperset(idx, true);
   db.currentWorkout.exercises.splice(idx, 1);
   save();
@@ -837,11 +907,11 @@ let _supersetLinkSource = null; // index of the exercise waiting to be linked
 function startSupersetLink(idx) {
   const cw = db.currentWorkout;
   if (!cw || cw.exercises.length < 2) {
-    showToast('Mindestens 2 Übungen für Superset nötig');
+    showToast(lang === 'en' ? 'Need at least 2 exercises for a superset' : 'Mindestens 2 Übungen für Superset nötig');
     return;
   }
   _supersetLinkSource = idx;
-  showToast('Tippe eine andere Übung an, um sie zu verknüpfen');
+  showToast(lang === 'en' ? 'Tap another exercise to link it' : 'Tippe eine andere Übung an, um sie zu verknüpfen');
   // Highlight all other cards as clickable targets
   const cards = document.querySelectorAll('#workoutExercises .exercise-card');
   cards.forEach((card, i) => {
@@ -880,7 +950,7 @@ function _finalizeSupersetLink(targetIdx) {
   save();
   renderActiveWorkout();
   haptic('success');
-  showToast('⟨ SS ⟩ Superset verknüpft');
+  showToast(lang === 'en' ? '⟨ SS ⟩ Superset linked' : '⟨ SS ⟩ Superset verknüpft');
 }
 
 function unlinkSuperset(idx, silent) {
@@ -895,7 +965,7 @@ function unlinkSuperset(idx, silent) {
   if (!silent) {
     renderActiveWorkout();
     haptic('light');
-    showToast('Superset gelöst');
+    showToast(lang === 'en' ? 'Superset unlinked' : 'Superset gelöst');
   }
 }
 
@@ -915,6 +985,8 @@ async function finishWorkout() {
 
   db.workouts.push(cw);
   db.currentWorkout = null;
+  // F6: award badges now (workout is in db.workouts) and surface them in the summary.
+  try { if (typeof checkAchievements === 'function') summary.newBadges = checkAchievements(cw, { silent: true }) || []; } catch (e) {}
   stopTimer();
   swReset();
   skipRestTimer();
@@ -963,10 +1035,12 @@ function _buildWorkoutSummary(cw) {
   const durMin  = Math.max(1, Math.round((cw.endTime - startTs) / 60000));
   let setCount = 0, volume = 0;
   const prs = [];
+  const _bw = (typeof _latestBodyweight === 'function') ? _latestBodyweight() : 0;
   cw.exercises.forEach(e => {
+    const _add = (!e.isCustom && typeof isBodyweightEx === 'function' && isBodyweightEx(e.exId)) ? _bw : 0; // F4
     (e.sets || []).forEach(s => {
       setCount++;
-      volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      volume += ((Number(s.weight) || 0) + _add) * (Number(s.reps) || 0);
     });
     if (!e.isCustom && e.exId) {
       const ex = getEx(e.exId);
@@ -1018,6 +1092,12 @@ function _showWorkoutSummary(s) {
     stat('📊', s.setCount, t('sets')) +
     stat('⚖️', `${Math.round(s.volume).toLocaleString(loc)} kg`, t('summaryVolume'));
 
+  // B6: allow correcting the recorded duration (e.g. a forgotten stop).
+  const durValEl = document.getElementById('summaryDurVal');
+  if (durValEl) durValEl.textContent = `${s.durMin} min`;
+  const durLbl = document.getElementById('lblSummaryDurEdit');
+  if (durLbl) durLbl.textContent = lang === 'en' ? 'Duration' : 'Dauer';
+
   const prSec = document.getElementById('summaryPrSection');
   if (s.prs.length > 0) {
     prSec.style.display = 'block';
@@ -1032,6 +1112,25 @@ function _showWorkoutSummary(s) {
   } else {
     prSec.style.display = 'none';
     prSec.innerHTML = '';
+  }
+
+  // F6: surface newly unlocked achievements right in the summary.
+  const badgeSec = document.getElementById('summaryBadgeSection');
+  if (badgeSec) {
+    const badges = s.newBadges || [];
+    if (badges.length) {
+      const de = lang !== 'en';
+      badgeSec.style.display = 'block';
+      badgeSec.innerHTML = `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);margin-bottom:8px;">🎖️ ${de ? 'Neue Abzeichen' : 'New badges'}</div>` +
+        badges.map(b => `<div style="display:flex;align-items:center;gap:10px;background:rgba(200,241,53,0.06);border:1px solid rgba(200,241,53,0.25);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+          <span style="font-size:22px;">${b.icon || '🏅'}</span>
+          <div><div style="font-weight:700;font-size:14px;">${b.title || 'Badge'}</div>
+          ${b.desc ? `<div style="font-size:12px;color:var(--muted);">${b.desc}</div>` : ''}</div>
+        </div>`).join('');
+    } else {
+      badgeSec.style.display = 'none';
+      badgeSec.innerHTML = '';
+    }
   }
 
   // D3: connect the two app halves — remind about remaining protein today.
@@ -1056,6 +1155,20 @@ function _showWorkoutSummary(s) {
   if (s.prs.length > 0 && typeof confetti === 'function') {
     setTimeout(() => confetti({ particleCount: 90, spread: 70, origin: { y: 0.7 }, zIndex: 3000 }), 250);
   }
+}
+
+// B6: adjust the finished workout's end time (duration) from the summary.
+function adjustSummaryDuration(deltaMin) {
+  const w = _pendingFinishedWorkout;
+  if (!w) return;
+  const start = typeof w.startTime === 'string' ? new Date(w.startTime).getTime() : w.startTime;
+  const curMin = Math.max(1, Math.round(((w.endTime || start) - start) / 60000));
+  const newMin = Math.max(1, Math.min(600, curMin + deltaMin));
+  w.endTime = start + newMin * 60000;
+  save();
+  const el = document.getElementById('summaryDurVal');
+  if (el) el.textContent = `${newMin} min`;
+  haptic('light');
 }
 
 function closeWorkoutSummary() {
@@ -1459,7 +1572,7 @@ function addExerciseToWorkout(exId) {
     closeHiitTimer();
     renderActiveWorkout();
     haptic('success');
-    showToast('⚡ HIIT gespeichert');
+    showToast(lang === 'en' ? '⚡ HIIT saved' : '⚡ HIIT gespeichert');
     return;
   }
   // Edit-past-workout mode
@@ -1622,7 +1735,7 @@ function addSetRow(data) {
     const km = data ? data.km : '', time = data ? data.time : '', pace = data ? data.pace : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
       ${typeBtn}
-      <input class="set-input" type="number" placeholder="0.0" value="${km}" inputmode="decimal" oninput="recalcPace(this.parentElement)"/>
+      <input class="set-input" type="text" placeholder="0.0" value="${km}" inputmode="decimal" oninput="recalcPace(this.parentElement)"/>
       <input class="set-input" type="text" placeholder="0:00" value="${time}" inputmode="numeric" oninput="recalcPace(this.parentElement)"/>
       <input class="set-input pace-display" type="text" placeholder="–" value="${pace}"/>
       ${rpeInput}
@@ -1631,15 +1744,15 @@ function addSetRow(data) {
     row.className = 'set-row stretch-row';
     const min = data ? data.minutes : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
-      <input class="set-input" type="number" placeholder="2" value="${min}" inputmode="decimal" step="0.5" min="0.5"/>
+      <input class="set-input" type="text" placeholder="2" value="${min}" inputmode="decimal"/>
       ${rmBtn}`;
   } else {
     row.className = 'set-row';
     const w = data ? data.weight : '', r = data ? data.reps : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
       ${typeBtn}
-      <input class="set-input" type="number" placeholder="0" value="${w}" inputmode="decimal"/>
-      <input class="set-input" type="number" placeholder="0" value="${r}" inputmode="numeric"/>
+      <input class="set-input" type="text" placeholder="0" value="${w}" inputmode="decimal"/>
+      <input class="set-input" type="text" placeholder="0" value="${r}" inputmode="numeric"/>
       ${rpeInput}
       ${rmBtn}`;
   }
@@ -1649,7 +1762,7 @@ function addSetRow(data) {
 
 function recalcPace(row) {
   const inputs  = row.querySelectorAll('.set-input');
-  const km      = parseFloat(inputs[0].value);
+  const km      = parseFloat(String(inputs[0].value).replace(',', '.'));
   const timeStr = inputs[1].value.trim();
   const paceInput = inputs[2];
   if (!km || !timeStr || !timeStr.includes(':')) { paceInput.value = '–'; return; }
@@ -1684,14 +1797,16 @@ function saveSets() {
     if (rpeInput && rpeInput.value) rpe = parseFloat(rpeInput.value);
 
     const inputs = row.querySelectorAll('.set-input:not(.set-rpe)');
+    // B7: accept a comma decimal separator (German keyboards) so "82,5" isn't lost.
+    const pf = el => parseFloat(String(el.value).replace(',', '.'));
     if (type === 'cardio') {
-      const km = parseFloat(inputs[0].value), time = inputs[1].value.trim(), pace = inputs[2].value.trim();
+      const km = pf(inputs[0]), time = inputs[1].value.trim(), pace = inputs[2].value.trim();
       if (km > 0 || time || pace) sets.push({ type: sType, rpe, km: km||0, time, pace });
     } else if (type === 'stretch') {
-      const minutes = parseFloat(inputs[0].value);
+      const minutes = pf(inputs[0]);
       if (minutes > 0) sets.push({ minutes });
     } else {
-      const weight = parseFloat(inputs[0].value), reps = parseInt(inputs[1].value);
+      const weight = pf(inputs[0]), reps = parseInt(String(inputs[1].value).replace(',', '.'), 10);
       if (!isNaN(weight) && !isNaN(reps) && reps > 0) sets.push({ type: sType, rpe, weight, reps });
     }
   });
@@ -1769,7 +1884,10 @@ function _showNextExSuggestions() {
   bar.id = 'nextExSuggestions';
   bar.className = 'next-ex-bar';
   bar.innerHTML = `
-    <div class="next-ex-label">${t('suggestNextEx')}</div>
+    <div class="next-ex-head">
+      <div class="next-ex-label">${t('suggestNextEx')}</div>
+      <button class="next-ex-close" onclick="document.getElementById('nextExSuggestions').remove();" aria-label="${lang === 'en' ? 'Dismiss' : 'Ausblenden'}">✕</button>
+    </div>
     <div class="next-ex-chips">
       ${suggestions.map(e => {
         const type = getCatType(e.category);
@@ -1779,8 +1897,7 @@ function _showNextExSuggestions() {
     </div>
   `;
   container.parentElement.insertBefore(bar, document.getElementById('btnAddExercise'));
-  // Auto-dismiss after 8 seconds
-  setTimeout(() => { const el = document.getElementById('nextExSuggestions'); if (el) el.remove(); }, 8000);
+  // B5: no auto-dismiss — the bar stays until the user closes it (✕) or picks one.
 }
 
 /* ---- Rest Timer ---- */

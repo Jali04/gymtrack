@@ -101,6 +101,34 @@ function showToast(message) {
   }, 3000);
 }
 
+/* ---- Undo toast (A4): destructive actions with a 5s Rückgängig ---- */
+let _undoTimer = null;
+function showUndoToast(message, onUndo) {
+  const existing = document.querySelector('.undo-toast');
+  if (existing) existing.remove();
+  if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+
+  const toast = document.createElement('div');
+  toast.className = 'undo-toast';
+  const label = document.createElement('span');
+  label.textContent = message;
+  const btn = document.createElement('button');
+  btn.className = 'undo-btn';
+  btn.textContent = (typeof lang !== 'undefined' && lang === 'en') ? 'Undo' : 'Rückgängig';
+  toast.appendChild(label);
+  toast.appendChild(btn);
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  const dismiss = () => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); };
+  btn.addEventListener('click', () => {
+    if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+    dismiss();
+    try { onUndo(); } catch (e) { console.error('undo failed', e); }
+  });
+  _undoTimer = setTimeout(dismiss, 5000);
+}
+
 function showInfo(title, text) {
   document.getElementById('infoModalTitle').textContent = title;
   document.getElementById('infoModalText').textContent = text;
@@ -141,6 +169,15 @@ function toggleWakeLockSetting(checked) {
   if (typeof applyWakeLockSetting === 'function') applyWakeLockSetting();
   haptic('light');
   showToast(checked ? t('wakeLockOn') : t('wakeLockOff'));
+}
+
+function toggleRirSetting(checked) {
+  if (!db.settings) db.settings = {};
+  db.settings.rir = checked;
+  save();
+  haptic('light');
+  if (typeof renderActiveWorkout === 'function' && db.currentWorkout) renderActiveWorkout();
+  showToast(checked ? (lang === 'en' ? 'Showing RIR' : 'Zeige RIR') : (lang === 'en' ? 'Showing RPE' : 'Zeige RPE'));
 }
 
 function toggleRestSoundSetting(checked) {

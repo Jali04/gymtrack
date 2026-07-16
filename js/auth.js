@@ -41,6 +41,20 @@ function setupAuthListeners() {
 
     if (event === 'SIGNED_IN') {
       showToast(lang === 'de' ? 'Erfolgreich angemeldet!' : 'Successfully signed in!');
+      // E2: before the very first merge, take a safety backup and let the user
+      // know local + cloud data will be merged (last-write-wins per item).
+      try {
+        const firstMerge = !localStorage.getItem('dscpln_merge_warned');
+        const hasLocalData = (db.workouts && db.workouts.length) || (db.exercises && db.exercises.length > 10) ||
+                             (db.measurements && db.measurements.length) || (db.templates && db.templates.length);
+        if (firstMerge && hasLocalData) {
+          if (typeof maybeAutoBackup === 'function') await maybeAutoBackup(true);
+          showToast(lang === 'de'
+            ? 'Lokale und Cloud-Daten werden zusammengeführt (Backup erstellt).'
+            : 'Local and cloud data are being merged (backup created).');
+          localStorage.setItem('dscpln_merge_warned', '1');
+        }
+      } catch (e) { console.warn('[Sync] pre-merge backup failed:', e); }
       // Trigger data migration & sync
       if (typeof syncAll === 'function') {
         try {

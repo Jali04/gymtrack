@@ -157,12 +157,32 @@ document.addEventListener('touchstart', e => {
   swipeStartTime = Date.now();
 }, { passive: true });
 
+// C2: ignore a swipe when it starts on an interactive control or inside any
+// horizontally-scrollable element (charts, chip rows, tables, editable inputs).
+function _swipeShouldIgnore(target) {
+  if (!target || !target.closest) return false;
+  if (target.closest('input, textarea, select, [contenteditable="true"]')) return true;
+  let el = target;
+  while (el && el !== document.body) {
+    if (el.nodeType === 1) {
+      // Element genuinely scrolls horizontally right now.
+      if (el.scrollWidth - el.clientWidth > 8) {
+        const ov = getComputedStyle(el).overflowX;
+        if (ov === 'auto' || ov === 'scroll') return true;
+      }
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
 document.addEventListener('touchend', e => {
   if (document.querySelector('.modal-overlay.open')) return;
-  if (e.target.closest('.qs-scroll-container') || e.target.closest('#quickStartTemplates') || e.target.closest('.horizontal-scroll') || e.target.closest('#monthlyRecap') || e.target.closest('.gymlab-category-chips-wrapper')) return;
+  if (_swipeShouldIgnore(e.target)) return;
   const dx = e.changedTouches[0].clientX - swipeStartX;
   const dy = e.changedTouches[0].clientY - swipeStartY;
-  if (Date.now() - swipeStartTime > 400 || Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
+  // Higher threshold (80px) + must be clearly horizontal.
+  if (Date.now() - swipeStartTime > 400 || Math.abs(dx) < 80 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
   const active = document.querySelector('.page.active');
   if (!active) return;
   const cur = PAGE_ORDER.indexOf(active.id.replace('page-', ''));

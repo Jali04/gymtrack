@@ -150,8 +150,9 @@ function openAddExercise() {
   populateCategoryDropdown('Brust');
   
   document.getElementById('exNotes').value    = '';
+  const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = false;
   document.getElementById('deleteExBtn').style.display = 'none';
-  
+
   const container = document.getElementById('exerciseAiAnalysisContainer');
   if (container) container.style.display = 'none';
 
@@ -173,6 +174,7 @@ function openEditExercise(id) {
   populateCategoryDropdown(ex.category);
   
   document.getElementById('exNotes').value    = ex.notes || '';
+  const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = (typeof isBodyweightEx === 'function') && isBodyweightEx(id);
   document.getElementById('deleteExBtn').style.display = 'block';
   
   const customGroup = document.getElementById('customCategoryGroup');
@@ -185,11 +187,23 @@ function openEditExercise(id) {
   openModal('addExerciseModal');
 }
 
-function saveExercise() {
+async function saveExercise() {
   const name     = document.getElementById('exName').value.trim();
   let category   = document.getElementById('exCategory').value;
   const notes    = document.getElementById('exNotes').value.trim();
   if (!name) { showAlert(t('enterName')); return; }
+
+  // F7: warn on duplicate name when creating a new exercise.
+  if (!editingExId) {
+    const dup = db.exercises.find(e => (e.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (dup) {
+      const proceed = await showConfirm(
+        lang === 'en' ? `"${dup.name}" already exists — create it anyway?` : `„${dup.name}" existiert bereits — trotzdem anlegen?`,
+        { danger: false, confirmText: lang === 'en' ? 'Create' : 'Anlegen' }
+      );
+      if (!proceed) return;
+    }
+  }
 
   if (category === 'new_custom') {
     const customName = document.getElementById('customCategoryName').value.trim();
@@ -208,13 +222,17 @@ function saveExercise() {
     }
   }
   
+  const bwEl = document.getElementById('exBodyweight');
+  const bodyweight = !!(bwEl && bwEl.checked);
   let newId = null;
   if (editingExId) {
     const ex = getEx(editingExId);
     ex.name = name; ex.category = category; ex.notes = notes;
+    if (typeof setBodyweightEx === 'function') setBodyweightEx(editingExId, bodyweight);
   } else {
     newId = uid();
     db.exercises.push({ id: newId, name, category, notes });
+    if (typeof setBodyweightEx === 'function') setBodyweightEx(newId, bodyweight);
   }
   const context = window._openedFromPickerContext || (window._openedFromPicker ? 'workout' : null);
   window._openedFromPickerContext = null;

@@ -43,7 +43,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DSCPLN">
   <meta name="theme-color" content="#0a0a0a">
-  <meta name="version" content="4.46">
+  <meta name="version" content="4.49">
   <title>DSCPLN</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
@@ -52,7 +52,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4.46">
+  <link rel="stylesheet" href="css/styles.css?v=4.49">
 </head>
 
 <body>
@@ -752,6 +752,18 @@
           style="resize:none;height:80px;line-height:1.5;"></textarea>
       </div>
 
+      <!-- Bodyweight flag (F4) -->
+      <div class="settings-row-item" style="margin-bottom:16px;">
+        <div class="settings-row-info">
+          <div class="settings-row-label" id="lblExBodyweight">Körpergewichtsübung</div>
+          <div class="settings-row-desc" id="lblExBodyweightDesc">Gewichtsfeld = Zusatzgewicht; Körpergewicht wird ins Volumen eingerechnet</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="exBodyweight">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
       <!-- AI Coach Analysis Container -->
       <div id="exerciseAiAnalysisContainer" style="display:none; margin-bottom:16px;">
         <div style="background: linear-gradient(135deg, rgba(155,92,246,0.12), rgba(232,255,71,0.04)); border: 1px solid rgba(155,92,246,0.25); border-radius: 12px; padding: 12px; display: flex; gap: 10px; align-items: flex-start;">
@@ -999,6 +1011,18 @@
           </label>
         </div>
 
+        <!-- RPE as RIR (F3) -->
+        <div class="settings-row-item">
+          <div class="settings-row-info">
+            <div class="settings-row-label" id="lblSettingsRir">RPE als RIR anzeigen</div>
+            <div class="settings-row-desc" id="lblSettingsRirDesc">Reps in Reserve statt RPE (RIR = 10 − RPE)</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="settingRir" onchange="toggleRirSetting(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
         <!-- Sync & Account Row -->
         <div class="settings-row-item" id="settingsRowAccount" style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 8px;">
           <div class="settings-row-info">
@@ -1034,7 +1058,10 @@
       </div>
       <!-- Notes export -->
       <button class="btn btn-secondary" id="btnExportNotes" onclick="exportToNotesReadable()"
-        style="margin-bottom:16px;">📝 Verlauf zu Notizen exportieren</button>
+        style="margin-bottom:8px;">📝 Verlauf zu Notizen exportieren</button>
+      <!-- CSV export (E4) -->
+      <button class="btn btn-secondary" id="btnExportCsv" onclick="exportWorkoutsCsv()"
+        style="margin-bottom:16px;">📊 Als CSV (Excel/Sheets)</button>
       
       <!-- Import section -->
       <div
@@ -1045,12 +1072,12 @@
       <button class="btn btn-secondary" id="btnCloseExport" onclick="closeModal('settingsHubModal')"
         style="margin-top:8px;">Schließen</button>
 
-      <!-- Copyright Notice -->
+      <!-- About / Copyright Notice (collapsed by default so it doesn't crowd the backup actions) -->
       <div class="divider" style="margin-top: 20px; margin-bottom: 12px;"></div>
-      <div style="text-align: center; font-size: 11px; color: var(--muted); line-height: 1.4; padding: 0 8px;">
-        <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; color: var(--text);" id="lblCopyrightTitle">© Urheberrechtsschutz</div>
-        <div id="lblCopyrightText">Diese App, ihr Design, der Quellcode sowie alle Inhalte sind geistiges Eigentum des Urhebers. Jede unbefugte Vervielfältigung, Verbreitung, Modifikation oder das Kopieren (auch auszugsweise) ist strengstens untersagt. Alle Rechte vorbehalten.</div>
-      </div>
+      <details class="about-details">
+        <summary id="lblCopyrightTitle">© Über &amp; Rechtliches</summary>
+        <div style="text-align: center; font-size: 11px; color: var(--muted); line-height: 1.4; padding: 10px 8px 0;" id="lblCopyrightText">Diese App, ihr Design, der Quellcode sowie alle Inhalte sind geistiges Eigentum des Urhebers. Jede unbefugte Vervielfältigung, Verbreitung, Modifikation oder das Kopieren (auch auszugsweise) ist strengstens untersagt. Alle Rechte vorbehalten.</div>
+      </details>
     </div>
   </div>
 
@@ -1707,8 +1734,15 @@
         <div class="modal-title" id="summaryTitle" style="margin-top:10px;">Training abgeschlossen!</div>
         <div id="summarySubtitle" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
       </div>
-      <div id="summaryStatsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;"></div>
+      <div id="summaryStatsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;"></div>
+      <div id="summaryDurationEdit" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;font-size:13px;color:var(--muted);">
+        <span id="lblSummaryDurEdit">Dauer</span>
+        <button class="wk-goal-btn" onclick="adjustSummaryDuration(-5)">−</button>
+        <span id="summaryDurVal" style="min-width:56px;text-align:center;font-weight:700;color:var(--text);">– min</span>
+        <button class="wk-goal-btn" onclick="adjustSummaryDuration(5)">+</button>
+      </div>
       <div id="summaryPrSection" style="display:none;margin-bottom:16px;"></div>
+      <div id="summaryBadgeSection" style="display:none;margin-bottom:16px;"></div>
       <div id="summaryProteinHint" style="display:none;margin-bottom:16px;"></div>
       <button class="btn btn-primary" onclick="closeWorkoutSummary()" id="btnCloseSummary">Weiter</button>
     </div>
@@ -1945,19 +1979,19 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-  <script src="js/db.js?v=4.46"></script>
+  <script src="js/db.js?v=4.49"></script>
   <script src="js/i18n.js?v=4.44"></script>
-  <script src="js/modals.js?v=4.45"></script>
-  <script src="js/nav.js?v=4.41"></script>
-  <script src="js/workout.js?v=4.46"></script>
-  <script src="js/exercises.js?v=4.31"></script>
+  <script src="js/modals.js?v=4.48"></script>
+  <script src="js/nav.js?v=4.47"></script>
+  <script src="js/workout.js?v=4.49"></script>
+  <script src="js/exercises.js?v=4.49"></script>
   <script src="js/history.js?v=4.31"></script>
   <script src="js/stats.js?v=4.31"></script>
   <script src="js/templates.js?v=4.31"></script>
   <script src="js/calendar.js?v=4.31"></script>
   <script src="js/editWorkout.js?v=4.31"></script>
-  <script src="js/timer.js?v=4.43"></script>
-  <script src="js/ui.js?v=4.44"></script>
+  <script src="js/timer.js?v=4.49"></script>
+  <script src="js/ui.js?v=4.48"></script>
   <script src="js/wakelock.js?v=4.43"></script>
   <script src="js/splash.js?v=4.31"></script>
   <script src="js/progress.js?v=4.46"></script>
@@ -1967,12 +2001,12 @@
   <script src="js/nutrition.js?v=4.46"></script>
   <script src="js/tools.js?v=4.46"></script>
   <script src="js/guide.js?v=4.34"></script>
-  <script src="js/achievements.js?v=4.45"></script>
-  <script src="js/app.js?v=4.46"></script>
+  <script src="js/achievements.js?v=4.47"></script>
+  <script src="js/app.js?v=4.49"></script>
   <script src="js/aiCoach.js?v=4.31"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.6"></script>
   <script src="js/config.js?v=4.31"></script>
-  <script src="js/auth.js?v=4.31"></script>
+  <script src="js/auth.js?v=4.48"></script>
   <script src="js/sync.js?v=4.44"></script>
 
 </body>
