@@ -853,6 +853,8 @@ body.modal-open {
 }
 .cal-day {
   aspect-ratio: 1;
+  min-width: 44px;   /* C5: accessible tap target */
+  min-height: 44px;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -1480,12 +1482,50 @@ body.modal-open {
   margin-bottom: 12px;
   animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+/* A4: undo toast for destructive actions */
+.undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(20px);
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px; z-index: 2000;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  font-size: 14px; color: var(--text); max-width: calc(100% - 32px);
+  opacity: 0; transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.undo-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.undo-btn {
+  background: rgba(200,241,53,0.12); border: 1px solid rgba(200,241,53,0.4);
+  color: var(--accent); font-weight: 700; font-size: 13px; padding: 6px 12px;
+  border-radius: 9px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+}
+.undo-btn:active { transform: scale(0.95); }
+
+/* F9: collapsible about/legal block in settings */
+.about-details { font-size: 12px; }
+.about-details > summary {
+  cursor: pointer; text-align: center; color: var(--muted); font-size: 11px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  list-style: none; padding: 4px; -webkit-tap-highlight-color: transparent;
+}
+.about-details > summary::-webkit-details-marker { display: none; }
+
+.next-ex-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.next-ex-close {
+  background: none; border: none; color: var(--muted); font-size: 14px;
+  cursor: pointer; padding: 2px 4px; line-height: 1; -webkit-tap-highlight-color: transparent;
+}
+.next-ex-close:active { color: var(--accent2); }
 .next-ex-label {
   font-size: 12px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
   font-weight: 600;
 }
 .next-ex-chips {

@@ -237,6 +237,49 @@ async function exportAsFile() {
   } catch(e) { showToast(t('exportFileError')); }
 }
 
+// E4: CSV export of all logged sets (Datum, Übung, Satz, kg, Wdh, RPE, …).
+function exportWorkoutsCsv() {
+  const de = lang !== 'en';
+  const esc = v => {
+    const s = (v == null ? '' : String(v));
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const header = de
+    ? ['Datum', 'Uhrzeit', 'Übung', 'Kategorie', 'Satz', 'Typ', 'kg', 'Wdh', 'RPE', 'km', 'Zeit', 'Minuten']
+    : ['Date', 'Time', 'Exercise', 'Category', 'Set', 'Type', 'kg', 'Reps', 'RPE', 'km', 'Time', 'Minutes'];
+  const rows = [header.join(';')];
+  const fmtDate = ts => { const d = new Date(ts); return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`; };
+  const fmtTime = ts => { const d = new Date(ts); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+
+  const sorted = [...(db.workouts || [])].sort((a, b) => (a.startTime || a.date || 0) - (b.startTime || b.date || 0));
+  sorted.forEach(w => {
+    const ts = w.startTime || w.date;
+    (w.exercises || []).forEach(e => {
+      const exObj = e.isCustom ? null : getEx(e.exId);
+      const exName = e.isCustom ? e.customName : (exObj ? exObj.name : e.exId);
+      const cat = e.isCustom ? e.customCategory : (exObj ? exObj.category : '');
+      (e.sets || []).forEach((s, i) => {
+        rows.push([
+          fmtDate(ts), fmtTime(ts), esc(exName), esc(cat), i + 1,
+          s.type || 'N',
+          s.weight != null ? s.weight : '',
+          s.reps != null ? s.reps : '',
+          s.rpe != null ? s.rpe : '',
+          s.km != null ? s.km : '',
+          s.time || '',
+          s.minutes != null ? s.minutes : ''
+        ].join(';'));
+      });
+    });
+  });
+
+  if (rows.length <= 1) { showToast(de ? 'Keine Workouts zum Exportieren' : 'No workouts to export'); return; }
+  const csv = '﻿' + rows.join('\r\n'); // BOM for Excel
+  const date = new Date().toISOString().split('T')[0];
+  _triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `dscpln_workouts_${date}.csv`);
+  showToast(de ? '✓ CSV exportiert' : '✓ CSV exported');
+}
+
 function _triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -368,6 +411,7 @@ function _mergeImportedDb(imported) {
       imported.t.id = String(imported.t.id);
     }
     if (!db.templates.find(x => String(x.id) === String(imported.t.id))) db.templates.push(imported.t);
+    if (typeof runMigrations === 'function') runMigrations(db, true);
     save(); closeModal('importModal'); renderTemplates(); renderExercises();
     showToast(t('tmplImportSuccess'));
     return;
@@ -396,6 +440,7 @@ function _mergeImportedDb(imported) {
     }
     if (!db.programs) db.programs = [];
     if (!db.programs.find(x => String(x.id) === String(imported.p.id))) db.programs.push(imported.p);
+    if (typeof runMigrations === 'function') runMigrations(db, true);
     save(); closeModal('importModal'); renderTemplates(); renderExercises();
     if (typeof renderPrograms === 'function') renderPrograms();
     showToast('✓ Programm importiert!');
@@ -442,6 +487,7 @@ function _mergeImportedDb(imported) {
       }
     });
   }
+  if (typeof runMigrations === 'function') runMigrations(db, true);
   save(); closeModal('importModal'); renderStats(); renderHistory();
   showToast(t('importSuccess'));
 }

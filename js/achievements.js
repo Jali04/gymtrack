@@ -67,7 +67,8 @@ function countPRs() {
 /* ─────────────────────────────────────────────
    Check achievements after a workout is saved
    ───────────────────────────────────────────── */
-function checkAchievements(justFinishedWorkout) {
+function checkAchievements(justFinishedWorkout, opts) {
+  opts = opts || {};
   let newUnlocks = [];
 
   const totalWorkouts = db.workouts.length;
@@ -123,11 +124,16 @@ function checkAchievements(justFinishedWorkout) {
 
   if (newUnlocks.length > 0) {
     save();
-    triggerConfetti();
-    showAchievementPopup(newUnlocks[0]);
+    // silent mode (e.g. called from finishWorkout): let the summary surface the
+    // badges instead of popping a competing modal over the summary.
+    if (!opts.silent) {
+      triggerConfetti();
+      showAchievementPopup(newUnlocks[0]);
+    }
   }
 
   renderAchievements();
+  return newUnlocks;
 }
 
 function hasAchievement(id) {

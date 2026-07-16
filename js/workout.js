@@ -251,14 +251,27 @@ function _renderQuickStartTemplates() {
   `;
 }
 
-async function deleteLogWorkout(id) {
-  if (!await showConfirm(t('confirmDeleteWorkout'))) return;
-  db.workouts = db.workouts.filter(w => w.id !== id);
+function deleteLogWorkout(id) {
+  // A4: delete immediately with a 5s Undo instead of a blocking confirm.
+  const idx = (db.workouts || []).findIndex(w => w.id === id);
+  if (idx === -1) return;
+  const removed = db.workouts[idx];
+  db.workouts.splice(idx, 1);
   save();
   renderLog();
   if (typeof renderCalendar === 'function') renderCalendar();
   if (typeof renderStats === 'function') renderStats();
   haptic('light');
+  const restore = () => {
+    db.workouts.splice(Math.min(idx, db.workouts.length), 0, removed);
+    save();
+    renderLog();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderStats === 'function') renderStats();
+    showToast(lang === 'en' ? '✓ Restored' : '✓ Wiederhergestellt');
+  };
+  if (typeof showUndoToast === 'function') showUndoToast(lang === 'en' ? 'Workout deleted' : 'Training gelöscht', restore);
+  else showToast(lang === 'en' ? 'Workout deleted' : 'Training gelöscht');
 }
 
 function openStartOptionsModal() {
@@ -616,10 +629,21 @@ function addInlineSet(i) {
 
 function removeInlineSet(i, k) {
   const we = _we(i); if (!we || !Array.isArray(we.sets)) return;
+  const removed = we.sets[k];
   we.sets.splice(k, 1);
   save();
   renderActiveWorkout();
   haptic('light');
+  // A4: offer a quick undo for an accidental set removal.
+  if (removed && _setHasData(removed) && typeof showUndoToast === 'function') {
+    showUndoToast(lang === 'en' ? 'Set removed' : 'Satz entfernt', () => {
+      const w2 = _we(i);
+      if (!w2 || !Array.isArray(w2.sets)) return;
+      w2.sets.splice(Math.min(k, w2.sets.length), 0, removed);
+      save();
+      renderActiveWorkout();
+    });
+  }
 }
 
 // B4: within a superset, the rest timer starts only after the LAST member's
@@ -770,6 +794,7 @@ function _forgottenFinish() {
   const summary = _buildWorkoutSummary(cw);
   db.workouts.push(cw);
   db.currentWorkout = null;
+  try { if (typeof checkAchievements === 'function') summary.newBadges = checkAchievements(cw, { silent: true }) || []; } catch (e) {}
   stopTimer(); swReset(); skipRestTimer();
   if (typeof refreshWakeLock === 'function') refreshWakeLock();
   if (typeof maybeAutoBackup === 'function' && (db.workouts.length % 5 === 0)) maybeAutoBackup(true);
@@ -822,8 +847,10 @@ function startExerciseSwap(idx) {
 }
 
 function removeWorkoutExercise(idx) {
-  // If part of a superset, clean up the link
+  // F8: defensive guard — currentWorkout may have been cleared/finished.
+  if (!db.currentWorkout || !Array.isArray(db.currentWorkout.exercises)) return;
   const e = db.currentWorkout.exercises[idx];
+  if (!e) return;
   if (e.supersetGroup) unlinkSuperset(idx, true);
   db.currentWorkout.exercises.splice(idx, 1);
   save();
@@ -915,6 +942,8 @@ async function finishWorkout() {
 
   db.workouts.push(cw);
   db.currentWorkout = null;
+  // F6: award badges now (workout is in db.workouts) and surface them in the summary.
+  try { if (typeof checkAchievements === 'function') summary.newBadges = checkAchievements(cw, { silent: true }) || []; } catch (e) {}
   stopTimer();
   swReset();
   skipRestTimer();
@@ -1032,6 +1061,25 @@ function _showWorkoutSummary(s) {
   } else {
     prSec.style.display = 'none';
     prSec.innerHTML = '';
+  }
+
+  // F6: surface newly unlocked achievements right in the summary.
+  const badgeSec = document.getElementById('summaryBadgeSection');
+  if (badgeSec) {
+    const badges = s.newBadges || [];
+    if (badges.length) {
+      const de = lang !== 'en';
+      badgeSec.style.display = 'block';
+      badgeSec.innerHTML = `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);margin-bottom:8px;">🎖️ ${de ? 'Neue Abzeichen' : 'New badges'}</div>` +
+        badges.map(b => `<div style="display:flex;align-items:center;gap:10px;background:rgba(200,241,53,0.06);border:1px solid rgba(200,241,53,0.25);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+          <span style="font-size:22px;">${b.icon || '🏅'}</span>
+          <div><div style="font-weight:700;font-size:14px;">${b.title || 'Badge'}</div>
+          ${b.desc ? `<div style="font-size:12px;color:var(--muted);">${b.desc}</div>` : ''}</div>
+        </div>`).join('');
+    } else {
+      badgeSec.style.display = 'none';
+      badgeSec.innerHTML = '';
+    }
   }
 
   // D3: connect the two app halves — remind about remaining protein today.
@@ -1769,7 +1817,10 @@ function _showNextExSuggestions() {
   bar.id = 'nextExSuggestions';
   bar.className = 'next-ex-bar';
   bar.innerHTML = `
-    <div class="next-ex-label">${t('suggestNextEx')}</div>
+    <div class="next-ex-head">
+      <div class="next-ex-label">${t('suggestNextEx')}</div>
+      <button class="next-ex-close" onclick="document.getElementById('nextExSuggestions').remove();" aria-label="${lang === 'en' ? 'Dismiss' : 'Ausblenden'}">✕</button>
+    </div>
     <div class="next-ex-chips">
       ${suggestions.map(e => {
         const type = getCatType(e.category);
@@ -1779,8 +1830,7 @@ function _showNextExSuggestions() {
     </div>
   `;
   container.parentElement.insertBefore(bar, document.getElementById('btnAddExercise'));
-  // Auto-dismiss after 8 seconds
-  setTimeout(() => { const el = document.getElementById('nextExSuggestions'); if (el) el.remove(); }, 8000);
+  // B5: no auto-dismiss — the bar stays until the user closes it (✕) or picks one.
 }
 
 /* ---- Rest Timer ---- */

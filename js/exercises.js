@@ -185,11 +185,23 @@ function openEditExercise(id) {
   openModal('addExerciseModal');
 }
 
-function saveExercise() {
+async function saveExercise() {
   const name     = document.getElementById('exName').value.trim();
   let category   = document.getElementById('exCategory').value;
   const notes    = document.getElementById('exNotes').value.trim();
   if (!name) { showAlert(t('enterName')); return; }
+
+  // F7: warn on duplicate name when creating a new exercise.
+  if (!editingExId) {
+    const dup = db.exercises.find(e => (e.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (dup) {
+      const proceed = await showConfirm(
+        lang === 'en' ? `"${dup.name}" already exists — create it anyway?` : `„${dup.name}" existiert bereits — trotzdem anlegen?`,
+        { danger: false, confirmText: lang === 'en' ? 'Create' : 'Anlegen' }
+      );
+      if (!proceed) return;
+    }
+  }
 
   if (category === 'new_custom') {
     const customName = document.getElementById('customCategoryName').value.trim();

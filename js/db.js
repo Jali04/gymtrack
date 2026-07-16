@@ -294,7 +294,7 @@ async function restoreAutoBackup() {
       }
     }
   }
-  try { runMigrations(db); } catch (e) {}
+  try { runMigrations(db, true); } catch (e) {}
   _persistDb();
   if (typeof showToast === 'function') showToast('✓ Backup wiederhergestellt');
   setTimeout(() => location.reload(), 400);
@@ -408,7 +408,11 @@ const MIGRATIONS = {
   }
 };
 
-function runMigrations(data) {
+// F10: `full` runs the catch-up pass over ALL migrations — needed only on
+// startup and after import/merge (imported items may lack past migrations).
+// Regular save() passes full=false, so once db.version === SCHEMA_VERSION the
+// work is O(1) instead of O(n·migrations) on every single save.
+function runMigrations(data, full) {
   let currentVersion = data.version || 0;
   let changed = false;
 
@@ -423,18 +427,20 @@ function runMigrations(data) {
     }
   }
 
-  // Also run migrations for merged/imported datasets to handle missing migrations
-  for (let v = 1; v <= SCHEMA_VERSION; v++) {
-    if (MIGRATIONS[v](data)) {
-      changed = true;
+  // Catch-up pass for merged/imported datasets to handle missing migrations.
+  if (full) {
+    for (let v = 1; v <= SCHEMA_VERSION; v++) {
+      if (MIGRATIONS[v](data)) {
+        changed = true;
+      }
     }
   }
 
   return changed;
 }
 
-// Run migrations on startup
-if (runMigrations(db)) {
+// Run migrations on startup (full catch-up once).
+if (runMigrations(db, true)) {
   _persistDb();
 }
 
@@ -486,7 +492,7 @@ _initPhotoStore();
 setTimeout(() => { try { maybeAutoBackup(false); } catch (e) {} }, 3000);
 
 function save() {
-  runMigrations(db);
+  runMigrations(db); // fast path: no-op once already at SCHEMA_VERSION (F10)
   _persistDb();
 
   if (typeof syncProfileUpdate === 'function') {
