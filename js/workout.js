@@ -337,7 +337,25 @@ function openNewWorkout() {
   haptic('medium');
 }
 
+// Task 7: true while the user is typing into a set/note field of the active
+// workout. Used to suppress DOM-rebuilding re-renders (e.g. a background sync
+// firing on tab refocus) that would blur the keyboard and drop the input.
+function _isTypingInWorkout() {
+  const el = document.activeElement;
+  if (!el) return false;
+  const tag = el.tagName;
+  if (tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
+  if (tag === 'INPUT' && el.type === 'checkbox') return false;
+  const aw = document.getElementById('activeWorkout');
+  return !!(aw && aw.contains(el));
+}
+
 function renderActiveWorkout() {
+  // Never rebuild the exercise DOM while a field is focused — it would steal
+  // focus, close the keyboard and reset the in-progress value. User-initiated
+  // re-renders (set done, add set, reorder…) fire from buttons/checkboxes, so
+  // they are unaffected by this guard.
+  if (_isTypingInWorkout()) return;
   const pageTitle = document.getElementById('ttlStartTraining');
   if (pageTitle) pageTitle.style.display = 'none';
   const container   = document.getElementById('workoutExercises');
@@ -356,6 +374,10 @@ function renderActiveWorkout() {
     container.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('enterExercise')}</div></div>`;
     return;
   }
+
+  // Template context (Task 1): lets each card offer add/remove-from-template,
+  // and drives the "save order to template" button below the list.
+  const cwTmpl = cw.templateId ? db.templates.find(x => String(x.id) === String(cw.templateId)) : null;
 
   container.innerHTML = (cw.exercises || []).map((e, i) => {
       const ex       = getEx(e.exId);
@@ -387,14 +409,27 @@ function renderActiveWorkout() {
       ? `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;color:var(--accent2);" onclick="unlinkSuperset(${i})">🔗 Superset lösen</button>`
       : `<button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-right:4px;font-size:11px;padding:4px 8px;" onclick="startSupersetLink(${i})">🔗 Superset</button>`;
 
-    // Template persist button (show if exercise is not in the original template)
+    // Template persist buttons (Task 1): mirror add + remove so template
+    // membership can be edited permanently right in the workout.
     let persistBtn = '';
-    if (cw.templateId) {
-      const tmpl = db.templates.find(x => String(x.id) === String(cw.templateId));
-      if (tmpl && !tmpl.exerciseIds.includes(e.exId) && e.exId) {
+    if (cwTmpl && e.exId && !e.isCustom) {
+      if (cwTmpl.exerciseIds.includes(e.exId)) {
+        persistBtn = `<button class="tmpl-persist-btn danger" onclick="event.stopPropagation();removeExerciseFromTemplate('${e.exId}', ${i})">${lang === 'en' ? '✕ From template' : '✕ Aus Vorlage'}</button>`;
+      } else {
         persistBtn = `<button class="tmpl-persist-btn" onclick="event.stopPropagation();saveExerciseToTemplate('${e.exId}', this)">${t('saveToTemplate')}</button>`;
       }
     }
+
+    // Inline note (Task 9): a per-set/session note lives right on the card now.
+    const noteLabel  = lang === 'en' ? 'Note (this workout only)' : 'Anmerkung (nur dieses Training)';
+    const notePlace  = lang === 'en' ? 'e.g. shoulder felt tight — only saved for this session' : 'z.B. Schulter gezwickt – gilt nur für dieses Training';
+    const noteToggle = lang === 'en' ? (e.note ? '💬 Note' : '💬 Add note') : (e.note ? '💬 Anmerkung' : '💬 Anmerkung');
+    const noteBlock = `
+      ${e.note ? `<div class="card-note-display" onclick="toggleCardNote(${i})">💬 ${_escNote(e.note)} <span class="card-note-edit">✎</span></div>` : ''}
+      <div id="cardNote-${i}" class="card-note-editor" style="display:none;">
+        <div class="card-note-label">${noteLabel}</div>
+        <textarea class="form-input card-note-input" placeholder="${notePlace}" oninput="_setCardNote(${i}, this.value)">${_escNote(e.note || '')}</textarea>
+      </div>`;
 
     const isFirst = i === 0;
     const isLast  = i === cw.exercises.length - 1;
@@ -413,16 +448,21 @@ function renderActiveWorkout() {
       </div>
       ${inlineEditor}
       ${extraBadges}
-      ${e.note ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
+      ${noteBlock}
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
         ${ssBtn}
-        <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="openLogSets(${i})">
-          ${t('detailsNote')}
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="toggleCardNote(${i})">
+          ${noteToggle}
         </button>
         ${persistBtn}
       </div>
     </div>`;
   }).join('');
+
+  // Task 1: offer to persist the current exercise order into the template.
+  if (cwTmpl && _tmplOrderDiffers(cw, cwTmpl)) {
+    container.innerHTML += `<button class="tmpl-order-btn" onclick="saveTemplateOrder()">🔀 ${lang === 'en' ? 'Save order to template' : 'Reihenfolge in Vorlage speichern'}</button>`;
+  }
 
   initRipples();
   _updateWorkoutLiveStats();
@@ -668,10 +708,14 @@ function addInlineSet(i) {
   if (!Array.isArray(we.sets)) we.sets = [];
   const type = _exType(we);
   const prev = we.sets[we.sets.length - 1];
+  // Task 6: keep new sets EMPTY (only inherit the set type). That way each new
+  // row shows the matching set from last time as ghost text (placeholder) —
+  // e.g. adding set 2 shows last workout's set 2, not a copy of this session's
+  // set 1. The ghost comes from _lastPerf() → lpSet(k) in the inline editor.
   let s;
   if (type === 'cardio')      s = { type: prev ? (prev.type || 'N') : 'N', km: null, time: '', pace: '', rpe: null, done: false };
   else if (type === 'stretch') s = { minutes: null, done: false };
-  else                         s = { type: prev ? (prev.type || 'N') : 'N', weight: prev ? (prev.weight ?? null) : null, reps: prev ? (prev.reps ?? null) : null, rpe: null, done: false };
+  else                         s = { type: prev ? (prev.type || 'N') : 'N', weight: null, reps: null, rpe: null, done: false };
   we.sets.push(s);
   save();
   renderActiveWorkout();
@@ -1857,7 +1901,9 @@ function saveSets() {
   renderActiveWorkout();
   haptic('success');
   showToast(prWeight ? `🏆 ${t('prToast')}: ${prWeight} kg` : '✓');
-  startRestTimer();
+  // Task 4: honour this exercise's own rest duration (not the global default)
+  // so a detail-save can't kick off a conflicting rest timer.
+  startRestTimer(currentWorkoutExIdx);
   // Show next-exercise suggestions if not template-based
   _showNextExSuggestions();
 }
@@ -2194,17 +2240,98 @@ function saveExerciseToTemplate(exId, btnEl) {
   const tmpl = db.templates.find(x => String(x.id) === String(cw.templateId));
   if (!tmpl) return;
   if (tmpl.exerciseIds.includes(exId)) return;
-  
+
   tmpl.exerciseIds.push(exId);
   save();
-  
-  // Update button to show "saved"
-  if (btnEl) {
-    btnEl.textContent = t('savedToTemplate');
-    btnEl.classList.add('saved');
-  }
+
+  // Re-render so the button flips to the "remove from template" variant (Task 1).
+  renderActiveWorkout();
   haptic('success');
   showToast(t('savedToTemplate'));
+}
+
+/* Task 1: permanently remove an exercise from its template — right from the
+   active workout. The exercise stays in the current session; only the stored
+   template loses it (with a quick undo). */
+function removeExerciseFromTemplate(exId, i) {
+  const cw = db.currentWorkout;
+  if (!cw || !cw.templateId) return;
+  const tmpl = db.templates.find(x => String(x.id) === String(cw.templateId));
+  if (!tmpl) return;
+  const idx = tmpl.exerciseIds.indexOf(exId);
+  if (idx === -1) return;
+  tmpl.exerciseIds.splice(idx, 1);
+  save();
+  renderActiveWorkout();
+  haptic('light');
+  const restore = () => {
+    const t2 = db.currentWorkout && db.templates.find(x => String(x.id) === String(db.currentWorkout.templateId));
+    if (t2 && !t2.exerciseIds.includes(exId)) {
+      t2.exerciseIds.splice(Math.min(idx, t2.exerciseIds.length), 0, exId);
+      save();
+      renderActiveWorkout();
+    }
+  };
+  if (typeof showUndoToast === 'function') showUndoToast(lang === 'en' ? 'Removed from template' : 'Aus Vorlage entfernt', restore);
+  else showToast(lang === 'en' ? 'Removed from template' : 'Aus Vorlage entfernt');
+}
+
+/* Task 1: does the workout's order of shared template exercises differ from the
+   template's stored order? Drives the "save order to template" button. */
+function _tmplOrderDiffers(cw, tmpl) {
+  if (!cw || !tmpl) return false;
+  const inWorkout = cw.exercises
+    .filter(e => !e.isCustom && e.exId && tmpl.exerciseIds.includes(e.exId))
+    .map(e => e.exId);
+  if (inWorkout.length < 2) return false;
+  const tmplOrder = tmpl.exerciseIds.filter(id => inWorkout.includes(id));
+  return inWorkout.join(',') !== tmplOrder.join(',');
+}
+
+/* Task 1: persist the current exercise order into the template. Shared members
+   follow the workout order; template exercises not in this session keep their
+   relative order and are appended. */
+function saveTemplateOrder() {
+  const cw = db.currentWorkout;
+  if (!cw || !cw.templateId) return;
+  const tmpl = db.templates.find(x => String(x.id) === String(cw.templateId));
+  if (!tmpl) return;
+  const workoutOrder = cw.exercises
+    .filter(e => !e.isCustom && e.exId && tmpl.exerciseIds.includes(e.exId))
+    .map(e => e.exId);
+  const others = tmpl.exerciseIds.filter(id => !workoutOrder.includes(id));
+  tmpl.exerciseIds = workoutOrder.concat(others);
+  save();
+  renderActiveWorkout();
+  haptic('success');
+  showToast(lang === 'en' ? '✓ Order saved to template' : '✓ Reihenfolge in Vorlage gespeichert');
+}
+
+/* ---- Inline card note (Task 9) ---- */
+// Escape for safe injection into the display line and textarea body.
+function _escNote(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function toggleCardNote(i) {
+  const ed = document.getElementById('cardNote-' + i);
+  if (!ed) return;
+  const open = ed.style.display !== 'none';
+  ed.style.display = open ? 'none' : 'block';
+  if (!open) {
+    const ta = ed.querySelector('textarea');
+    if (ta) { ta.focus(); const v = ta.value; ta.value = ''; ta.value = v; } // caret to end
+  }
+  haptic('light');
+}
+
+// Persist the note without re-rendering, so the keyboard/caret stay put (Task 7).
+function _setCardNote(i, val) {
+  const we = _we(i);
+  if (!we) return;
+  we.note = val;
+  save();
 }
 
 let _pendingTemplateUpdate = null;

@@ -721,10 +721,84 @@ function _buildSparkline(values, type) {
 let _exGraphMetric = 'weight';
 let _exGraphExId   = null;
 
+// "mm:ss" (or plain minutes) -> minutes as a float.
+function _timeStrToMin(str) {
+  if (!str) return 0;
+  const s = String(str).trim();
+  if (s.includes(':')) {
+    const p = s.split(':');
+    return (parseInt(p[0], 10) || 0) + ((parseInt(p[1], 10) || 0) / 60);
+  }
+  const n = parseFloat(s.replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
+
+// Total logged time (minutes) for one exercise entry: stretch minutes, cardio
+// durations and any stopwatch time (timerSec) all count. Task 2.
+function _exEntryMinutes(entry) {
+  let mins = 0;
+  (entry.sets || []).forEach(s => {
+    if (s.minutes != null && s.minutes !== '') mins += Number(s.minutes) || 0;
+    else if (s.time) mins += _timeStrToMin(s.time);
+  });
+  if (entry.timerSec) mins += entry.timerSec / 60;
+  return mins;
+}
+
+// Metric definitions per exercise type. Each returns the session value (or 0).
+// Task 2 adds time/distance/pace tracking so time-based exercises get a graph
+// instead of the old weight-only chart that showed "not enough data".
+const EX_GRAPH_METRICS = {
+  strength: [
+    { key: 'weight', de: 'Max. Gewicht', en: 'Max weight', unit: () => unitLabel(),
+      val: e => { let v = 0; (e.sets || []).forEach(s => { if (s.type !== 'W' && Number(s.weight) > v) v = Number(s.weight); }); return v > 0 ? Number(fmtWeightNum(v)) : 0; } },
+    { key: 'e1rm', de: 'e1RM', en: 'e1RM', unit: () => unitLabel(),
+      val: e => { const b = (typeof _bestE1rm === 'function') ? _bestE1rm(e.sets) : 0; return b > 0 ? Number(fmtWeightNum(b)) : 0; } },
+    { key: 'reps', de: 'Wdh. gesamt', en: 'Total reps', unit: () => '',
+      val: e => (e.sets || []).reduce((a, s) => a + (Number(s.reps) || 0), 0) }
+  ],
+  cardio: [
+    { key: 'km', de: 'Max. Distanz', en: 'Max distance', unit: () => 'km',
+      val: e => { let v = 0; (e.sets || []).forEach(s => { if (Number(s.km) > v) v = Number(s.km); }); return v; } },
+    { key: 'time', de: 'Zeit gesamt', en: 'Total time', unit: () => 'min',
+      val: e => +_exEntryMinutes(e).toFixed(1) }
+  ],
+  stretch: [
+    { key: 'time', de: 'Zeit gesamt', en: 'Total time', unit: () => 'min',
+      val: e => +_exEntryMinutes(e).toFixed(1) }
+  ]
+};
+
+const _TIME_METRIC = { key: 'time', de: 'Zeit gesamt', en: 'Total time', unit: () => 'min', val: e => +_exEntryMinutes(e).toFixed(1) };
+
+function _exGraphMetricsFor(type, exId) {
+  const list = (EX_GRAPH_METRICS[type] || EX_GRAPH_METRICS.strength).slice();
+  // If this exercise ever logged time (stopwatch/isometric hold) but sits in a
+  // non-time category, still expose a time metric so it can be tracked. Task 2.
+  if (!list.some(m => m.key === 'time') && exId) {
+    const hasTime = db.workouts.some(w => (w.exercises || []).some(e =>
+      e.exId === exId && ((e.timerSec > 0) || (e.sets || []).some(s => (s.minutes != null && s.minutes !== '') || s.time))));
+    if (hasTime) list.push(_TIME_METRIC);
+  }
+  return list;
+}
+
 function setExGraphMetric(metric) {
   _exGraphMetric = metric;
   document.querySelectorAll('.exg-metric-btn').forEach(b => b.classList.toggle('active', b.dataset.metric === metric));
   if (_exGraphExId) _renderExGraph();
+}
+
+function _renderExGraphToggle(type) {
+  const host = document.getElementById('exGraphToggle');
+  if (!host) return;
+  const metrics = _exGraphMetricsFor(type, _exGraphExId);
+  // Reset to a valid default metric for this type if the current one isn't offered.
+  if (!metrics.some(m => m.key === _exGraphMetric)) _exGraphMetric = metrics[0].key;
+  host.style.display = metrics.length > 1 ? 'flex' : 'none';
+  host.innerHTML = metrics.map(m =>
+    `<button class="exg-metric-btn${m.key === _exGraphMetric ? ' active' : ''}" data-metric="${m.key}" onclick="setExGraphMetric('${m.key}')">${lang === 'en' ? m.en : m.de}</button>`
+  ).join('');
 }
 
 function _renderExGraph() {
@@ -735,20 +809,21 @@ function _renderExGraph() {
   const chartContainer = document.getElementById('exGraphChart');
   chartContainer.innerHTML = '';
 
+  const type    = getCatType(ex.category);
+  const metrics = _exGraphMetricsFor(type, exId);
+  const metric  = metrics.find(m => m.key === _exGraphMetric) || metrics[0];
+
   const dataPoints = [];
   const sortedWorkouts = [...db.workouts].sort((a, b) => (a.startTime || a.date) - (b.startTime || b.date));
 
   sortedWorkouts.forEach(w => {
     if (!w.exercises) return;
     const match = w.exercises.find(e => e.exId === exId);
-    if (!match || !match.sets || match.sets.length === 0) return;
-    let val = 0;
-    if (_exGraphMetric === 'e1rm') {
-      val = (typeof _bestE1rm === 'function') ? _bestE1rm(match.sets) : 0;
-    } else {
-      match.sets.forEach(s => { if (s.type !== 'W' && s.weight > val) val = s.weight; });
-    }
-    if (val > 0) dataPoints.push({ date: new Date(w.startTime || w.date), y: fmtWeightNum(val) }); // F2: chart in display unit
+    if (!match) return;
+    const hasData = (match.sets && match.sets.length) || match.timerSec;
+    if (!hasData) return;
+    const val = metric.val(match);
+    if (val > 0) dataPoints.push({ date: new Date(w.startTime || w.date), y: val });
   });
 
   if (dataPoints.length < 2) {
@@ -757,14 +832,17 @@ function _renderExGraph() {
   }
 
   const drawPoints = dataPoints.slice(-12);
+  const unit   = metric.unit ? metric.unit() : '';
   const points = drawPoints.map(d => ({ x: `${d.date.getDate()}.${d.date.getMonth() + 1}.`, y: d.y }));
-  chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color: 'var(--accent)' });
+  const color  = type === 'cardio' ? 'orange' : type === 'stretch' ? '#64c8ff' : 'var(--accent)';
+  chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color, unit });
 }
 
 window.openExGraph = function(exId) {
   const ex = db.exercises.find(x => x.id === exId);
   if (!ex) return;
   _exGraphExId = exId;
+  _renderExGraphToggle(getCatType(ex.category));
   _renderExGraph();
   openModal('exGraphModal');
 };
