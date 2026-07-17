@@ -184,7 +184,7 @@ function renderMonthlyRecap() {
 
   const prHtml = prThisMonth.length > 0
     ? prThisMonth.slice(0, 3).map(p => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
-        <span>${p.name}</span><span style="color:var(--accent);font-weight:700;">🏆 ${p.weight}kg</span>
+        <span>${p.name}</span><span style="color:var(--accent);font-weight:700;">🏆 ${fmtWeight(p.weight)}</span>
       </div>`).join('')
     : `<div style="color:var(--muted);font-size:13px;text-align:center;padding:8px 0;">Noch keine PRs diesen Monat</div>`;
 
@@ -244,7 +244,7 @@ function openCalDay(year, month, day) {
       let setsHtml   = '';
       if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
-      else                         setsHtml = e.sets.map(s => `<span class="set-badge">${s.weight}kg×${s.reps}</span>`).join('');
+      else                         setsHtml = e.sets.map(s => `<span class="set-badge">${fmtWeight(s.weight)}×${s.reps}</span>`).join('');
       return `<div style="margin-bottom:10px;">
         <div style="font-weight:600;font-size:14px;margin-bottom:6px;">${getExName(e.exId)} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>

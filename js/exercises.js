@@ -142,6 +142,14 @@ function onCategoryChange() {
   updateCategoryHint();
 }
 
+function _localizeBodyweightLabel() {
+  if (typeof lang === 'undefined' || lang !== 'en') return;
+  const l = document.getElementById('lblExBodyweight');
+  const d = document.getElementById('lblExBodyweightDesc');
+  if (l) l.textContent = 'Bodyweight exercise';
+  if (d) d.textContent = 'Weight field = added weight; body weight counts toward volume';
+}
+
 function openAddExercise() {
   editingExId = null;
   document.getElementById('addExerciseTitle').textContent = t('newExercise');
@@ -151,6 +159,7 @@ function openAddExercise() {
   
   document.getElementById('exNotes').value    = '';
   const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = false;
+  _localizeBodyweightLabel();
   document.getElementById('deleteExBtn').style.display = 'none';
 
   const container = document.getElementById('exerciseAiAnalysisContainer');
@@ -175,6 +184,7 @@ function openEditExercise(id) {
   
   document.getElementById('exNotes').value    = ex.notes || '';
   const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = (typeof isBodyweightEx === 'function') && isBodyweightEx(id);
+  _localizeBodyweightLabel();
   document.getElementById('deleteExBtn').style.display = 'block';
   
   const customGroup = document.getElementById('customCategoryGroup');

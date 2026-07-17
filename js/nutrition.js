@@ -302,6 +302,15 @@ function openQuickKcal() {
     const h = new Date().getHours();
     mealSel.value = h < 11 ? 'breakfast' : h < 15 ? 'lunch' : h < 21 ? 'dinner' : 'snack';
   }
+  if (de === false) { // C4: EN labels
+    const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    set('lblQuickKcalTitle', '⚡ Quick-Add kcal');
+    set('lblQuickKcalCal', 'Calories (kcal)');
+    set('lblQuickKcalProt', 'Protein (g, optional)');
+    set('lblQuickKcalName', 'Label (optional)');
+    set('lblQuickKcalMeal', 'Meal');
+    const b = document.getElementById('btnSaveQuickKcal'); if (b) b.textContent = 'Log';
+  }
   openModal('quickKcalModal');
   setTimeout(() => { const el = document.getElementById('quickKcalCal'); if (el) el.focus(); }, 150);
 }

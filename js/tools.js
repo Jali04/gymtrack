@@ -57,9 +57,11 @@ function calculate1Rm() {
     return;
   }
   
-  // Epley Formula: 1RM = Weight * (1 + Reps/30)
+  // Epley Formula: 1RM = Weight * (1 + Reps/30). Unit-agnostic ratio, so just
+  // label with the user's current unit (F2).
   const epley = w * (1 + (r / 30));
-  document.getElementById('tool1RmResult').textContent = Math.round(epley * 10) / 10 + ' kg';
+  const unit = (typeof unitLabel === 'function') ? unitLabel() : 'kg';
+  document.getElementById('tool1RmResult').textContent = Math.round(epley * 10) / 10 + ' ' + unit;
 }
 
 function calculatePlates() {

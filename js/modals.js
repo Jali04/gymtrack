@@ -205,6 +205,21 @@ function openSettingsHub() {
   if (rs) rs.checked = !(db.restTimer && db.restTimer.sound === false);
   const rir = document.getElementById('settingRir');
   if (rir) rir.checked = !!(db.settings && db.settings.rir);
+  const unitBtn = document.getElementById('btnSettingsUnit');
+  if (unitBtn) unitBtn.textContent = (db.settings && db.settings.unit === 'lbs') ? 'lbs' : 'kg';
+  // C4: localize the training-settings labels added this session for EN users.
+  if (typeof lang !== 'undefined' && lang === 'en') {
+    const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    set('lblSettingsWakeLock', 'Keep screen on during training');
+    set('lblSettingsWakeLockDesc', 'Screen stays on during workouts & HIIT');
+    set('lblSettingsRestSound', 'Rest-timer sound');
+    set('lblSettingsRestSoundDesc', 'Beep at the end of a rest period');
+    set('lblSettingsRir', 'Show RPE as RIR');
+    set('lblSettingsRirDesc', 'Reps in Reserve instead of RPE (RIR = 10 − RPE)');
+    set('lblSettingsUnit', 'Unit');
+    set('lblSettingsUnitDesc', 'Show weights in kilograms or pounds');
+    set('lblAutoBackup', 'Automatic backup');
+  }
   if (typeof _refreshAutoBackupUI === 'function') _refreshAutoBackupUI();
   openModal('settingsHubModal');
 }
@@ -367,7 +382,7 @@ async function exportToNotesReadable() {
   // Fallback: copy to clipboard
   try {
     await navigator.clipboard.writeText(text);
-    showToast('✓ Verlauf kopiert!');
+    showToast(lang==='en'?'✓ History copied!':'✓ Verlauf kopiert!');
   } catch(e) { showToast('Fehler beim Kopieren'); }
 }
 
@@ -445,7 +460,7 @@ function _mergeImportedDb(imported) {
     if (typeof runMigrations === 'function') runMigrations(db, true);
     save(); closeModal('importModal'); renderTemplates(); renderExercises();
     if (typeof renderPrograms === 'function') renderPrograms();
-    showToast('✓ Programm importiert!');
+    showToast(lang==='en'?'✓ Program imported!':'✓ Programm importiert!');
     return;
   }
   if (!imported.exercises || !imported.workouts) throw new Error('invalid');

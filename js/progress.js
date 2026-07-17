@@ -8,6 +8,8 @@ function openAddMeasurementModal() {
   document.getElementById('measureWeight').value = '';
   document.getElementById('measureBf').value = '';
   document.getElementById('measureNote').value = '';
+  const lbl = document.getElementById('lblMeasureWeight');
+  if (lbl) lbl.textContent = `${lang === 'en' ? 'Body weight' : 'Körpergewicht'} (${unitLabel()})`;
   openModal('measurementModal');
 }
 
@@ -16,14 +18,14 @@ function saveMeasurement() {
   const bfRaw = document.getElementById('measureBf').value;
   const note = document.getElementById('measureNote').value.trim();
   
-  const w = parseFloat(wRaw.replace(',', '.'));
+  const w = toKg(wRaw); // F2: body weight entered in display unit, stored in kg
   const bf = parseFloat(bfRaw.replace(',', '.'));
-  
-  if (isNaN(w)) {
+
+  if (w == null) {
     showAlert(t('invalidInput') || 'Ungültige Eingabe');
     return;
   }
-  
+
   const entry = {
     id: uid(),
     date: new Date().toISOString(),
@@ -103,7 +105,7 @@ function renderMeasurements() {
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);">
         <div>
           <div style="font-size:12px;color:var(--muted);">${dateStr}</div>
-          <div style="font-weight:700;font-size:16px;">${m.weight} kg${bfStr}</div>
+          <div style="font-weight:700;font-size:16px;">${fmtWeight(m.weight)}${bfStr}</div>
           ${noteStr}
         </div>
         <button class="icon-btn" style="color:var(--accent2);width:30px;height:30px;" onclick="deleteMeasurement('${m.id}')">✕</button>
@@ -120,7 +122,7 @@ function renderMeasurements() {
   }
   const points = chartData.map(d => {
     const date = new Date(d.date);
-    return { x: `${date.getDate()}.${date.getMonth()+1}.`, y: d.weight };
+    return { x: `${date.getDate()}.${date.getMonth()+1}.`, y: fmtWeightNum(d.weight) };
   });
   chart.style.display = 'block';
   chart.innerHTML = _buildLineChart(points, { width: 320, height: 140, color: 'var(--accent)' });
@@ -258,7 +260,7 @@ async function _pinSubmit() {
       localStorage.setItem('gymtrack_pics_pin', hashed);
       window._picsUnlocked = true;
       closeModal('pinModal');
-      showToast('🔒 PIN-Schutz aktiviert');
+      showToast(lang==='en'?'🔒 PIN protection enabled':'🔒 PIN-Schutz aktiviert');
       renderProgressPics();
     } else {
       _pinState.mode      = 'setup';
@@ -488,14 +490,13 @@ function renderWeeklyVolume() {
     return;
   }
   const max = entries[0][1];
-  const loc = de ? 'de-DE' : 'en-GB';
   const rows = entries.map(([cat, v]) => {
     const label = (t('cats') && t('cats')[cat]) ? t('cats')[cat] : cat;
     const pct = Math.max(4, Math.round((v / max) * 100));
     return `<div style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
         <span style="font-weight:600;">${label}</span>
-        <span style="color:var(--muted);">${Math.round(v).toLocaleString(loc)} kg</span>
+        <span style="color:var(--muted);">${fmtWeightBig(v)}</span>
       </div>
       <div style="height:8px;background:var(--surface2);border-radius:6px;overflow:hidden;">
         <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:6px;"></div>
@@ -634,7 +635,7 @@ function _buildExCard(ex, type, locale, catClass) {
       return e ? Math.max(...e.sets.map(s => s.weight)) : 0;
     });
     const maxW = Math.max(...lastEntry.sets.map(s => s.weight));
-    mainValue = maxW; mainUnit = 'kg';
+    mainValue = fmtWeightNum(maxW); mainUnit = unitLabel();
     if (workoutsWithEx.length >= 2) {
       const prev     = workoutsWithEx[workoutsWithEx.length - 2];
       const prevEntry = prev.exercises.find(e => e.exId === ex.id);
@@ -642,8 +643,8 @@ function _buildExCard(ex, type, locale, catClass) {
       const totalReps = lastEntry.sets.reduce((a, s) => a + s.reps, 0);
       const prevReps  = prevEntry.sets.reduce((a, s) => a + s.reps, 0);
       const wDiff = maxW - prevMax, rDiff = totalReps - prevReps;
-      if (wDiff > 0)      progressTag = `<span class="progress-tag up">↑ +${wDiff}${t('weightUp')}</span>`;
-      else if (wDiff < 0) progressTag = `<span class="progress-tag down">↓ ${wDiff}${t('weightDown')}</span>`;
+      if (wDiff > 0)      progressTag = `<span class="progress-tag up">↑ +${fmtWeight(wDiff, {noUnit:true})} ${unitLabel()}</span>`;
+      else if (wDiff < 0) progressTag = `<span class="progress-tag down">↓ ${fmtWeight(wDiff, {noUnit:true})} ${unitLabel()}</span>`;
       else if (rDiff > 0) progressTag = `<span class="progress-tag up">↑ +${rDiff}${t('repsUp')}</span>`;
       else if (rDiff < 0) progressTag = `<span class="progress-tag down">↓ ${rDiff}${t('repsDown')}</span>`;
       else                progressTag = `<span class="progress-tag same">${t('same')}</span>`;
@@ -666,15 +667,15 @@ function _buildExCard(ex, type, locale, catClass) {
       let diff = '';
       if (prevSets && prevSets[i]) {
         const wD = s.weight - prevSets[i].weight, rD = s.reps - prevSets[i].reps;
-        if (wD > 0)      diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${wD}kg</span>`;
-        else if (wD < 0) diff = `<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${wD}kg</span>`;
+        if (wD > 0)      diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${fmtWeight(wD, {noUnit:true})}${unitLabel()}</span>`;
+        else if (wD < 0) diff = `<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${fmtWeight(wD, {noUnit:true})}${unitLabel()}</span>`;
         else if (rD > 0) diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">+${rD} ${t('reps')}</span>`;
         else if (rD < 0) diff = `<span style="color:var(--accent2);font-size:11px;margin-left:4px;">${rD} ${t('reps')}</span>`;
       } else if (prevSets && !prevSets[i]) {
         diff = `<span style="color:var(--accent);font-size:11px;margin-left:4px;">${t('newBadge')}</span>`;
       }
       return `<div style="display:inline-flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
-        <span style="color:var(--muted);font-size:11px;margin-right:4px;">S${i + 1}</span>${s.weight}kg × ${s.reps}${diff}
+        <span style="color:var(--muted);font-size:11px;margin-right:4px;">S${i + 1}</span>${fmtWeight(s.weight)} × ${s.reps}${diff}
       </div>`;
     }).join('');
   }
@@ -747,7 +748,7 @@ function _renderExGraph() {
     } else {
       match.sets.forEach(s => { if (s.type !== 'W' && s.weight > val) val = s.weight; });
     }
-    if (val > 0) dataPoints.push({ date: new Date(w.startTime || w.date), y: val });
+    if (val > 0) dataPoints.push({ date: new Date(w.startTime || w.date), y: fmtWeightNum(val) }); // F2: chart in display unit
   });
 
   if (dataPoints.length < 2) {

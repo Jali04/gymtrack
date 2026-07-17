@@ -99,7 +99,7 @@ function activateProgram(id) {
   save();
   renderPrograms();
   updateActiveProgramBanner();
-  showToast('Programm aktiviert');
+  showToast(lang==='en'?'Program activated':'Programm aktiviert');
 }
 
 function updateActiveProgramBanner() {
@@ -146,7 +146,7 @@ function quitProgram() {
   save();
   renderPrograms();
   updateActiveProgramBanner();
-  showToast('Programm beendet');
+  showToast(lang==='en'?'Program ended':'Programm beendet');
 }
 
 async function startNextProgramDay() {
@@ -164,7 +164,7 @@ async function startNextProgramDay() {
 
   const tpl = db.templates.find(x => String(x.id) === String(todayTplId));
   if (!tpl) {
-    showAlert('Die Vorlage für heute wurde gelöscht.');
+    showAlert(lang === 'en' ? 'The template for today was deleted.' : 'Die Vorlage für heute wurde gelöscht.');
     return;
   }
 

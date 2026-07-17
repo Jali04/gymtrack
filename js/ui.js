@@ -171,6 +171,21 @@ function toggleWakeLockSetting(checked) {
   showToast(checked ? t('wakeLockOn') : t('wakeLockOff'));
 }
 
+function toggleUnitSetting() {
+  if (!db.settings) db.settings = {};
+  db.settings.unit = (db.settings.unit === 'lbs') ? 'kg' : 'lbs';
+  save();
+  haptic('light');
+  const btn = document.getElementById('btnSettingsUnit');
+  if (btn) btn.textContent = db.settings.unit;
+  // Re-render every weight-bearing surface.
+  if (typeof db.currentWorkout !== 'undefined' && db.currentWorkout && typeof renderActiveWorkout === 'function') renderActiveWorkout();
+  if (typeof renderLog === 'function') renderLog();
+  if (typeof renderProgress === 'function') { try { renderProgress(); } catch (e) {} }
+  if (typeof renderCalendar === 'function') { try { renderCalendar(); } catch (e) {} }
+  showToast(db.settings.unit === 'lbs' ? (lang === 'en' ? 'Showing pounds' : 'Zeige Pfund') : (lang === 'en' ? 'Showing kilograms' : 'Zeige Kilogramm'));
+}
+
 function toggleRirSetting(checked) {
   if (!db.settings) db.settings = {};
   db.settings.rir = checked;
