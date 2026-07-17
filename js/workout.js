@@ -1708,29 +1708,23 @@ function openLogSets(idx) {
 }
 
 function getLastPerformance(exId, currentWorkoutId) {
-  const cw = db.currentWorkout;
-  const templateId = cw ? cw.templateId : null;
-  let relevant;
-  if (templateId) {
-    // Template-specific: compare with workouts spawned from the exact same template
-    relevant = db.workouts
-      .filter(w => w.id !== currentWorkoutId && w.templateId === templateId && w.exercises.some(e => !e.isCustom && e.exId === exId))
-      .sort((a, b) => b.date - a.date);
-  }
-  if (!relevant || relevant.length === 0) {
-    // Fallback: global comparison
-    relevant = db.workouts
-      .filter(w => w.id !== currentWorkoutId && w.exercises.some(e => !e.isCustom && e.exId === exId))
-      .sort((a, b) => b.date - a.date);
-  }
+  // Show the GENUINELY most recent time this exercise was done. We used to
+  // prefer workouts with the same templateId, but if the actual last workout
+  // had a different or missing templateId (e.g. lost on an old cloud sync) it
+  // got skipped and an older same-template session was shown instead — so
+  // "last time" displayed e.g. 20×3 from two workouts ago rather than the real
+  // last 20×6. Recency wins; the Progress tab still offers a template filter.
+  const relevant = (db.workouts || [])
+    .filter(w => w.id !== currentWorkoutId && w.exercises && w.exercises.some(e => !e.isCustom && e.exId === exId))
+    .sort((a, b) => (b.startTime || b.date || 0) - (a.startTime || a.date || 0));
   if (relevant.length === 0) return null;
   return relevant[0].exercises.find(e => !e.isCustom && e.exId === exId);
 }
 
 function getLastCustomPerformance(name, category, currentWorkoutId) {
-  const relevant = db.workouts
-    .filter(w => w.id !== currentWorkoutId && w.exercises.some(e => e.isCustom && e.customName === name && e.customCategory === category))
-    .sort((a, b) => b.date - a.date);
+  const relevant = (db.workouts || [])
+    .filter(w => w.id !== currentWorkoutId && w.exercises && w.exercises.some(e => e.isCustom && e.customName === name && e.customCategory === category))
+    .sort((a, b) => (b.startTime || b.date || 0) - (a.startTime || a.date || 0));
   if (relevant.length === 0) return null;
   return relevant[0].exercises.find(e => e.isCustom && e.customName === name && e.customCategory === category);
 }
