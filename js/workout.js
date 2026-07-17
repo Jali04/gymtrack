@@ -588,10 +588,12 @@ function _renderInlineSetEditor(e, i, type) {
     const e1chip = e1 > 0
       ? `<span class="il-e1rm" title="Epley 1RM-Schätzung">≈ e1RM <b>${fmtWeight(e1)}</b></span>`
       : '';
-    // F5: offer warm-up sets when there's a heavy work set and no warm-ups yet.
-    const topWork = Math.max(0, ...(e.sets || []).filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
+    // Offer warm-up sets whenever we know a target work weight — from THIS
+    // session or, if nothing entered yet, from last time. So the button is
+    // there right away (no need to log a set first).
     const hasWarmup = (e.sets || []).some(s => s.type === 'W');
-    const warmBtn = (!hasWarmup && topWork >= 40)
+    const wuTarget  = _warmupTargetWeight(e);
+    const warmBtn = (!hasWarmup && wuTarget && wuTarget.top >= 20)
       ? `<button class="il-plate" onclick="suggestWarmup(${i})">🔥 ${lang === 'en' ? 'Warm-up' : 'Aufwärmen'}</button>`
       : '';
     e1rmRow = `<div class="il-e1rm-row">
@@ -614,21 +616,54 @@ function _renderInlineSetEditor(e, i, type) {
 
 // F5: prepend warm-up sets (40/60/80% of the top work weight) as "W" sets.
 function _round25(x) { return Math.round(x / 2.5) * 2.5; }
-function suggestWarmup(i) {
-  const we = _we(i); if (!we) return;
-  if (_exType(we) !== 'strength') return;
-  let top = 0, reps = 8;
+
+// Target NORMAL (work) weight a warm-up ramp should build up to: the heaviest
+// non-warmup set entered THIS session, or — if nothing is entered yet — the
+// heaviest non-warmup set from last time. Warm-up sets ('W') are ignored so a
+// logged warm-up weight is never mistaken for the work weight.
+function _warmupTargetWeight(we) {
+  if (!we) return null;
+  let top = 0, reps = 0;
   (we.sets || []).forEach(s => {
     if (s.type !== 'W') { const w = Number(s.weight) || 0; if (w > top) { top = w; reps = Number(s.reps) || reps; } }
   });
-  if (top <= 0) return;
+  let src = 'current';
+  if (top <= 0) {
+    const lp = (typeof _lastPerf === 'function') ? _lastPerf(we) : null;
+    if (lp && Array.isArray(lp.sets)) {
+      lp.sets.forEach(s => {
+        if (s.type !== 'W') { const w = Number(s.weight) || 0; if (w > top) { top = w; reps = Number(s.reps) || reps; } }
+      });
+    }
+    src = 'last';
+  }
+  if (top <= 0) return null;
+  return { top, reps: reps || 8, src };
+}
+
+function suggestWarmup(i) {
+  const we = _we(i); if (!we) return;
+  if (_exType(we) !== 'strength') return;
+  const target = _warmupTargetWeight(we);
+  if (!target) {
+    showToast(lang === 'en' ? 'No target weight yet — enter a work set first' : 'Kein Zielgewicht – trag zuerst ein Arbeitsgewicht ein');
+    return;
+  }
+  const top = target.top, reps = target.reps;
   const warm = [0.4, 0.6, 0.8].map(p => ({
     type: 'W',
     weight: Math.max(2.5, _round25(top * p)),
     reps: Math.max(3, Math.round(reps * 0.7)),
     rpe: null, done: false
   }));
-  we.sets = warm.concat(we.sets);
+  // When the exercise is still empty and the target comes from last time, also
+  // drop in the work set at that normal weight so the ramp actually leads up to
+  // it — the user only has to confirm/adjust.
+  const hasWorkRow = (we.sets || []).some(s => s.type !== 'W');
+  const tail = (!hasWorkRow && target.src === 'last')
+    ? [{ type: 'N', weight: top, reps, rpe: null, done: false }]
+    : [];
+  we.sets = warm.concat(we.sets, tail);
   save();
   renderActiveWorkout();
   haptic('light');
