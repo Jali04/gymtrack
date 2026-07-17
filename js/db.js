@@ -39,6 +39,7 @@ if (typeof db.settings.wakeLock === 'undefined') db.settings.wakeLock = true;
 if (typeof db.settings.barWeight === 'undefined') db.settings.barWeight = 20;
 if (!Array.isArray(db.settings.plates)) db.settings.plates = [25, 20, 15, 10, 5, 2.5, 1.25];
 if (typeof db.settings.rir === 'undefined') db.settings.rir = false;
+if (db.settings.unit !== 'lbs' && db.settings.unit !== 'kg') db.settings.unit = 'kg';
 if (!db.nutritionGoals) db.nutritionGoals = { calories: 2000, protein: 150, carbs: 200, fat: 70 };
 if (!db.nutritionLog) db.nutritionLog = [];
 const DEFAULT_FOODS = [
@@ -284,7 +285,7 @@ async function restoreAutoBackup() {
 
   let imported;
   try { imported = JSON.parse(rec.json); }
-  catch (e) { if (typeof showToast === 'function') showToast('Backup beschädigt.'); return; }
+  catch (e) { if (typeof showToast === 'function') showToast((typeof lang!=='undefined'&&lang==='en')?'Backup corrupted.':'Backup beschädigt.'); return; }
 
   db = imported;
   // Move restored photos into IndexedDB first so the slim blob fits the quota.
@@ -298,7 +299,7 @@ async function restoreAutoBackup() {
   }
   try { runMigrations(db, true); } catch (e) {}
   _persistDb();
-  if (typeof showToast === 'function') showToast('✓ Backup wiederhergestellt');
+  if (typeof showToast === 'function') showToast((typeof lang!=='undefined'&&lang==='en')?'✓ Backup restored':'✓ Backup wiederhergestellt');
   setTimeout(() => location.reload(), 400);
 }
 
@@ -517,6 +518,45 @@ function getEx(id) {
   return db.exercises.find(x => x.id === id);
 }
 
+/* =============================================
+   F2 — kg / lbs unit system.
+   Weights are ALWAYS stored in kg. These helpers convert only for display and
+   input, so switching units never rewrites stored data.
+   ============================================= */
+const LB_PER_KG = 2.2046226218;
+function unitLabel() { return (db.settings && db.settings.unit === 'lbs') ? 'lbs' : 'kg'; }
+function _isLbs() { return unitLabel() === 'lbs'; }
+// kg -> display-unit number (for input value fields; no label).
+function fmtWeightNum(kg) {
+  if (kg == null || kg === '') return '';
+  const v = _isLbs() ? (Number(kg) * LB_PER_KG) : Number(kg);
+  if (isNaN(v)) return '';
+  return parseFloat(v.toFixed(_isLbs() ? 1 : 2));
+}
+// kg -> "82.5 kg" / "182 lbs" (opts.noUnit strips the label).
+function fmtWeight(kg, opts) {
+  opts = opts || {};
+  const n = Number(kg) || 0;
+  const v = _isLbs() ? (n * LB_PER_KG) : n;
+  const rounded = _isLbs() ? Math.round(v * 10) / 10 : Math.round(v * 10) / 10;
+  const numStr = (Math.round(rounded * 10) / 10).toString();
+  return opts.noUnit ? numStr : `${numStr} ${unitLabel()}`;
+}
+// kg -> locale-grouped big number with unit, for volume totals ("1.000 kg").
+function fmtWeightBig(kg) {
+  const n = Number(kg) || 0;
+  const v = _isLbs() ? (n * LB_PER_KG) : n;
+  const loc = (typeof lang !== 'undefined' && lang === 'en') ? 'en-GB' : 'de-DE';
+  return `${Math.round(v).toLocaleString(loc)} ${unitLabel()}`;
+}
+// display-unit input -> kg (accepts comma decimals). Returns null if invalid.
+function toKg(val) {
+  if (val == null || val === '') return null;
+  const n = parseFloat(String(val).replace(',', '.'));
+  if (isNaN(n)) return null;
+  return _isLbs() ? (n / LB_PER_KG) : n;
+}
+
 // F4: bodyweight flag is kept in a local-only map (not in the synced exercises
 // array) so a cloud pull can never clobber it and no remote schema is needed.
 function isBodyweightEx(exId) {
@@ -639,6 +679,6 @@ function _renderSetBadges(sets, type) {
   return sets.map(s => {
     const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${TYPE_COLORS[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
     const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
-    return `<span class="set-badge">${tBadge}${s.weight}kg × ${s.reps}${rBadge}</span>`;
+    return `<span class="set-badge">${tBadge}${fmtWeight(s.weight)} × ${s.reps}${rBadge}</span>`;
   }).join('');
 }

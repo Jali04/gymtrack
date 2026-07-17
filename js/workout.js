@@ -51,7 +51,7 @@ function renderLog() {
   _renderCoachTip();
 }
 
-const COACH_TIPS = [
+const COACH_TIPS_DE = [
   "Trink ausreichend Wasser! Muskeln bestehen zu ca. 75% aus Wasser. Eine Dehydration senkt deine Kraftleistung rapide.",
   "Nutze Supersätze (SS) im GymLab, um Zeit zu sparen und deinen Puls hochzuhalten.",
   "Regeneration ist der Schlüssel! Muskeln wachsen in den Ruhephasen, nicht während des Trainings.",
@@ -63,6 +63,20 @@ const COACH_TIPS = [
   "Wärme dich vor schweren Arbeitssätzen gut auf. 5-10 min Cardio und spezifisches Aufwärmen schützen vor Verletzungen.",
   "Tracke dein Gewicht regelmäßig im Fortschritts-Tab, um Trends bei deinem KFA und Muskelaufbau zu erkennen."
 ];
+const COACH_TIPS_EN = [
+  "Drink enough water! Muscles are ~75% water and dehydration quickly cuts your strength output.",
+  "Use supersets (SS) in the GymLab to save time and keep your heart rate up.",
+  "Recovery is key! Muscles grow during rest, not during the workout itself.",
+  "Chase progressive overload: aim to add a little weight or a rep over time.",
+  "Form over weight. Avoid using momentum to protect your joints and hit the muscle properly.",
+  "A protein-rich meal after training supports muscle growth and speeds up recovery.",
+  "Sleep is your best booster: 7–8 hours maximises muscle growth and fat loss.",
+  "Creatine is one of the best-researched supplements for strength. 3–5 g daily is enough.",
+  "Warm up well before heavy work sets. 5–10 min cardio + specific warm-ups prevent injuries.",
+  "Track your weight regularly in the Progress tab to spot body-fat and muscle trends."
+];
+// Language-aware accessor used by _renderCoachTip.
+function _coachTips() { return (typeof lang !== 'undefined' && lang === 'en') ? COACH_TIPS_EN : COACH_TIPS_DE; }
 
 function _renderCoachTip() {
   const el = document.getElementById('coachTipText');
@@ -157,7 +171,8 @@ function _renderCoachTip() {
 
   // Default rotating science tip
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / 86400000);
-  const tip = COACH_TIPS[dayOfYear % COACH_TIPS.length];
+  const tips = _coachTips();
+  const tip = tips[dayOfYear % tips.length];
   el.textContent = tip;
 }
 
@@ -201,7 +216,7 @@ function _renderRecentWorkouts() {
     const endTs  = w.endTime || ts;
     const durMin = Math.max(0, Math.round((endTs - ts) / 60000));
     const durStr = durMin >= 60 ? `${Math.floor(durMin / 60)}h ${durMin % 60}m` : `${durMin}m`;
-    const volStr = vol > 0 ? ` · ${Math.round(vol).toLocaleString(loc)} kg` : '';
+    const volStr = vol > 0 ? ` · ${fmtWeightBig(vol)}` : '';
     return `<button class="recent-wo" onclick="_openRecentWorkout('${w.id}')">
       <div class="recent-wo-main">
         <div class="recent-wo-name">${name}</div>
@@ -462,7 +477,7 @@ function _renderInlineSetEditor(e, i, type) {
   let head;
   if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else if (type === 'stretch') head = `<div class="il-head il-stretch"><span>#</span><span>${t('colMin')}</span><span>✓</span><span></span></div>`;
-  else head = `<div class="il-head"><span>#</span><span></span><span>${t('kg')}</span><span>${t('reps')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
+  else head = `<div class="il-head"><span>#</span><span></span><span>${unitLabel()}</span><span>${t('reps')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
 
   const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Warmup', 'D': t('setDropTitle') || 'Drop' };
   const typeLabel = st => t('set' + (st === 'N' ? 'Normal' : st === 'W' ? 'Warmup' : 'Drop')) || st;
@@ -493,7 +508,7 @@ function _renderInlineSetEditor(e, i, type) {
     return `<div class="il-row${done ? ' done' : ''}">
       <span class="il-num">${k + 1}</span>
       ${typeBtn(s.type || 'N')}
-      <input class="il-in" type="text" inputmode="decimal" value="${s.weight != null ? s.weight : ''}" placeholder="${g && g.weight != null ? g.weight : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
+      <input class="il-in" type="text" inputmode="decimal" value="${fmtWeightNum(s.weight)}" placeholder="${g && g.weight != null ? fmtWeightNum(g.weight) : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
       <input class="il-in" type="text" inputmode="numeric" value="${s.reps != null ? s.reps : ''}" placeholder="${g && g.reps != null ? g.reps : '0'}" onchange="inlineSet(${i},${k},'reps',this.value)">
       <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
       ${done_cb}${rm}
@@ -519,7 +534,7 @@ function _renderInlineSetEditor(e, i, type) {
   if (type === 'strength') {
     const e1 = _bestE1rm(e.sets);
     const e1chip = e1 > 0
-      ? `<span class="il-e1rm" title="Epley 1RM-Schätzung">≈ e1RM <b>${e1} kg</b></span>`
+      ? `<span class="il-e1rm" title="Epley 1RM-Schätzung">≈ e1RM <b>${fmtWeight(e1)}</b></span>`
       : '';
     // F5: offer warm-up sets when there's a heavy work set and no warm-ups yet.
     const topWork = Math.max(0, ...(e.sets || []).filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
@@ -598,13 +613,14 @@ function _lastPerfShort(sets, type) {
   const s = sets[0];
   if (type === 'cardio') return `${s.km || 0}km ${s.time || ''}`.trim();
   if (type === 'stretch') return `${s.minutes || 0} ${t('colMin')}`;
-  return `${s.weight != null ? s.weight : 0}kg × ${s.reps != null ? s.reps : 0}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
+  return `${fmtWeight(s.weight != null ? s.weight : 0)} × ${s.reps != null ? s.reps : 0}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
 }
 
 function inlineSet(i, k, field, value) {
   const we = _we(i); if (!we || !we.sets[k]) return;
   const s = we.sets[k];
-  if (field === 'weight' || field === 'km' || field === 'minutes') s[field] = _parseNum(value);
+  if (field === 'weight') s.weight = toKg(value); // F2: input is in display unit, stored in kg
+  else if (field === 'km' || field === 'minutes') s[field] = _parseNum(value);
   else if (field === 'reps') { const n = parseInt(String(value).replace(',', '.'), 10); s.reps = isNaN(n) ? null : n; }
   else if (field === 'rpe') {
     const n = _parseNum(value);
@@ -866,8 +882,7 @@ function _updateWorkoutLiveStats() {
     });
   });
   if (setCount === 0) { el.textContent = ''; return; }
-  const loc = lang === 'de' ? 'de-DE' : 'en-GB';
-  el.textContent = `${setCount} ${t('sets')}${volume > 0 ? ' · ' + Math.round(volume).toLocaleString(loc) + ' kg' : ''}`;
+  el.textContent = `${setCount} ${t('sets')}${volume > 0 ? ' · ' + fmtWeightBig(volume) : ''}`;
 }
 
 function moveWorkoutExercise(idx, dir) {
@@ -1090,7 +1105,7 @@ function _showWorkoutSummary(s) {
     stat('⏱', `${s.durMin} min`, t('summaryDuration')) +
     stat('🏋️', s.exCount, t('exercises')) +
     stat('📊', s.setCount, t('sets')) +
-    stat('⚖️', `${Math.round(s.volume).toLocaleString(loc)} kg`, t('summaryVolume'));
+    stat('⚖️', fmtWeightBig(s.volume), t('summaryVolume'));
 
   // B6: allow correcting the recorded duration (e.g. a forgotten stop).
   const durValEl = document.getElementById('summaryDurVal');
@@ -1106,7 +1121,7 @@ function _showWorkoutSummary(s) {
         const tag = p.kind === 'e1rm' ? ' e1RM' : '';
         return `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(200,241,53,0.06);border:1px solid rgba(200,241,53,0.25);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
         <span style="font-weight:600;font-size:14px;">${p.name}${p.kind === 'e1rm' ? ` <span style="font-size:10px;color:var(--muted);text-transform:uppercase;">e1RM</span>` : ''}</span>
-        <span style="font-size:13px;color:var(--accent);font-weight:700;">${p.prior} → ${p.value} kg${tag && p.kind === 'e1rm' ? '' : ''}</span>
+        <span style="font-size:13px;color:var(--accent);font-weight:700;">${fmtWeight(p.prior, {noUnit:true})} → ${fmtWeight(p.value)}</span>
       </div>`;
       }).join('');
   } else {
@@ -1675,7 +1690,7 @@ function _setupSetColHeaders(type) {
     colLabels.innerHTML = `<div></div><div class="set-col-label">${t('colMin')}</div><div></div>`;
   } else {
     colLabels.className = 'set-col-labels';
-    colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${t('kg')}</div><div class="set-col-label">${t('reps')}</div><div class="set-col-label" id="colLabelRpe">${t('colRpe') || 'RPE'}</div><div></div>`;
+    colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${unitLabel()}</div><div class="set-col-label">${t('reps')}</div><div class="set-col-label" id="colLabelRpe">${_rirMode() ? 'RIR' : (t('colRpe') || 'RPE')}</div><div></div>`;
   }
   btnAddRow.textContent = t('addSet');
 }
@@ -1708,7 +1723,7 @@ function addSetRow(data) {
     } else if (currentExCategory !== 'cardio') {
       data = {
         type:   typeBtn ? (typeBtn.dataset.type || 'N') : 'N',
-        weight: inputs[0] ? inputs[0].value : '',
+        weight: inputs[0] ? toKg(inputs[0].value) : '', // F2: normalize to kg so the row re-renders in the display unit
         reps:   inputs[1] ? inputs[1].value : ''
       };
     }
@@ -1751,7 +1766,7 @@ function addSetRow(data) {
     const w = data ? data.weight : '', r = data ? data.reps : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
       ${typeBtn}
-      <input class="set-input" type="text" placeholder="0" value="${w}" inputmode="decimal"/>
+      <input class="set-input" type="text" placeholder="0" value="${fmtWeightNum(w)}" inputmode="decimal"/>
       <input class="set-input" type="text" placeholder="0" value="${r}" inputmode="numeric"/>
       ${rpeInput}
       ${rmBtn}`;
@@ -1806,8 +1821,8 @@ function saveSets() {
       const minutes = pf(inputs[0]);
       if (minutes > 0) sets.push({ minutes });
     } else {
-      const weight = pf(inputs[0]), reps = parseInt(String(inputs[1].value).replace(',', '.'), 10);
-      if (!isNaN(weight) && !isNaN(reps) && reps > 0) sets.push({ type: sType, rpe, weight, reps });
+      const weight = toKg(inputs[0].value), reps = parseInt(String(inputs[1].value).replace(',', '.'), 10); // F2: store kg
+      if (weight != null && !isNaN(reps) && reps > 0) sets.push({ type: sType, rpe, weight, reps });
     }
   });
 
