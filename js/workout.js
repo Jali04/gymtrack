@@ -420,15 +420,27 @@ function renderActiveWorkout() {
       }
     }
 
-    // Inline note (Task 9): a per-set/session note lives right on the card now.
-    const noteLabel  = lang === 'en' ? 'Note (this workout only)' : 'Anmerkung (nur dieses Training)';
-    const notePlace  = lang === 'en' ? 'e.g. shoulder felt tight — only saved for this session' : 'z.B. Schulter gezwickt – gilt nur für dieses Training';
-    const noteToggle = lang === 'en' ? (e.note ? '💬 Note' : '💬 Add note') : (e.note ? '💬 Anmerkung' : '💬 Anmerkung');
+    // Inline notes on the card (Task 9). Two distinct kinds, clearly labelled:
+    //  📌 permanent exercise note (ex.notes) — carries across ALL workouts.
+    //  📝 session note (e.note) — only for THIS training.
+    // A permanent note only exists for real (non-custom) exercises.
+    const en        = lang === 'en';
+    const permNote  = (!e.isCustom && ex) ? (ex.notes || '') : null; // null → not applicable
+    const sessNote  = e.note || '';
+    const permLabel = en ? 'Permanent note (all workouts)' : 'Dauerhafte Notiz (alle Trainings)';
+    const permPlace = en ? 'e.g. grip just inside the rings — always shown for this exercise' : 'z.B. Griff knapp innerhalb der Ringe – immer bei dieser Übung';
+    const sessLabel = en ? 'Note (this workout only)' : 'Anmerkung (nur dieses Training)';
+    const sessPlace = en ? 'e.g. shoulder felt tight — only this session' : 'z.B. Schulter gezwickt – nur diese Einheit';
+    const noteToggle = en ? '💬 Notes' : '💬 Notizen';
     const noteBlock = `
-      ${e.note ? `<div class="card-note-display" onclick="toggleCardNote(${i})">💬 ${_escNote(e.note)} <span class="card-note-edit">✎</span></div>` : ''}
+      ${permNote ? `<div class="card-note-display" onclick="toggleCardNote(${i})">📌 ${_escNote(permNote)} <span class="card-note-edit">✎</span></div>` : ''}
+      ${sessNote ? `<div class="card-note-display" onclick="toggleCardNote(${i})">📝 ${_escNote(sessNote)} <span class="card-note-edit">✎</span></div>` : ''}
       <div id="cardNote-${i}" class="card-note-editor" style="display:none;">
-        <div class="card-note-label">${noteLabel}</div>
-        <textarea class="form-input card-note-input" placeholder="${notePlace}" oninput="_setCardNote(${i}, this.value)">${_escNote(e.note || '')}</textarea>
+        ${permNote !== null ? `
+        <div class="card-note-label">📌 ${permLabel}</div>
+        <textarea class="form-input card-note-input" placeholder="${permPlace}" oninput="updateGlobalExNote('${e.exId}', this.value)">${_escNote(permNote)}</textarea>` : ''}
+        <div class="card-note-label" style="${permNote !== null ? 'margin-top:10px;' : ''}">📝 ${sessLabel}</div>
+        <textarea class="form-input card-note-input" placeholder="${sessPlace}" oninput="_setCardNote(${i}, this.value)">${_escNote(sessNote)}</textarea>
       </div>`;
 
     const isFirst = i === 0;
