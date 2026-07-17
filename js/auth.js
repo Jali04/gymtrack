@@ -55,8 +55,14 @@ function setupAuthListeners() {
           localStorage.setItem('dscpln_merge_warned', '1');
         }
       } catch (e) { console.warn('[Sync] pre-merge backup failed:', e); }
-      // Trigger data migration & sync
-      if (typeof syncAll === 'function') {
+      // Trigger data migration & sync — but only ONCE per actual sign-in.
+      // Supabase re-emits SIGNED_IN on every tab refocus/token refresh; running
+      // the full syncAll() again there calls initUI() → renderActiveWorkout(),
+      // which rebuilds the DOM mid-typing (keyboard drops, input resets). Ongoing
+      // changes still push via the per-save background sync, so skipping the
+      // redundant re-sync loses no data.
+      if (typeof syncAll === 'function' && window._syncedUserId !== user?.id) {
+        window._syncedUserId = user?.id;
         try {
           await syncAll();
         } catch (e) {
@@ -65,7 +71,8 @@ function setupAuthListeners() {
       }
     } else if (event === 'SIGNED_OUT') {
       showToast(lang === 'de' ? 'Abgemeldet.' : 'Signed out.');
-      // Optional: Clear active cached user states
+      // Allow the next real sign-in to run a full sync again.
+      window._syncedUserId = null;
     }
   });
 }

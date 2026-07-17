@@ -30,6 +30,9 @@ const SYNC_MAPPINGS = {
       end_time: item.endTime ? Number(item.endTime) : null,
       date: Number(item.date),
       exercises: item.exercises,
+      // Persist the template link so "Freies Training" isn't shown after a
+      // cloud round-trip for workouts that were started from a template.
+      template_id: item.templateId != null ? String(item.templateId) : null,
       notes: item.notes || null,
       updated_at: Number(item.updated_at || item.date || Date.now())
     }),
@@ -39,6 +42,7 @@ const SYNC_MAPPINGS = {
       endTime: dbItem.end_time ? Number(dbItem.end_time) : null,
       date: Number(dbItem.date),
       exercises: dbItem.exercises,
+      templateId: dbItem.template_id != null ? String(dbItem.template_id) : null,
       notes: dbItem.notes,
       updated_at: Number(dbItem.updated_at)
     }),

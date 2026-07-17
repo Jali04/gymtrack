@@ -140,6 +140,10 @@ body {
   /* Clear the floating bottom-nav plus the iPhone home-indicator */
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
   overscroll-behavior: none;
+  /* Kill the annoying double-tap-to-zoom gesture while keeping pinch-zoom
+     (accessibility) intact. `manipulation` allows panning + pinch-zoom but
+     disables double-tap zoom and the 300ms tap delay. */
+  touch-action: manipulation;
 }
 body.light-mode {
   background: var(--bg) !important;
@@ -1354,13 +1358,23 @@ body.modal-open {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 16px;
+  padding: 12px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   z-index: 150;
   animation: slideUp 0.25s cubic-bezier(0.32, 0.72, 0, 1);
   box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  /* Keep every control (incl. the long DE "Überspringen" label) inside the box
+     on narrow phones — the tap-zone shrinks first, buttons never overflow. */
+  overflow: hidden;
+}
+#restTimerOverlay #btnReduceRest,
+#restTimerOverlay #btnExtendRest,
+#restTimerOverlay #btnSkipRest {
+  flex-shrink: 0;
+  padding: 8px 9px !important;
+  white-space: nowrap;
 }
 
 /* ---- PICKER SEARCH ---- */
@@ -1980,6 +1994,57 @@ body.modal-open {
   background: rgba(200,241,53,0.12);
   border-color: var(--accent);
   pointer-events: none;
+}
+/* "Remove from template" variant (Task 1) */
+.tmpl-persist-btn.danger {
+  background: rgba(255,77,77,0.08);
+  border-color: rgba(255,77,77,0.28);
+  color: var(--accent2);
+}
+.tmpl-persist-btn.danger:active { background: rgba(255,77,77,0.16); }
+/* Full-width "save order to template" button (Task 1) */
+.tmpl-order-btn {
+  width: 100%;
+  margin-top: 10px;
+  background: rgba(200,241,53,0.06);
+  border: 1px dashed rgba(200,241,53,0.3);
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tmpl-order-btn:active { transform: scale(0.98); background: rgba(200,241,53,0.12); }
+
+/* ---- Inline exercise-card note (Task 9) ---- */
+.card-note-display {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.card-note-display .card-note-edit { color: var(--accent); margin-left: 4px; font-size: 11px; }
+.card-note-editor { margin-top: 8px; }
+.card-note-editor .card-note-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.card-note-input {
+  resize: none;
+  height: 52px;
+  line-height: 1.4;
+  font-size: 13px;
+  margin-bottom: 0 !important;
+  background: rgba(200,241,53,0.03) !important;
+  border-color: rgba(200,241,53,0.2) !important;
 }
 
 /* Template update modal checkbox */
@@ -3537,9 +3602,13 @@ select {
    B1 — Rest timer: tap-to-fullscreen + fullscreen countdown
    ============================================= */
 .rest-tap-zone {
-  display: flex; align-items: center; gap: 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* Allow the label/count block to shrink so the action buttons stay in-box. */
+  flex: 1 1 auto; min-width: 0; overflow: hidden;
 }
+.rest-tap-zone > div { min-width: 0; }
+.rest-tap-zone #restTimerLabel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #restFullscreen {
   position: fixed; inset: 0; z-index: 900;
   background: rgba(8,8,8,0.96);
