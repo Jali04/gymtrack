@@ -454,6 +454,9 @@ function renderActiveWorkout() {
         <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="toggleCardNote(${i})">
           ${noteToggle}
         </button>
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="openLogSets(${i})">
+          ${t('detailsNote')}
+        </button>
         ${persistBtn}
       </div>
     </div>`;
