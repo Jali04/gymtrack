@@ -185,6 +185,7 @@ async function startNextProgramDay() {
   wo.programDayId = `${prog.id}_wday${todayDayIndex}`;
   wo.programId = prog.id;
   wo.templateId = todayTplId;
+  wo.templateName = tpl.name; // survives template deletion / sync loss (see history display)
   
   db.currentWorkout = wo;
   save();

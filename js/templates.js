@@ -292,6 +292,7 @@ function startWorkoutFromTemplate(tmplId) {
   db.currentWorkout = {
     id: uid(), date: Date.now(), startTime: Date.now(),
     templateId: tmplId,
+    templateName: tmpl.name, // keep the name so history survives template edits/deletes/sync loss
     exercises: tmpl.exerciseIds.map(exId => ({ exId, sets: [] }))
   };
   save();
