@@ -484,6 +484,19 @@ if (!localStorage.getItem('supp_sync_fix_v1')) {
   dbNeedsSave = true;
 }
 
+// One-time backfill: snapshot the template name onto past template-based
+// workouts so history keeps the real name even if the template is later
+// deleted or its id is lost on a cloud sync (was showing "Freies Training").
+if (!localStorage.getItem('workout_tmplname_fix_v1')) {
+  (db.workouts || []).forEach(w => {
+    if (w && w.templateId && !w.templateName) {
+      const tmpl = (db.templates || []).find(x => String(x.id) === String(w.templateId));
+      if (tmpl && tmpl.name) { w.templateName = tmpl.name; dbNeedsSave = true; }
+    }
+  });
+  localStorage.setItem('workout_tmplname_fix_v1', '1');
+}
+
 if (dbNeedsSave) {
   _persistDb();
 }

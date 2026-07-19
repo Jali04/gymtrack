@@ -245,14 +245,23 @@ function openCalDay(year, month, day) {
       if (type === 'cardio')       setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type === 'stretch') setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
       else                         setsHtml = e.sets.map(s => `<span class="set-badge">${fmtWeight(s.weight)}×${s.reps}</span>`).join('');
+      // Show both note kinds saved on the exercise: 📌 permanent (carries across
+      // all workouts, stored on the exercise) and 💬 session (this workout only).
+      const permNote = (!e.isCustom && ex && ex.notes) ? ex.notes : '';
+      const notesHtml =
+        (permNote ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">📌 ${permNote}</div>` : '') +
+        (e.note   ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : '');
       return `<div style="margin-bottom:10px;">
         <div style="font-weight:600;font-size:14px;margin-bottom:6px;">${getExName(e.exId)} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">${setsHtml}</div>
-        ${e.note ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${e.note}</div>` : ''}
+        ${notesHtml}
       </div>`;
     }).join('');
 
+    const woName = typeof _resolveWorkoutName === 'function' ? _resolveWorkoutName(w) : '';
+
     return `<div class="cal-detail-workout" style="margin-bottom:16px; border: 1px solid var(--border); padding: 12px; border-radius: 12px; background: var(--card);">
+      ${woName ? `<div style="font-weight:700;font-size:15px;margin-bottom:8px;">${woName}</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
         <div class="cal-time-badge" style="margin:0;">🕐 ${startTime} – ${endTime} &nbsp;·&nbsp; ${durStr}</div>
         <div style="display:flex;gap:6px;">

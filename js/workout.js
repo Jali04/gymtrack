@@ -6,6 +6,12 @@ let currentWorkoutExIdx = null;
 let currentExCategory   = 'strength';
 let timerInterval       = null;
 
+// Which cards have their inline note editor expanded (by exercise index). The
+// panel is pure DOM state, so without tracking it a re-render (e.g. checking a
+// set, which also starts the rest timer) would silently collapse it. We restore
+// it while building the card HTML so notes stay open across those re-renders.
+let _openCardNotes = new Set();
+
 /* ---- Stopwatch state ---- */
 let swInterval = null;
 let swElapsed  = 0;
@@ -193,6 +199,21 @@ function _updateQuickMetrics() {
   elWorkouts7d.textContent = count;
 }
 
+// Resolve a workout's display name robustly: prefer the live template (name may
+// have been edited), then the name snapshot stored on the workout (survives a
+// deleted template or a templateId lost on cloud sync), and only then fall back
+// to "Freies Training". This is why history no longer randomly shows the free
+// label for workouts that were started from a template.
+function _resolveWorkoutName(w) {
+  if (!w) return lang === 'en' ? 'Free workout' : 'Freies Training';
+  if (w.templateId) {
+    const tmpl = (db.templates || []).find(x => String(x.id) === String(w.templateId));
+    if (tmpl && tmpl.name) return tmpl.name;
+  }
+  if (w.templateName) return w.templateName;
+  return lang === 'en' ? 'Free workout' : 'Freies Training';
+}
+
 /* ---- B2: Recent workouts list ---- */
 function _renderRecentWorkouts() {
   const c = document.getElementById('recentWorkouts');
@@ -207,8 +228,7 @@ function _renderRecentWorkouts() {
     const ts = w.startTime || w.date;
     const d  = new Date(ts);
     const dateStr = d.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short' });
-    const tmpl = w.templateId ? (db.templates || []).find(x => String(x.id) === String(w.templateId)) : null;
-    const name = tmpl ? tmpl.name : (lang === 'en' ? 'Free workout' : 'Freies Training');
+    const name = _resolveWorkoutName(w);
     let sets = 0, vol = 0;
     (w.exercises || []).forEach(e => (e.sets || []).forEach(s => {
       sets++; vol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
@@ -316,7 +336,8 @@ function repeatLastWorkout() {
   });
   db.currentWorkout = {
     id: uid(), date: Date.now(), startTime: Date.now(),
-    exercises, templateId: last.templateId || null
+    exercises, templateId: last.templateId || null,
+    templateName: last.templateName || null
   };
   save();
   document.getElementById('quickStart').style.display    = 'none';
@@ -371,9 +392,12 @@ function renderActiveWorkout() {
   if (activeLabel) activeLabel.textContent = t('activeWorkout');
 
   if (!cw || !cw.exercises || cw.exercises.length === 0) {
+    _openCardNotes.clear();
     container.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-text">${t('enterExercise')}</div></div>`;
     return;
   }
+  // Drop any open-note indices that no longer exist (defensive after edits).
+  _openCardNotes.forEach(idx => { if (idx >= cw.exercises.length) _openCardNotes.delete(idx); });
 
   // Template context (Task 1): lets each card offer add/remove-from-template,
   // and drives the "save order to template" button below the list.
@@ -432,10 +456,11 @@ function renderActiveWorkout() {
     const sessLabel = en ? 'Note (this workout only)' : 'Anmerkung (nur dieses Training)';
     const sessPlace = en ? 'e.g. shoulder felt tight — only this session' : 'z.B. Schulter gezwickt – nur diese Einheit';
     const noteToggle = en ? '💬 Notes' : '💬 Notizen';
+    const noteOpen = _openCardNotes.has(i);
     const noteBlock = `
       ${permNote ? `<div class="card-note-display" onclick="toggleCardNote(${i})">📌 ${_escNote(permNote)} <span class="card-note-edit">✎</span></div>` : ''}
       ${sessNote ? `<div class="card-note-display" onclick="toggleCardNote(${i})">📝 ${_escNote(sessNote)} <span class="card-note-edit">✎</span></div>` : ''}
-      <div id="cardNote-${i}" class="card-note-editor" style="display:none;">
+      <div id="cardNote-${i}" class="card-note-editor" style="display:${noteOpen ? 'block' : 'none'};">
         ${permNote !== null ? `
         <div class="card-note-label">📌 ${permLabel}</div>
         <textarea class="form-input card-note-input" placeholder="${permPlace}" oninput="updateGlobalExNote('${e.exId}', this.value)">${_escNote(permNote)}</textarea>` : ''}
@@ -596,8 +621,12 @@ function _renderInlineSetEditor(e, i, type) {
     const warmBtn = (!hasWarmup && wuTarget && wuTarget.top >= 20)
       ? `<button class="il-plate" onclick="suggestWarmup(${i})">🔥 ${lang === 'en' ? 'Warm-up' : 'Aufwärmen'}</button>`
       : '';
+    // e1RM info sits left; the action buttons (Warm-up + Plates) are grouped
+    // together on the right via the flexible spacer, so the warm-up button is no
+    // longer floated off on its own with an odd gap.
     e1rmRow = `<div class="il-e1rm-row">
       ${e1chip}
+      <span class="il-e1rm-spacer"></span>
       ${warmBtn}
       <button class="il-plate" onclick="openPlateCalcFor(${i})">🧮 ${lang === 'en' ? 'Plates' : 'Scheiben'}</button>
     </div>`;
@@ -982,6 +1011,7 @@ function moveWorkoutExercise(idx, dir) {
   const j = idx + dir;
   if (j < 0 || j >= cw.exercises.length) return;
   [cw.exercises[idx], cw.exercises[j]] = [cw.exercises[j], cw.exercises[idx]];
+  _openCardNotes.clear(); // indices shifted — avoid re-opening the wrong card
   save();
   renderActiveWorkout();
   haptic('light');
@@ -1002,6 +1032,7 @@ function removeWorkoutExercise(idx) {
   if (!e) return;
   if (e.supersetGroup) unlinkSuperset(idx, true);
   db.currentWorkout.exercises.splice(idx, 1);
+  _openCardNotes.clear(); // indices shifted — avoid re-opening the wrong card
   save();
   renderActiveWorkout();
   haptic('light');
@@ -2360,6 +2391,8 @@ function toggleCardNote(i) {
   if (!ed) return;
   const open = ed.style.display !== 'none';
   ed.style.display = open ? 'none' : 'block';
+  // Remember the state so re-renders (e.g. starting the rest timer) don't close it.
+  if (open) _openCardNotes.delete(i); else _openCardNotes.add(i);
   if (!open) {
     const ta = ed.querySelector('textarea');
     if (ta) { ta.focus(); const v = ta.value; ta.value = ''; ta.value = v; } // caret to end
