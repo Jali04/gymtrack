@@ -262,8 +262,8 @@ function exportWorkoutsCsv() {
     return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
   const header = de
-    ? ['Datum', 'Uhrzeit', 'Übung', 'Kategorie', 'Satz', 'Typ', 'kg', 'Wdh', 'RPE', 'km', 'Zeit', 'Minuten']
-    : ['Date', 'Time', 'Exercise', 'Category', 'Set', 'Type', 'kg', 'Reps', 'RPE', 'km', 'Time', 'Minutes'];
+    ? ['Datum', 'Uhrzeit', 'Übung', 'Kategorie', 'Satz', 'Typ', 'kg', 'Wdh', 'RPE', 'km', 'Zeit', 'Minuten', 'Haltezeit (s)']
+    : ['Date', 'Time', 'Exercise', 'Category', 'Set', 'Type', 'kg', 'Reps', 'RPE', 'km', 'Time', 'Minutes', 'Hold (s)'];
   const rows = [header.join(';')];
   const fmtDate = ts => { const d = new Date(ts); return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`; };
   const fmtTime = ts => { const d = new Date(ts); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
@@ -284,7 +284,8 @@ function exportWorkoutsCsv() {
           s.rpe != null ? s.rpe : '',
           s.km != null ? s.km : '',
           s.time || '',
-          s.minutes != null ? s.minutes : ''
+          s.minutes != null ? s.minutes : '',
+          s.secs != null ? s.secs : ''
         ].join(';'));
       });
     });

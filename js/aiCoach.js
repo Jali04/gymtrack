@@ -597,6 +597,8 @@ function compileAiContext(provider = aiProvider) {
           setsStr = (we.sets || []).map(s => `${s.km}km in ${s.time} (RPE ${s.rpe || '–'})`).join(', ');
         } else if (type === 'stretch') {
           setsStr = (we.sets || []).map(s => `${s.minutes}min`).join(', ');
+        } else if (type === 'isometric') {
+          setsStr = (we.sets || []).map(s => `${(Number(s.weight) || 0) > 0 ? `${s.weight}kg` : 'Körpergewicht'} für ${s.secs || 0}s (RPE ${s.rpe || '–'}${s.type && s.type !== 'N' ? `, Typ: ${s.type}` : ''})`).join(', ');
         } else {
           setsStr = (we.sets || []).map(s => `${s.weight}kg × ${s.reps} (RPE ${s.rpe || '–'}${s.type && s.type !== 'N' ? `, Typ: ${s.type}` : ''})`).join(', ');
         }

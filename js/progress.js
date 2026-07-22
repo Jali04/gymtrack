@@ -629,6 +629,21 @@ function _buildExCard(ex, type, locale, catClass) {
       else if (diff < 0) progressTag = `<span class="progress-tag down">↓ ${diff}${t('shorterStretch')}</span>`;
       else               progressTag = `<span class="progress-tag same">${t('same')}</span>`;
     }
+  } else if (type === 'isometric') {
+    sparkValues = sessions.map(w => {
+      const e = w.exercises.find(x => x.exId === ex.id);
+      return e ? Math.max(0, ...e.sets.map(s => Number(s.secs) || 0)) : 0;
+    });
+    const maxSecs = Math.max(0, ...lastEntry.sets.map(s => Number(s.secs) || 0));
+    mainValue = maxSecs; mainUnit = 's';
+    if (workoutsWithEx.length >= 2) {
+      const prev     = workoutsWithEx[workoutsWithEx.length - 2];
+      const prevMax  = Math.max(0, ...prev.exercises.find(e => e.exId === ex.id).sets.map(s => Number(s.secs) || 0));
+      const diff     = maxSecs - prevMax;
+      if (diff > 0)      progressTag = `<span class="progress-tag up">↑ +${diff}s</span>`;
+      else if (diff < 0) progressTag = `<span class="progress-tag down">↓ ${diff}s</span>`;
+      else               progressTag = `<span class="progress-tag same">${t('same')}</span>`;
+    }
   } else {
     sparkValues = sessions.map(w => {
       const e = w.exercises.find(x => x.exId === ex.id);
@@ -657,6 +672,8 @@ function _buildExCard(ex, type, locale, catClass) {
     setsHtml = lastEntry.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
   } else if (type === 'stretch') {
     setsHtml = lastEntry.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
+  } else if (type === 'isometric') {
+    setsHtml = lastEntry.sets.map(s => `<span class="set-badge">${_fmtIsoSet(s)}</span>`).join('');
   } else {
     const prevSets = workoutsWithEx.length >= 2
       ? workoutsWithEx[workoutsWithEx.length - 2].exercises.find(e => e.exId === ex.id).sets
@@ -739,6 +756,7 @@ function _exEntryMinutes(entry) {
   let mins = 0;
   (entry.sets || []).forEach(s => {
     if (s.minutes != null && s.minutes !== '') mins += Number(s.minutes) || 0;
+    else if (s.secs != null && s.secs !== '') mins += (Number(s.secs) || 0) / 60;
     else if (s.time) mins += _timeStrToMin(s.time);
   });
   if (entry.timerSec) mins += entry.timerSec / 60;
@@ -766,6 +784,14 @@ const EX_GRAPH_METRICS = {
   stretch: [
     { key: 'time', de: 'Zeit gesamt', en: 'Total time', unit: () => 'min',
       val: e => +_exEntryMinutes(e).toFixed(1) }
+  ],
+  isometric: [
+    { key: 'hold', de: 'Max. Haltezeit', en: 'Max hold', unit: () => 's',
+      val: e => { let v = 0; (e.sets || []).forEach(s => { if (Number(s.secs) > v) v = Number(s.secs); }); return v; } },
+    { key: 'load', de: 'Max. Last', en: 'Max load', unit: () => unitLabel(),
+      val: e => { let v = 0; (e.sets || []).forEach(s => { if (s.type !== 'W' && Number(s.weight) > v) v = Number(s.weight); }); return v > 0 ? Number(fmtWeightNum(v)) : 0; } },
+    { key: 'time', de: 'Zeit gesamt', en: 'Total time', unit: () => 'min',
+      val: e => +_exEntryMinutes(e).toFixed(1) }
   ]
 };
 
@@ -777,7 +803,7 @@ function _exGraphMetricsFor(type, exId) {
   // non-time category, still expose a time metric so it can be tracked. Task 2.
   if (!list.some(m => m.key === 'time') && exId) {
     const hasTime = db.workouts.some(w => (w.exercises || []).some(e =>
-      e.exId === exId && ((e.timerSec > 0) || (e.sets || []).some(s => (s.minutes != null && s.minutes !== '') || s.time))));
+      e.exId === exId && ((e.timerSec > 0) || (e.sets || []).some(s => (s.minutes != null && s.minutes !== '') || (s.secs != null && s.secs !== '') || s.time))));
     if (hasTime) list.push(_TIME_METRIC);
   }
   return list;
@@ -834,7 +860,7 @@ function _renderExGraph() {
   const drawPoints = dataPoints.slice(-12);
   const unit   = metric.unit ? metric.unit() : '';
   const points = drawPoints.map(d => ({ x: `${d.date.getDate()}.${d.date.getMonth() + 1}.`, y: d.y }));
-  const color  = type === 'cardio' ? 'orange' : type === 'stretch' ? '#64c8ff' : 'var(--accent)';
+  const color  = type === 'cardio' ? 'orange' : type === 'stretch' ? '#64c8ff' : type === 'isometric' ? '#b47cff' : 'var(--accent)';
   chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color, unit });
 }
 

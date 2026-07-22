@@ -16,7 +16,19 @@ function getCatType(category) {
 
 const TYPE_COLORS = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
 function getCatClass(type) {
-  return type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+  return type === 'cardio' ? 'cat-cardio'
+       : type === 'stretch' ? 'cat-stretch'
+       : type === 'isometric' ? 'cat-isometric'
+       : 'cat-strength';
+}
+
+// Isometric holds track Load (weight, kg) × Hold time (seconds). Formats a set
+// like "20 kg · 45s", or just "45s" for a bodyweight hold.
+function _fmtIsoSet(s) {
+  const secs = (s && s.secs != null && s.secs !== '') ? `${Number(s.secs)}s` : '';
+  const w = Number(s && s.weight) || 0;
+  const load = w > 0 ? (typeof fmtWeight === 'function' ? fmtWeight(w) : `${w} kg`) : '';
+  return load ? `${load} · ${secs || '0s'}` : (secs || '0s');
 }
 
 let db = JSON.parse(localStorage.getItem('gymdb') || '{"exercises":[],"workouts":[],"currentWorkout":null}');
@@ -688,6 +700,13 @@ function _renderSetBadges(sets, type) {
   }
   if (type === 'stretch') {
     return sets.map(s => `<span class="set-badge">${s.minutes} ${typeof t === 'function' ? t('colMin') : 'min'}</span>`).join('');
+  }
+  if (type === 'isometric') {
+    return sets.map(s => {
+      const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${TYPE_COLORS[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
+      const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
+      return `<span class="set-badge">${tBadge}${_fmtIsoSet(s)}${rBadge}</span>`;
+    }).join('');
   }
   return sets.map(s => {
     const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${TYPE_COLORS[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';
