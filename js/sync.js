@@ -362,6 +362,16 @@ async function syncUserProfile(userId) {
       console.log('[Sync] Pulling profile updates from remote');
       db.activeProgram = remoteProfile.active_program_id ? { id: remoteProfile.active_program_id } : null;
       db.weekStatus = remoteProfile.week_status;
+      // Local-only maps now live on the profile. Only apply when the remote
+      // actually has a value (!= null) so a legacy row whose column was never
+      // written can't wipe locally created categories/flags/settings. Once every
+      // client runs this code, pushes always send these fields (even as {}), so
+      // deletions still propagate.
+      if (remoteProfile.custom_categories != null) db.customCategories = remoteProfile.custom_categories;
+      if (remoteProfile.exercise_flags != null) db.exerciseFlags = remoteProfile.exercise_flags;
+      // Merge settings so keys the remote doesn't carry keep their local
+      // defaults (barWeight, plates, …) instead of becoming undefined.
+      if (remoteProfile.settings != null) db.settings = Object.assign({}, db.settings, remoteProfile.settings);
       localStorage.setItem('gym_profile_updated_at', String(remoteProfile.updated_at));
       save(); // local save
     } else if (localNeedsPush) {
@@ -373,6 +383,9 @@ async function syncUserProfile(userId) {
           id: userId,
           active_program_id: db.activeProgram?.id || null,
           week_status: db.weekStatus || {"weekKey": 0, "mode": "normal"},
+          custom_categories: db.customCategories || {},
+          exercise_flags: db.exerciseFlags || {},
+          settings: db.settings || {},
           updated_at: now
         });
       if (upsertError) throw upsertError;
@@ -637,6 +650,9 @@ async function syncProfileUpdate() {
       id: userId,
       active_program_id: db.activeProgram?.id || null,
       week_status: db.weekStatus || {"weekKey": 0, "mode": "normal"},
+      custom_categories: db.customCategories || {},
+      exercise_flags: db.exerciseFlags || {},
+      settings: db.settings || {},
       updated_at: now
     })
     .then(({ error }) => {

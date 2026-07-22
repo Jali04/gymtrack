@@ -12,6 +12,12 @@ create table public.profiles (
   subscription_tier text not null default 'free',
   active_program_id text,
   week_status jsonb not null default '{"weekKey": 0, "mode": "normal"}'::jsonb,
+  -- User-scoped maps that used to live only in localStorage. Kept on the
+  -- profile row so they survive device changes / cache clears. Protected by the
+  -- same row-level security as the rest of the profile (auth.uid() = id).
+  custom_categories jsonb not null default '{}'::jsonb, -- { "Kategorie": "isometric" | "strength" | … }
+  exercise_flags jsonb not null default '{}'::jsonb,     -- { exId: { bodyweight: true } }
+  settings jsonb not null default '{}'::jsonb,            -- unit, rir, barWeight, plates, weeklyGoal, …
   updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint
 );
 
