@@ -76,6 +76,9 @@ function getProgressSummary(exId) {
   } else if (type === 'stretch') {
     const total = last.sets.reduce((a, s) => a + s.minutes, 0);
     return `${t('lastTime')}: ${total} ${t('colMin')}`;
+  } else if (type === 'isometric') {
+    const maxSecs = Math.max(0, ...last.sets.map(s => Number(s.secs) || 0));
+    return `${t('lastTime')}: ${maxSecs}s max`;
   } else {
     const maxW = Math.max(...last.sets.map(s => s.weight));
     return `${t('lastTime')}: ${maxW}kg max`;
@@ -304,7 +307,7 @@ function _updateExerciseAiAnalysis(exId) {
   const catSelect = document.getElementById('exCategory');
   const activeCategory = catSelect ? catSelect.value : ex.category;
   const type = getCatType(activeCategory);
-  const unit = type === 'cardio' ? ' km' : type === 'stretch' ? ' Min' : ' kg';
+  const unit = type === 'cardio' ? ' km' : type === 'stretch' ? ' Min' : type === 'isometric' ? ' s' : ' kg';
 
   // Filter workouts that contain this exercise, sorted oldest to newest
   const exerciseWorkouts = (db.workouts || [])
@@ -332,6 +335,8 @@ function _updateExerciseAiAnalysis(exId) {
       return Math.max(...se.sets.map(s => Number(s.km) || 0));
     } else if (type === 'stretch') {
       return se.sets.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+    } else if (type === 'isometric') {
+      return Math.max(0, ...se.sets.map(s => Number(s.secs) || 0));
     } else {
       return Math.max(...se.sets.map(s => Number(s.weight) || 0));
     }
@@ -348,6 +353,8 @@ function _updateExerciseAiAnalysis(exId) {
       textEl.innerHTML = `<strong>Plateau-Warnung</strong>: Deine Leistung stagniert bei <strong>${m1}${unit}</strong>. Der AI Coach empfiehlt: Erhöhe die Pause auf 3 Min, steigere die Wiederholungszahl bei leicht reduziertem Gewicht oder plane eine Deload-Woche, um neue Reize zu setzen. 🔄`;
     } else if (type === 'cardio') {
       textEl.innerHTML = `<strong>Plateau-Warnung</strong>: Deine Ausdauerleistung stagniert bei <strong>${m1}${unit}</strong>. Tipp: Baue Intervallläufe ein oder variiere das Tempo, um dein Herz-Kreislauf-System neu herauszufordern. 🏃‍♂️`;
+    } else if (type === 'isometric') {
+      textEl.innerHTML = `<strong>Plateau-Warnung</strong>: Deine Haltezeit stagniert bei <strong>${m1}${unit}</strong>. Tipp: Erhöhe die Last leicht oder verlängere den Halt schrittweise um 5-10 Sek, um neue Spannungsreize zu setzen. 🧱`;
     } else {
       textEl.innerHTML = `<strong>Plateau-Warnung</strong>: Deine Dehnungsdauer stagniert bei <strong>${m1}${unit}</strong>. Tipp: Konzentriere dich auf tiefere Atmung und halte die Positionen passiv für 10-15 Sek länger. 🧘`;
     }
@@ -360,6 +367,8 @@ function _updateExerciseAiAnalysis(exId) {
       textEl.innerHTML = `<strong>Progressive Overload!</strong> Du hast dich um <strong>+${pct}%</strong> gesteigert (von ${m3}${unit} auf ${m1}${unit}). Empfehlung: Versuche in der nächsten Einheit ein kleines Gewicht-Upgrade (+1.25kg bis 2.5kg) oder 1-2 Wiederholungen mehr! 🚀`;
     } else if (type === 'cardio') {
       textEl.innerHTML = `<strong>Ausdauer gesteigert!</strong> Du hast dich um <strong>+${pct}%</strong> gesteigert (von ${m3}${unit} auf ${m1}${unit}). Tolle Pace! Versuche beim nächsten Mal die Distanz leicht zu erhöhen oder die Zeit zu unterbieten. 🏃‍♂️`;
+    } else if (type === 'isometric') {
+      textEl.innerHTML = `<strong>Stärkere Haltekraft!</strong> Du hast dich um <strong>+${pct}%</strong> gesteigert (von ${m3}${unit} auf ${m1}${unit}). Stark! Setz beim nächsten Mal etwas mehr Last drauf oder halte noch ein paar Sekunden länger. 🧱`;
     } else {
       textEl.innerHTML = `<strong>Flexibilität verbessert!</strong> Du hast dich um <strong>+${pct}%</strong> gesteigert (von ${m3}${unit} auf ${m1}${unit}). Sehr gut! Behalte diese Routine bei, um deine Gelenkgesundheit weiter zu fördern. 🧘`;
     }
@@ -369,6 +378,8 @@ function _updateExerciseAiAnalysis(exId) {
       textEl.innerHTML = `<strong>Konstanz zahlt sich aus</strong>: Du hältst deine Leistung stabil bei <strong>${m1}${unit}</strong>. Tipp: Konzentriere dich auf eine saubere Ausführung und versuche im letzten Satz ans Muskelversagen zu gehen, um Muskelwachstum anzuregen! 💪`;
     } else if (type === 'cardio') {
       textEl.innerHTML = `<strong>Ausdauer stabil</strong>: Du bist solide <strong>${m1}${unit}</strong> gelaufen. Versuche beim nächsten Training, die ersten 10 Minuten etwas ruhiger anzugehen, um am Ende mehr Energie für einen Schlusssprint zu haben! 🏃‍♂️`;
+    } else if (type === 'isometric') {
+      textEl.innerHTML = `<strong>Haltekraft stabil</strong>: Du hältst konstant <strong>${m1}${unit}</strong>. Tipp: Achte auf maximale Körperspannung und volle Kontrolle – teste im letzten Satz bewusst deine Grenze, um neue Reize zu setzen. 🧱`;
     } else {
       textEl.innerHTML = `<strong>Flexibilität stabil</strong>: Du hast <strong>${m1}${unit}</strong> gedehnt. Versuche, die Übung nach einem warmen Bad oder am Ende eines Krafttrainings durchzuführen, wenn die Muskeln maximal durchblutet sind. 🧘`;
     }

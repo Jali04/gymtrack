@@ -522,6 +522,7 @@ function _parseNum(v) {
 }
 function _setHasData(s) {
   if (!s) return false;
+  if ('secs' in s) return Number(s.secs) > 0; // isometric hold
   if (s.minutes != null && s.minutes !== '') return Number(s.minutes) > 0;
   if ('km' in s || 'pace' in s || (s.time != null && !('reps' in s))) {
     return Number(s.km) > 0 || !!(s.time && String(s.time).trim());
@@ -554,6 +555,7 @@ function _renderInlineSetEditor(e, i, type) {
   let head;
   if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else if (type === 'stretch') head = `<div class="il-head il-stretch"><span>#</span><span>${t('colMin')}</span><span>✓</span><span></span></div>`;
+  else if (type === 'isometric') head = `<div class="il-head"><span>#</span><span></span><span>${t('colLoad')} (${unitLabel()})</span><span>${t('colHold')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else head = `<div class="il-head"><span>#</span><span></span><span>${unitLabel()}</span><span>${t('reps')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
 
   const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Warmup', 'D': t('setDropTitle') || 'Drop' };
@@ -579,6 +581,15 @@ function _renderInlineSetEditor(e, i, type) {
       return `<div class="il-row il-stretch${done ? ' done' : ''}">
         <span class="il-num">${k + 1}</span>
         <input class="il-in" type="text" inputmode="decimal" value="${s.minutes != null ? s.minutes : ''}" placeholder="${g && g.minutes != null ? g.minutes : '2'}" onchange="inlineSet(${i},${k},'minutes',this.value)">
+        ${done_cb}${rm}
+      </div>`;
+    } else if (type === 'isometric') {
+      return `<div class="il-row${done ? ' done' : ''}">
+        <span class="il-num">${k + 1}</span>
+        ${typeBtn(s.type || 'N')}
+        <input class="il-in" type="text" inputmode="decimal" value="${fmtWeightNum(s.weight)}" placeholder="${g && g.weight != null ? fmtWeightNum(g.weight) : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
+        <input class="il-in" type="text" inputmode="numeric" value="${s.secs != null ? s.secs : ''}" placeholder="${g && g.secs != null ? g.secs : '30'}" onchange="inlineSet(${i},${k},'secs',this.value)">
+        <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
         ${done_cb}${rm}
       </div>`;
     }
@@ -729,6 +740,7 @@ function _lastPerfShort(sets, type) {
   const s = sets[0];
   if (type === 'cardio') return `${s.km || 0}km ${s.time || ''}`.trim();
   if (type === 'stretch') return `${s.minutes || 0} ${t('colMin')}`;
+  if (type === 'isometric') return `${_fmtIsoSet(s)}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
   return `${fmtWeight(s.weight != null ? s.weight : 0)} × ${s.reps != null ? s.reps : 0}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
 }
 
@@ -737,6 +749,7 @@ function inlineSet(i, k, field, value) {
   const s = we.sets[k];
   if (field === 'weight') s.weight = toKg(value); // F2: input is in display unit, stored in kg
   else if (field === 'km' || field === 'minutes') s[field] = _parseNum(value);
+  else if (field === 'secs') { const n = parseInt(String(value).replace(',', '.'), 10); s.secs = isNaN(n) ? null : n; }
   else if (field === 'reps') { const n = parseInt(String(value).replace(',', '.'), 10); s.reps = isNaN(n) ? null : n; }
   else if (field === 'rpe') {
     const n = _parseNum(value);
@@ -789,9 +802,10 @@ function addInlineSet(i) {
   // e.g. adding set 2 shows last workout's set 2, not a copy of this session's
   // set 1. The ghost comes from _lastPerf() → lpSet(k) in the inline editor.
   let s;
-  if (type === 'cardio')      s = { type: prev ? (prev.type || 'N') : 'N', km: null, time: '', pace: '', rpe: null, done: false };
-  else if (type === 'stretch') s = { minutes: null, done: false };
-  else                         s = { type: prev ? (prev.type || 'N') : 'N', weight: null, reps: null, rpe: null, done: false };
+  if (type === 'cardio')        s = { type: prev ? (prev.type || 'N') : 'N', km: null, time: '', pace: '', rpe: null, done: false };
+  else if (type === 'stretch')  s = { minutes: null, done: false };
+  else if (type === 'isometric') s = { type: prev ? (prev.type || 'N') : 'N', weight: null, secs: null, rpe: null, done: false };
+  else                          s = { type: prev ? (prev.type || 'N') : 'N', weight: null, reps: null, rpe: null, done: false };
   we.sets.push(s);
   save();
   renderActiveWorkout();
@@ -1804,6 +1818,9 @@ function _setupSetColHeaders(type) {
   } else if (type === 'stretch') {
     colLabels.className = 'set-col-labels stretch-labels';
     colLabels.innerHTML = `<div></div><div class="set-col-label">${t('colMin')}</div><div></div>`;
+  } else if (type === 'isometric') {
+    colLabels.className = 'set-col-labels';
+    colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${t('colLoad')} (${unitLabel()})</div><div class="set-col-label">${t('colHold')}</div><div class="set-col-label" id="colLabelRpe">${_rirMode() ? 'RIR' : (t('colRpe') || 'RPE')}</div><div></div>`;
   } else {
     colLabels.className = 'set-col-labels';
     colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${unitLabel()}</div><div class="set-col-label">${t('reps')}</div><div class="set-col-label" id="colLabelRpe">${_rirMode() ? 'RIR' : (t('colRpe') || 'RPE')}</div><div></div>`;
@@ -1836,6 +1853,12 @@ function addSetRow(data) {
     const typeBtn = last.querySelector('.set-type-btn');
     if (currentExCategory === 'stretch') {
       data = { minutes: inputs[0] ? inputs[0].value : '' };
+    } else if (currentExCategory === 'isometric') {
+      data = {
+        type: typeBtn ? (typeBtn.dataset.type || 'N') : 'N',
+        weight: inputs[0] ? toKg(inputs[0].value) : '',
+        secs: inputs[1] ? inputs[1].value : ''
+      };
     } else if (currentExCategory !== 'cardio') {
       data = {
         type:   typeBtn ? (typeBtn.dataset.type || 'N') : 'N',
@@ -1876,6 +1899,15 @@ function addSetRow(data) {
     const min = data ? data.minutes : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
       <input class="set-input" type="text" placeholder="2" value="${min}" inputmode="decimal"/>
+      ${rmBtn}`;
+  } else if (type === 'isometric') {
+    row.className = 'set-row';
+    const w = data ? data.weight : '', secs = data ? data.secs : '';
+    row.innerHTML = `<span class="set-num">${idx}</span>
+      ${typeBtn}
+      <input class="set-input" type="text" placeholder="0" value="${fmtWeightNum(w)}" inputmode="decimal"/>
+      <input class="set-input" type="text" placeholder="30" value="${secs}" inputmode="numeric"/>
+      ${rpeInput}
       ${rmBtn}`;
   } else {
     row.className = 'set-row';
@@ -1936,6 +1968,9 @@ function saveSets() {
     } else if (type === 'stretch') {
       const minutes = pf(inputs[0]);
       if (minutes > 0) sets.push({ minutes });
+    } else if (type === 'isometric') {
+      const weight = toKg(inputs[0].value), secs = parseInt(String(inputs[1].value).replace(',', '.'), 10);
+      if (!isNaN(secs) && secs > 0) sets.push({ type: sType, rpe, weight: weight || 0, secs });
     } else {
       const weight = toKg(inputs[0].value), reps = parseInt(String(inputs[1].value).replace(',', '.'), 10); // F2: store kg
       if (weight != null && !isNaN(reps) && reps > 0) sets.push({ type: sType, rpe, weight, reps });

@@ -428,6 +428,7 @@ body.light-mode .nav-btn.active {
 }
 .cat-cardio { background: rgba(255,165,0,0.15); color: orange; }
 .cat-stretch { background: rgba(100,200,255,0.15); color: #64c8ff; }
+.cat-isometric { background: rgba(180,124,255,0.15); color: #b47cff; }
 .cat-strength { background: rgba(200,241,53,0.1); color: var(--accent); }
 
 /* ---- FORMS ---- */
@@ -1567,6 +1568,7 @@ body.modal-open {
 .next-ex-chip.cat-strength { border-color: rgba(200,241,53,0.25); }
 .next-ex-chip.cat-cardio { border-color: rgba(255,165,0,0.25); }
 .next-ex-chip.cat-stretch { border-color: rgba(100,200,255,0.25); }
+.next-ex-chip.cat-isometric { border-color: rgba(180,124,255,0.25); }
 
 /* ---- PROGRAM FILTER (Progress) ---- */
 .prog-filter-bar {
