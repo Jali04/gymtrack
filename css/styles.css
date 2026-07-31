@@ -3523,6 +3523,19 @@ select {
 .il-in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,241,53,0.08); }
 .il-in::placeholder { color: var(--muted); opacity: 0.55; }
 .il-rpe { opacity: 0.9; }
+/* Per-set hold timer: value field + start/stop button share one grid cell. */
+.il-hold { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.il-hold-in { flex: 1 1 auto; min-width: 0; padding-left: 2px; padding-right: 2px; }
+.il-hold-btn {
+  flex: 0 0 auto; width: 30px; height: 34px; border: none; border-radius: 9px;
+  background: var(--accent); color: #0a0a0a; font-size: 12px; line-height: 1;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.1s, background 0.15s;
+}
+.il-hold-btn:active { transform: scale(0.9); }
+.il-hold-btn.running { background: var(--accent2, #d0021b); color: #fff; animation: holdPulse 1s ease-in-out infinite; }
+@keyframes holdPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .il-pace {
   font-size: 12px; color: var(--muted); text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
