@@ -245,6 +245,7 @@ function openCalDay(year, month, day) {
       if (type === 'cardio')        setsHtml = e.sets.map(s => `<span class="set-badge">${s.km}km ${s.time} (${s.pace})</span>`).join('');
       else if (type === 'stretch')  setsHtml = e.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
       else if (type === 'isometric') setsHtml = e.sets.map(s => `<span class="set-badge">${_fmtIsoSet(s)}</span>`).join('');
+      else if (type === 'time')      setsHtml = e.sets.map(s => `<span class="set-badge">⏱ ${fmtDurSec(s.secs)}</span>`).join('');
       else                         setsHtml = e.sets.map(s => `<span class="set-badge">${fmtWeight(s.weight)}×${s.reps}</span>`).join('');
       // Show both note kinds saved on the exercise: 📌 permanent (carries across
       // all workouts, stored on the exercise) and 💬 session (this workout only).

@@ -342,12 +342,17 @@ window._timerLogState = {
   roundTargets: [],
   roundNotes: [],
   swTarget: 'workout_0',
-  swNote: ''
+  swNote: '',
+  swDest: null,     // 'total' | 'new' | 'set_<k>' — where the stopped time lands
+  adoptIdx: null,   // exercise index when moving an already-booked total
+  adoptDest: null
 };
 
 window._reRenderTimerLog = function() {
   if (window._timerLogState.type === 'hiit') {
     _renderHiitLogContent();
+  } else if (window._timerLogState.type === 'adopt') {
+    _renderAdoptTimerContent();
   } else {
     _renderSwLogContent();
   }
@@ -368,9 +373,13 @@ function _buildTargetOptions(selectedVal) {
   }
   html += `<optgroup label="${t('targetMuscleGroup') || 'Muskelgruppe (Freies Training)'}">`;
   const catsObj = t('cats') || {};
-  Object.keys(catsObj).forEach(cat => {
+  // Own categories belong here too (that's where a "time" category lives), and
+  // the "+ Neue Kategorie..." entry is a UI action, not a bookable target.
+  const cats = Object.keys(catsObj).filter(c => c !== 'new_custom');
+  Object.keys(db.customCategories || {}).forEach(c => { if (!cats.includes(c)) cats.push(c); });
+  cats.forEach(cat => {
     const sel = (selectedVal === `custom_${cat}`) ? 'selected' : '';
-    html += `<option value="custom_${cat}" ${sel}>${catsObj[cat]}</option>`;
+    html += `<option value="custom_${cat}" ${sel}>${catsObj[cat] || cat}</option>`;
   });
   html += `</optgroup>`;
   html += `<optgroup label="Optionen">`;

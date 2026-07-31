@@ -19,7 +19,31 @@ function getCatClass(type) {
   return type === 'cardio' ? 'cat-cardio'
        : type === 'stretch' ? 'cat-stretch'
        : type === 'isometric' ? 'cat-isometric'
+       : type === 'time' ? 'cat-time'
        : 'cat-strength';
+}
+
+/* Duration helpers for the time-only exercise type ("Zeit"): sets store a plain
+   number of seconds in `secs` (same field as an isometric hold), but a pure
+   time exercise can easily run minutes, so it is shown/entered as m:ss. */
+function fmtDurSec(sec) {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+}
+// Accepts "90", "1:30", "1:30,5" — anything else yields null.
+function parseDurSec(v) {
+  if (v == null) return null;
+  const str = String(v).trim().replace(',', '.');
+  if (!str) return null;
+  if (str.includes(':')) {
+    const p = str.split(':');
+    const m = parseInt(p[0], 10) || 0;
+    const s = parseFloat(p[1]) || 0;
+    return Math.round(m * 60 + s);
+  }
+  const n = parseFloat(str);
+  return isNaN(n) ? null : Math.round(n);
 }
 
 // Isometric holds track Load (weight, kg) × Hold time (seconds). Formats a set
@@ -707,6 +731,9 @@ function _renderSetBadges(sets, type) {
       const rBadge = s.rpe ? `<span style="opacity:0.6;margin-left:4px;">@${s.rpe}</span>` : '';
       return `<span class="set-badge">${tBadge}${_fmtIsoSet(s)}${rBadge}</span>`;
     }).join('');
+  }
+  if (type === 'time') {
+    return sets.map(s => `<span class="set-badge">⏱ ${fmtDurSec(s.secs)}</span>`).join('');
   }
   return sets.map(s => {
     const tBadge = (s.type && s.type !== 'N') ? `<span style="color:${TYPE_COLORS[s.type]};font-weight:700;margin-right:4px;">${s.type}</span>` : '';

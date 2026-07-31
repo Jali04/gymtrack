@@ -382,6 +382,13 @@ body.light-mode .nav-btn.active {
   transition: transform 0.15s;
 }
 .set-badge.new { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+/* Stopwatch total on an exercise card — tappable to move the time into a set. */
+.set-badge.tappable {
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.set-badge.tappable:active { transform: scale(0.95); }
 
 .progress-tag {
   display: inline-flex;
@@ -429,6 +436,7 @@ body.light-mode .nav-btn.active {
 .cat-cardio { background: rgba(255,165,0,0.15); color: orange; }
 .cat-stretch { background: rgba(100,200,255,0.15); color: #64c8ff; }
 .cat-isometric { background: rgba(180,124,255,0.15); color: #b47cff; }
+.cat-time { background: rgba(63,216,194,0.15); color: #3fd8c2; }
 .cat-strength { background: rgba(200,241,53,0.1); color: var(--accent); }
 
 /* ---- FORMS ---- */
@@ -482,6 +490,7 @@ body.light-mode select.form-input {
 .set-row { display: grid; grid-template-columns: 32px 32px 1fr 1fr 40px 36px; gap: 8px; align-items: center; }
 .set-row.cardio-row { grid-template-columns: 32px 32px 1fr 1fr 1fr 40px 36px; }
 .set-row.stretch-row { grid-template-columns: 32px 1fr 36px; }
+.set-row.time-row { grid-template-columns: 32px 1fr 36px; }
 .set-num { color: var(--muted); font-size: 14px; text-align: center; }
 .set-input {
   background: var(--surface2);
@@ -537,6 +546,7 @@ body.light-mode select.form-input {
 .set-col-labels { gap: 8px; margin-bottom: 4px; display: grid; grid-template-columns: 32px 32px 1fr 1fr 40px 36px; }
 .set-col-labels.cardio-labels { grid-template-columns: 32px 32px 1fr 1fr 1fr 40px 36px; }
 .set-col-labels.stretch-labels { grid-template-columns: 32px 1fr 36px; }
+.set-col-labels.time-labels { grid-template-columns: 32px 1fr 36px; }
 .set-col-label {
   font-size: 11px;
   color: var(--muted);
@@ -905,6 +915,8 @@ body.modal-open {
 .cal-dot.strength { background: var(--accent); }
 .cal-dot.cardio { background: orange; }
 .cal-dot.stretch { background: #64c8ff; }
+.cal-dot.isometric { background: #b47cff; }
+.cal-dot.time { background: #3fd8c2; }
 .cal-streak {
   background: var(--surface);
   border-radius: var(--radius);
@@ -1369,6 +1381,13 @@ body.modal-open {
   /* Keep every control (incl. the long DE "Überspringen" label) inside the box
      on narrow phones — the tap-zone shrinks first, buttons never overflow. */
   overflow: hidden;
+  transition: bottom 0.18s ease;
+}
+/* With the software keyboard open (e.g. editing a card note) the bar would sit
+   behind it — lift it just above the keyboard instead. --kb-inset is kept up to
+   date from visualViewport in ui.js. */
+body.kb-open #restTimerOverlay {
+  bottom: calc(var(--kb-inset, 0px) + 10px);
 }
 #restTimerOverlay #btnReduceRest,
 #restTimerOverlay #btnExtendRest,
@@ -1569,6 +1588,7 @@ body.modal-open {
 .next-ex-chip.cat-cardio { border-color: rgba(255,165,0,0.25); }
 .next-ex-chip.cat-stretch { border-color: rgba(100,200,255,0.25); }
 .next-ex-chip.cat-isometric { border-color: rgba(180,124,255,0.25); }
+.next-ex-chip.cat-time { border-color: rgba(63,216,194,0.25); }
 
 /* ---- PROGRAM FILTER (Progress) ---- */
 .prog-filter-bar {
@@ -3505,6 +3525,25 @@ select {
 .il-head.il-stretch, .il-row.il-stretch {
   grid-template-columns: 20px 1fr 32px 26px;
 }
+/* Isometric rows carry the hold-timer button inside their time cell, so give
+   that cell a fixed slot and let the load column take the rest — otherwise the
+   entered hold time is clipped on narrow phones. */
+.il-head.il-iso, .il-row.il-iso {
+  grid-template-columns: 16px 30px 1fr 76px 32px 28px 22px;
+  gap: 4px;
+}
+/* Time-only sets: #, duration, "take stopwatch time", done, remove */
+.il-head.il-time, .il-row.il-time {
+  grid-template-columns: 20px 1fr 34px 32px 26px;
+}
+.il-grab {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 9px;
+  padding: 8px 0; font-size: 13px; line-height: 1; cursor: pointer;
+  color: var(--accent); font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.il-grab:active { transform: scale(0.92); }
+.il-grab:disabled { opacity: 0.35; cursor: default; }
 .il-head {
   margin-bottom: 4px; padding: 0 2px;
 }
