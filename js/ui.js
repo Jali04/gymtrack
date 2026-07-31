@@ -217,6 +217,31 @@ function toggleTheme() {
   }
 })();
 
+/* ---- Keyboard-aware bottom bars ----
+   The software keyboard shrinks only the VISUAL viewport, so a position:fixed
+   bar anchored to the bottom (the rest timer) stays behind it: tapping
+   "Notizen" focuses the note field and the running rest countdown seemed to
+   vanish / jump. Mirror the keyboard height into a CSS variable so those bars
+   can lift above it (see body.kb-open in styles.css). */
+(function initKeyboardInset() {
+  const vv = window.visualViewport;
+  if (!vv || !document.body) return;
+  let raf = null;
+  const apply = () => {
+    raf = null;
+    const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    // Browser chrome (URL bar) also shrinks the viewport a little — only a
+    // keyboard is this tall, so small insets are ignored.
+    const open  = inset > 90;
+    document.documentElement.style.setProperty('--kb-inset', (open ? inset : 0) + 'px');
+    document.body.classList.toggle('kb-open', open);
+  };
+  const schedule = () => { if (raf == null) raf = requestAnimationFrame(apply); };
+  vv.addEventListener('resize', schedule);
+  vv.addEventListener('scroll', schedule);
+  apply();
+})();
+
 /* ---- Init (called from app.js after DOM ready) ---- */
 function initUIEffects() {
   initRipples();

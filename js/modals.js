@@ -406,6 +406,8 @@ function _registerCustomCategory(category) {
         type = 'cardio';
       } else if (catLower.includes('dehnen') || catLower.includes('stretch') || catLower.includes('yoga') || catLower.includes('flex')) {
         type = 'stretch';
+      } else if (catLower.includes('zeit') || catLower.includes('stopp') || catLower.includes('timer')) {
+        type = 'time';
       }
       db.customCategories[category] = type;
     }

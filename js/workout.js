@@ -25,6 +25,33 @@ function _fmtSwSec(s) {
   return `${m}:${r}`;
 }
 
+/* ---- Time-in-a-set helpers (stopwatch → set) ----
+   Every category except pure strength has a place for a duration in its set
+   row, so a stopped time can be adopted into the set itself instead of only
+   living as the separate green total on the card. */
+function _typeAcceptsSetTime(type) {
+  return type === 'time' || type === 'isometric' || type === 'cardio' || type === 'stretch';
+}
+
+// A fresh, empty set for an exercise type (shared by "+ Satz" and the
+// stopwatch booking, so both produce identically shaped sets).
+function _blankSetFor(type, prev) {
+  if (type === 'cardio')    return { type: prev ? (prev.type || 'N') : 'N', km: null, time: '', pace: '', rpe: null, done: false };
+  if (type === 'stretch')   return { minutes: null, done: false };
+  if (type === 'isometric') return { type: prev ? (prev.type || 'N') : 'N', weight: null, secs: null, rpe: null, done: false };
+  if (type === 'time')      return { secs: null, done: false };
+  return { type: prev ? (prev.type || 'N') : 'N', weight: null, reps: null, rpe: null, done: false };
+}
+
+// Write `sec` seconds into a set, in the unit that type's row actually shows.
+function _writeSecIntoSet(set, type, sec) {
+  const v = Math.max(0, Math.round(Number(sec) || 0));
+  if (type === 'cardio')       set.time    = `${Math.floor(v / 60)}:${String(v % 60).padStart(2, '0')}`;
+  else if (type === 'stretch') set.minutes = Math.round((v / 60) * 10) / 10;
+  else                         set.secs    = v; // time + isometric
+  return set;
+}
+
 function _hiitBadge(s) {
   const label = { tabata: 'Tabata', emom: 'EMOM', amrap: 'AMRAP', custom: 'Custom' };
   const rest  = s.restSec > 0 ? `/${s.restSec}s` : '';
@@ -412,7 +439,12 @@ function renderActiveWorkout() {
 
     const hiits    = e.hiitSets || [];
     const hiitBadges  = hiits.map(_hiitBadge).join('');
-    const timerBadge  = e.timerSec ? `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>` : '';
+    // The stopwatch total is only a card-level badge; for every type that has a
+    // duration in its set row it doubles as a button to move it into a set.
+    const timerBadge  = !e.timerSec ? ''
+      : _typeAcceptsSetTime(type)
+        ? `<button class="set-badge tappable" style="border-color:rgba(200,241,53,0.4);color:var(--accent);" title="${t('swAdoptTitle')}" onclick="openAdoptTimerModal(${i})">⏱ ${_fmtSwSec(e.timerSec)} ↳</button>`
+        : `<span class="set-badge" style="border-color:rgba(200,241,53,0.4);color:var(--accent);">⏱ ${_fmtSwSec(e.timerSec)}</span>`;
     const extraBadges = (hiitBadges || timerBadge)
       ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${hiitBadges}${timerBadge}</div>`
       : '';
@@ -522,7 +554,7 @@ function _parseNum(v) {
 }
 function _setHasData(s) {
   if (!s) return false;
-  if ('secs' in s) return Number(s.secs) > 0; // isometric hold
+  if ('secs' in s) return Number(s.secs) > 0; // isometric hold / time-only duration
   if (s.minutes != null && s.minutes !== '') return Number(s.minutes) > 0;
   if ('km' in s || 'pace' in s || (s.time != null && !('reps' in s))) {
     return Number(s.km) > 0 || !!(s.time && String(s.time).trim());
@@ -556,6 +588,7 @@ function _renderInlineSetEditor(e, i, type) {
   if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else if (type === 'stretch') head = `<div class="il-head il-stretch"><span>#</span><span>${t('colMin')}</span><span>✓</span><span></span></div>`;
   else if (type === 'isometric') head = `<div class="il-head"><span>#</span><span></span><span>${t('colLoad')} (${unitLabel()})</span><span>${t('colHold')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
+  else if (type === 'time') head = `<div class="il-head il-time"><span>#</span><span>${t('colDuration')}</span><span>⏱</span><span>✓</span><span></span></div>`;
   else head = `<div class="il-head"><span>#</span><span></span><span>${unitLabel()}</span><span>${t('reps')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
 
   const titles = { 'N': t('setNormalTitle') || 'Normal', 'W': t('setWarmupTitle') || 'Warmup', 'D': t('setDropTitle') || 'Drop' };
@@ -590,6 +623,16 @@ function _renderInlineSetEditor(e, i, type) {
         <input class="il-in" type="text" inputmode="decimal" value="${fmtWeightNum(s.weight)}" placeholder="${g && g.weight != null ? fmtWeightNum(g.weight) : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
         <input class="il-in" type="text" inputmode="numeric" value="${s.secs != null ? s.secs : ''}" placeholder="${g && g.secs != null ? g.secs : '30'}" onchange="inlineSet(${i},${k},'secs',this.value)">
         <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
+        ${done_cb}${rm}
+      </div>`;
+    } else if (type === 'time') {
+      // Time-only: just the duration, plus a one-tap grab of the running/stopped
+      // workout stopwatch so a timed set never has to be typed by hand.
+      const grabTitle = t('swGrab') || 'Stoppuhr-Zeit übernehmen';
+      return `<div class="il-row il-time${done ? ' done' : ''}">
+        <span class="il-num">${k + 1}</span>
+        <input class="il-in" type="text" inputmode="numeric" value="${s.secs != null && s.secs !== '' ? fmtDurSec(s.secs) : ''}" placeholder="${g && g.secs != null ? fmtDurSec(g.secs) : '0:30'}" onchange="inlineDur(${i},${k},this)">
+        <button class="il-grab" title="${grabTitle}" aria-label="${grabTitle}" ${swElapsed > 0 ? '' : 'disabled'} onclick="grabStopwatchIntoSet(${i},${k})">⏱</button>
         ${done_cb}${rm}
       </div>`;
     }
@@ -741,6 +784,7 @@ function _lastPerfShort(sets, type) {
   if (type === 'cardio') return `${s.km || 0}km ${s.time || ''}`.trim();
   if (type === 'stretch') return `${s.minutes || 0} ${t('colMin')}`;
   if (type === 'isometric') return `${_fmtIsoSet(s)}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
+  if (type === 'time') return `${fmtDurSec(s.secs)}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
   return `${fmtWeight(s.weight != null ? s.weight : 0)} × ${s.reps != null ? s.reps : 0}${sets.length > 1 ? ` (${sets.length}×)` : ''}`;
 }
 
@@ -749,7 +793,7 @@ function inlineSet(i, k, field, value) {
   const s = we.sets[k];
   if (field === 'weight') s.weight = toKg(value); // F2: input is in display unit, stored in kg
   else if (field === 'km' || field === 'minutes') s[field] = _parseNum(value);
-  else if (field === 'secs') { const n = parseInt(String(value).replace(',', '.'), 10); s.secs = isNaN(n) ? null : n; }
+  else if (field === 'secs') s.secs = parseDurSec(value); // accepts "90" and "1:30"
   else if (field === 'reps') { const n = parseInt(String(value).replace(',', '.'), 10); s.reps = isNaN(n) ? null : n; }
   else if (field === 'rpe') {
     const n = _parseNum(value);
@@ -759,6 +803,15 @@ function inlineSet(i, k, field, value) {
   else if (field === 'time') { s.time = String(value).trim(); _recalcInlinePace(i, k); }
   save();
   _updateWorkoutLiveStats();
+}
+
+// Duration cell (time-only sets): parse tolerantly, then echo the normalised
+// m:ss back into the field so what is stored is what is shown.
+function inlineDur(i, k, el) {
+  inlineSet(i, k, 'secs', el.value);
+  const we = _we(i);
+  const s  = we && we.sets[k];
+  el.value = (s && s.secs != null) ? fmtDurSec(s.secs) : '';
 }
 
 function _recalcInlinePace(i, k) {
@@ -801,12 +854,7 @@ function addInlineSet(i) {
   // row shows the matching set from last time as ghost text (placeholder) —
   // e.g. adding set 2 shows last workout's set 2, not a copy of this session's
   // set 1. The ghost comes from _lastPerf() → lpSet(k) in the inline editor.
-  let s;
-  if (type === 'cardio')        s = { type: prev ? (prev.type || 'N') : 'N', km: null, time: '', pace: '', rpe: null, done: false };
-  else if (type === 'stretch')  s = { minutes: null, done: false };
-  else if (type === 'isometric') s = { type: prev ? (prev.type || 'N') : 'N', weight: null, secs: null, rpe: null, done: false };
-  else                          s = { type: prev ? (prev.type || 'N') : 'N', weight: null, reps: null, rpe: null, done: false };
-  we.sets.push(s);
+  we.sets.push(_blankSetFor(type, prev));
   save();
   renderActiveWorkout();
   // Focus the first input of the new row for immediate typing
@@ -1450,37 +1498,165 @@ function _restoreSwState() {
   }
 }
 
+/* ---- Booking a stopped time onto an exercise ----
+   Two entry points share this modal:
+     · the stopwatch "Buchen" button  (state.type = 'sw')
+     · tapping the green ⏱ total on a card (state.type = 'adopt')
+   Both ask the same question — as the exercise's TOTAL time (the green badge)
+   or straight into a set, which is what makes the time show up in the set row
+   like any other logged value. */
+
+function _timerDestDefault(exEntry) {
+  if (!exEntry) return 'total';
+  return _typeAcceptsSetTime(_exType(exEntry)) ? 'new' : 'total';
+}
+
+// Short label for one set of an exercise, used in the destination dropdown.
+function _setPickLabel(set, type, idx) {
+  const nr = `${t('set') || 'Satz'} ${idx + 1}`;
+  let val = '';
+  if (type === 'cardio')        val = [set.km ? `${set.km}km` : '', set.time || ''].filter(Boolean).join(' ');
+  else if (type === 'stretch')  val = (set.minutes != null && set.minutes !== '') ? `${set.minutes} ${t('colMin')}` : '';
+  else if (type === 'isometric') val = _fmtIsoSet(set);
+  else if (type === 'time')     val = (set.secs != null && set.secs !== '') ? fmtDurSec(set.secs) : '';
+  else                          val = [set.weight != null ? fmtWeight(set.weight) : '', set.reps != null ? `× ${set.reps}` : ''].filter(Boolean).join(' ');
+  return val ? `${nr} · ${val}` : nr;
+}
+
+// Destination <select> for a given target entry (or a hint when the type has
+// no per-set time field at all).
+function _buildDestBlock(exEntry, selected, onchange) {
+  const type = _exType(exEntry);
+  if (!exEntry || !_typeAcceptsSetTime(type)) {
+    return `<div style="font-size:12px;color:var(--muted);margin-top:8px;">${t('swBookOnlyTotal')}</div>`;
+  }
+  const sets = Array.isArray(exEntry.sets) ? exEntry.sets : [];
+  let opts = `<option value="new" ${selected === 'new' ? 'selected' : ''}>${t('swBookNewSet')}</option>`;
+  sets.forEach((st, k) => {
+    const v = `set_${k}`;
+    opts += `<option value="${v}" ${selected === v ? 'selected' : ''}>${t('swBookIntoSet')} ${_setPickLabel(st, type, k)}</option>`;
+  });
+  opts += `<option value="total" ${selected === 'total' ? 'selected' : ''}>${t('swBookTotal')}</option>`;
+  return `
+    <div style="font-size:13px;font-weight:600;margin:12px 0 8px;">${t('swBookHow')}</div>
+    <select class="form-input" style="margin-bottom:0;" onchange="${onchange}">${opts}</select>`;
+}
+
+// Resolve the target select value ("workout_2" / "custom_Brust") to a workout
+// entry, creating the free-training placeholder exercise when needed.
+function _resolveTimerTarget(tVal, customName) {
+  const cw = db.currentWorkout;
+  if (!cw) return null;
+  if (tVal.startsWith('workout_')) return cw.exercises[parseInt(tVal.split('_')[1], 10)] || null;
+  if (tVal.startsWith('custom_')) {
+    const cat = tVal.split('_')[1];
+    let entry = cw.exercises.find(e => e.isCustom && e.customCategory === cat && e.customName === customName);
+    if (!entry) {
+      entry = { isCustom: true, customCategory: cat, customName, sets: [] };
+      cw.exercises.push(entry);
+    }
+    return entry;
+  }
+  return null;
+}
+
+// Put `sec` seconds on an entry the way `dest` asks for: 'total' keeps the old
+// green badge behaviour, 'new' appends a set, 'set_<k>' fills an existing one.
+function _bookSecOnEntry(exEntry, dest, sec) {
+  const type = _exType(exEntry);
+  if (!exEntry) return false;
+  if (dest === 'total' || !_typeAcceptsSetTime(type)) {
+    exEntry.timerSec = (exEntry.timerSec || 0) + Math.round(sec);
+    return true;
+  }
+  if (!Array.isArray(exEntry.sets)) exEntry.sets = [];
+  let idx;
+  if (dest === 'new') {
+    exEntry.sets.push(_blankSetFor(type, exEntry.sets[exEntry.sets.length - 1]));
+    idx = exEntry.sets.length - 1;
+  } else {
+    idx = parseInt(String(dest).split('_')[1], 10);
+    if (isNaN(idx) || !exEntry.sets[idx]) return false;
+  }
+  _writeSecIntoSet(exEntry.sets[idx], type, sec);
+  // Cardio pace depends on the time we just wrote.
+  if (type === 'cardio') {
+    const exIdx = db.currentWorkout.exercises.indexOf(exEntry);
+    if (exIdx >= 0) _recalcInlinePace(exIdx, idx);
+  }
+  return true;
+}
+
 function openLogTimerModal() {
   const cw = db.currentWorkout;
   if (!cw) return;
-  document.getElementById('logTimerTimeDisplay').textContent = _fmtSwSec(swElapsed);
-  
+  _setTimerModalHeader(t('swBookTitle') || 'Zeit buchen', t('swBookTime') || 'Gemessene Zeit:', _fmtSwSec(swElapsed));
+
   if (typeof window._timerLogState !== 'undefined') {
     window._timerLogState.type = 'sw';
     window._timerLogState.swTarget = (cw.exercises.length > 0) ? 'workout_0' : 'custom_Brust';
     window._timerLogState.swNote = '';
+    window._timerLogState.swDest = _timerDestDefault(cw.exercises[0]);
     _renderSwLogContent();
   }
-  
+
   openModal('logTimerModal');
+}
+
+function _setTimerModalHeader(title, label, value) {
+  const ttl = document.getElementById('ttlLogTimer');
+  const lbl = document.getElementById('logTimerTimeLabel');
+  const val = document.getElementById('logTimerTimeDisplay');
+  if (ttl) ttl.textContent = title;
+  if (lbl) lbl.textContent = label;
+  if (val) val.textContent = value;
 }
 
 function _renderSwLogContent() {
   const state = window._timerLogState;
   const container = document.getElementById('logTimerContent');
   if (!container) return;
-  
-  let html = `
+
+  // Keep the destination valid whenever the target exercise changes.
+  const entry = _peekTimerTarget(state.swTarget);
+  if (!_destValidFor(entry, state.swDest)) state.swDest = _timerDestDefault(entry);
+
+  const html = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
       <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${t('swBookWhich') || 'Auf welche Übung buchen?'}</div>
-      <select class="form-input" style="margin-bottom:8px;" onchange="window._timerLogState.swTarget=this.value; if(typeof _checkTimerLogTarget === 'function') _checkTimerLogTarget(this.value, 'sw')">
+      <select class="form-input" style="margin-bottom:8px;" onchange="window._timerLogState.swTarget=this.value; window._timerLogState.swDest=null; if(typeof _checkTimerLogTarget === 'function') _checkTimerLogTarget(this.value, 'sw'); _renderSwLogContent();">
          ${typeof _buildTargetOptions === 'function' ? _buildTargetOptions(state.swTarget) : ''}
       </select>
-      <input type="text" class="form-input" style="height:36px;font-size:13px;" placeholder="${t('sessionNotePlaceholder') || 'Anmerkung...'}" value="${state.swNote}" oninput="window._timerLogState.swNote=this.value">
+      <input type="text" class="form-input" style="height:36px;font-size:13px;margin-bottom:0;" placeholder="${t('sessionNotePlaceholder') || 'Anmerkung...'}" value="${state.swNote}" oninput="window._timerLogState.swNote=this.value">
+      ${_buildDestBlock(entry, state.swDest, "window._timerLogState.swDest=this.value")}
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="_saveSwLog()">✓ ${t('save') || 'Speichern'}</button>
   `;
   container.innerHTML = html;
+}
+
+// Look up the selected target WITHOUT creating anything (rendering must not
+// mutate the workout — the entry is only created when the booking is saved).
+function _peekTimerTarget(tVal) {
+  const cw = db.currentWorkout;
+  if (!cw || !tVal) return null;
+  if (tVal.startsWith('workout_')) return cw.exercises[parseInt(tVal.split('_')[1], 10)] || null;
+  if (tVal.startsWith('custom_')) {
+    // A not-yet-created free-training entry: type comes from the category, and
+    // it starts out with no sets.
+    const cat = tVal.split('_')[1];
+    return { isCustom: true, customCategory: cat, sets: [] };
+  }
+  return null;
+}
+
+function _destValidFor(entry, dest) {
+  if (!dest) return false;
+  if (dest === 'total') return true;
+  if (!entry || !_typeAcceptsSetTime(_exType(entry))) return false;
+  if (dest === 'new') return true;
+  const k = parseInt(String(dest).split('_')[1], 10);
+  return !isNaN(k) && Array.isArray(entry.sets) && !!entry.sets[k];
 }
 
 function _saveSwLog() {
@@ -1488,38 +1664,89 @@ function _saveSwLog() {
   if (!cw) return;
   const state = window._timerLogState;
   const tVal = state.swTarget;
-  const tNote = state.swNote.trim();
-  
+  const tNote = (state.swNote || '').trim();
+
   if (tVal === 'gymlab' || tVal === 'newex') {
     showAlert("Bitte ein gültiges Ziel wählen.");
     return;
   }
-  
-  let exEntry = null;
-  if (tVal.startsWith('workout_')) {
-    const idx = parseInt(tVal.split('_')[1]);
-    exEntry = cw.exercises[idx];
-  } else if (tVal.startsWith('custom_')) {
-    const cat = tVal.split('_')[1];
-    const customName = 'Stoppuhr';
-    exEntry = cw.exercises.find(e => e.isCustom && e.customCategory === cat && e.customName === customName);
-    if (!exEntry) {
-      exEntry = { isCustom: true, customCategory: cat, customName: customName, sets: [] };
-      cw.exercises.push(exEntry);
-    }
-  }
-  
+
+  const exEntry = _resolveTimerTarget(tVal, 'Stoppuhr');
   if (exEntry) {
-    if (!exEntry.timerSec) exEntry.timerSec = 0;
-    exEntry.timerSec += swElapsed;
-    if (tNote) exEntry.note = exEntry.note ? exEntry.note + '\\n' + tNote : tNote;
+    _bookSecOnEntry(exEntry, state.swDest || 'total', swElapsed);
+    if (tNote) exEntry.note = exEntry.note ? exEntry.note + '\n' + tNote : tNote;
   }
-  
+
   save();
   closeModal('logTimerModal');
   renderActiveWorkout();
   haptic('success');
   showToast('⏱ ' + _fmtSwSec(swElapsed) + ' ' + (t('swSaved') || 'gespeichert'));
+  swReset(); // the time is booked — don't let it be counted twice
+}
+
+/* ---- Move an already-booked stopwatch total into a set ---- */
+function openAdoptTimerModal(i) {
+  const we = _we(i);
+  if (!we || !we.timerSec) return;
+  window._timerLogState.type      = 'adopt';
+  window._timerLogState.adoptIdx  = i;
+  window._timerLogState.adoptDest = 'new';
+  _setTimerModalHeader(t('swAdoptTitle'), t('swAdoptTime'), _fmtSwSec(we.timerSec));
+  _renderAdoptTimerContent();
+  openModal('logTimerModal');
+  haptic('light');
+}
+
+function _renderAdoptTimerContent() {
+  const container = document.getElementById('logTimerContent');
+  if (!container) return;
+  const state = window._timerLogState;
+  const we = _we(state.adoptIdx);
+  if (!we) { container.innerHTML = ''; return; }
+  if (!_destValidFor(we, state.adoptDest)) state.adoptDest = _timerDestDefault(we);
+
+  container.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:12px;color:var(--muted);">${t('swAdoptHint')}</div>
+      ${_buildDestBlock(we, state.adoptDest, "window._timerLogState.adoptDest=this.value")}
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="_saveAdoptTimer()">✓ ${t('swAdoptBtn')}</button>
+  `;
+}
+
+function _saveAdoptTimer() {
+  const state = window._timerLogState;
+  const we = _we(state.adoptIdx);
+  if (!we || !we.timerSec) { closeModal('logTimerModal'); return; }
+  const sec = we.timerSec;
+  const dest = state.adoptDest || 'new';
+  if (dest === 'total') { closeModal('logTimerModal'); return; } // nothing to move
+  we.timerSec = 0;
+  delete we.timerSec;
+  if (!_bookSecOnEntry(we, dest, sec)) { we.timerSec = sec; return; }
+  save();
+  closeModal('logTimerModal');
+  renderActiveWorkout();
+  haptic('success');
+  showToast(t('swAdopted'));
+}
+
+/* One-tap grab of the workout stopwatch into a single time set. While the watch
+   is still running we only take a snapshot and let it keep going; once it is
+   stopped the value is consumed, so it resets to 0 for the next set. */
+function grabStopwatchIntoSet(i, k) {
+  const we = _we(i);
+  if (!we || !we.sets || !we.sets[k]) return;
+  if (!(swElapsed > 0)) return;
+  const sec = swElapsed;
+  _writeSecIntoSet(we.sets[k], _exType(we), sec);
+  if (_exType(we) === 'cardio') _recalcInlinePace(i, k);
+  if (!swRunning) swReset();
+  save();
+  renderActiveWorkout();
+  haptic('success');
+  showToast('⏱ ' + _fmtSwSec(sec) + ' → ' + (t('set') || 'Satz') + ' ' + (k + 1));
 }
 
 /* ---- Exercise Picker ---- */
@@ -1553,7 +1780,7 @@ function _buildExPickerListHtml(query) {
         freqs.map(e => {
           const cat = e.category;
           const type = getCatType(cat);
-          const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+          const catClass = getCatClass(type);
           const catLabel = t('cats')[cat] || cat;
           return `<div class="exercise-list-item" onclick="addExerciseToWorkout('${e.id}')">
             <div class="exercise-list-name">${e.name} <span class="cat-badge ${catClass}" style="font-size:10px;">${catLabel}</span></div>
@@ -1821,6 +2048,9 @@ function _setupSetColHeaders(type) {
   } else if (type === 'isometric') {
     colLabels.className = 'set-col-labels';
     colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${t('colLoad')} (${unitLabel()})</div><div class="set-col-label">${t('colHold')}</div><div class="set-col-label" id="colLabelRpe">${_rirMode() ? 'RIR' : (t('colRpe') || 'RPE')}</div><div></div>`;
+  } else if (type === 'time') {
+    colLabels.className = 'set-col-labels time-labels';
+    colLabels.innerHTML = `<div></div><div class="set-col-label">${t('colDuration')}</div><div></div>`;
   } else {
     colLabels.className = 'set-col-labels';
     colLabels.innerHTML = `<div></div><div class="set-col-label" id="colLabelType">${t('colType') || 'Typ'}</div><div class="set-col-label">${unitLabel()}</div><div class="set-col-label">${t('reps')}</div><div class="set-col-label" id="colLabelRpe">${_rirMode() ? 'RIR' : (t('colRpe') || 'RPE')}</div><div></div>`;
@@ -1853,6 +2083,8 @@ function addSetRow(data) {
     const typeBtn = last.querySelector('.set-type-btn');
     if (currentExCategory === 'stretch') {
       data = { minutes: inputs[0] ? inputs[0].value : '' };
+    } else if (currentExCategory === 'time') {
+      data = { secs: inputs[0] ? parseDurSec(inputs[0].value) : null };
     } else if (currentExCategory === 'isometric') {
       data = {
         type: typeBtn ? (typeBtn.dataset.type || 'N') : 'N',
@@ -1899,6 +2131,12 @@ function addSetRow(data) {
     const min = data ? data.minutes : '';
     row.innerHTML = `<span class="set-num">${idx}</span>
       <input class="set-input" type="text" placeholder="2" value="${min}" inputmode="decimal"/>
+      ${rmBtn}`;
+  } else if (type === 'time') {
+    row.className = 'set-row time-row';
+    const secs = (data && data.secs != null && data.secs !== '') ? fmtDurSec(data.secs) : '';
+    row.innerHTML = `<span class="set-num">${idx}</span>
+      <input class="set-input" type="text" placeholder="0:30" value="${secs}" inputmode="numeric"/>
       ${rmBtn}`;
   } else if (type === 'isometric') {
     row.className = 'set-row';
@@ -1968,9 +2206,12 @@ function saveSets() {
     } else if (type === 'stretch') {
       const minutes = pf(inputs[0]);
       if (minutes > 0) sets.push({ minutes });
+    } else if (type === 'time') {
+      const secs = parseDurSec(inputs[0].value);
+      if (secs != null && secs > 0) sets.push({ secs });
     } else if (type === 'isometric') {
-      const weight = toKg(inputs[0].value), secs = parseInt(String(inputs[1].value).replace(',', '.'), 10);
-      if (!isNaN(secs) && secs > 0) sets.push({ type: sType, rpe, weight: weight || 0, secs });
+      const weight = toKg(inputs[0].value), secs = parseDurSec(inputs[1].value);
+      if (secs != null && secs > 0) sets.push({ type: sType, rpe, weight: weight || 0, secs });
     } else {
       const weight = toKg(inputs[0].value), reps = parseInt(String(inputs[1].value).replace(',', '.'), 10); // F2: store kg
       if (weight != null && !isNaN(reps) && reps > 0) sets.push({ type: sType, rpe, weight, reps });
@@ -2059,7 +2300,7 @@ function _showNextExSuggestions() {
     <div class="next-ex-chips">
       ${suggestions.map(e => {
         const type = getCatType(e.category);
-        const catClass = type === 'cardio' ? 'cat-cardio' : type === 'stretch' ? 'cat-stretch' : 'cat-strength';
+        const catClass = getCatClass(type);
         return `<button class="next-ex-chip ${catClass}" onclick="addExerciseToWorkout('${e.id}');this.parentElement.parentElement.remove();">${e.name}</button>`;
       }).join('')}
     </div>
@@ -2206,7 +2447,7 @@ window.updateGlobalExNote = function(exId, val) {
   const ex = db.exercises.find(e => e.id === exId);
   if (ex) {
     ex.notes = val;
-    save();
+    _scheduleNoteSave(); // buffered like session notes — see flushNoteSave()
   }
 };
 
@@ -2431,16 +2672,38 @@ function toggleCardNote(i) {
   if (!open) {
     const ta = ed.querySelector('textarea');
     if (ta) { ta.focus(); const v = ta.value; ta.value = ''; ta.value = v; } // caret to end
+  } else {
+    flushNoteSave();
   }
   haptic('light');
 }
+
+/* Notes used to call save() on every keystroke, and save() serialises the whole
+   DB and runs cloud change-detection over it — on a phone that is tens of
+   milliseconds per character, which visibly stutters the running rest
+   countdown while you type. The value lands in the model immediately (so any
+   re-render shows it); only the persist is buffered, and flushed as soon as
+   typing stops or the app goes away. */
+let _noteSaveTimer = null;
+function _scheduleNoteSave() {
+  clearTimeout(_noteSaveTimer);
+  _noteSaveTimer = setTimeout(() => { _noteSaveTimer = null; save(); }, 600);
+}
+function flushNoteSave() {
+  if (_noteSaveTimer == null) return;
+  clearTimeout(_noteSaveTimer);
+  _noteSaveTimer = null;
+  save();
+}
+window.addEventListener('pagehide', flushNoteSave);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushNoteSave(); });
 
 // Persist the note without re-rendering, so the keyboard/caret stay put (Task 7).
 function _setCardNote(i, val) {
   const we = _we(i);
   if (!we) return;
   we.note = val;
-  save();
+  _scheduleNoteSave();
 }
 
 let _pendingTemplateUpdate = null;

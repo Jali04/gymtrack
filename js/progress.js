@@ -629,6 +629,23 @@ function _buildExCard(ex, type, locale, catClass) {
       else if (diff < 0) progressTag = `<span class="progress-tag down">↓ ${diff}${t('shorterStretch')}</span>`;
       else               progressTag = `<span class="progress-tag same">${t('same')}</span>`;
     }
+  } else if (type === 'time') {
+    // Time-only exercises: the session's total stopped time is the headline.
+    const totalOf = e => (e.sets || []).reduce((a, s) => a + (Number(s.secs) || 0), 0) + (Number(e.timerSec) || 0);
+    sparkValues = sessions.map(w => {
+      const e = w.exercises.find(x => x.exId === ex.id);
+      return e ? totalOf(e) : 0;
+    });
+    const total = totalOf(lastEntry);
+    mainValue = fmtDurSec(total); mainUnit = t('colDuration');
+    if (workoutsWithEx.length >= 2) {
+      const prev      = workoutsWithEx[workoutsWithEx.length - 2];
+      const prevTotal = totalOf(prev.exercises.find(e => e.exId === ex.id));
+      const diff      = total - prevTotal;
+      if (diff > 0)      progressTag = `<span class="progress-tag up">↑ +${fmtDurSec(diff)}</span>`;
+      else if (diff < 0) progressTag = `<span class="progress-tag down">↓ −${fmtDurSec(-diff)}</span>`;
+      else               progressTag = `<span class="progress-tag same">${t('same')}</span>`;
+    }
   } else if (type === 'isometric') {
     sparkValues = sessions.map(w => {
       const e = w.exercises.find(x => x.exId === ex.id);
@@ -674,6 +691,8 @@ function _buildExCard(ex, type, locale, catClass) {
     setsHtml = lastEntry.sets.map(s => `<span class="set-badge">${s.minutes} ${t('colMin')}</span>`).join('');
   } else if (type === 'isometric') {
     setsHtml = lastEntry.sets.map(s => `<span class="set-badge">${_fmtIsoSet(s)}</span>`).join('');
+  } else if (type === 'time') {
+    setsHtml = lastEntry.sets.map(s => `<span class="set-badge">⏱ ${fmtDurSec(s.secs)}</span>`).join('');
   } else {
     const prevSets = workoutsWithEx.length >= 2
       ? workoutsWithEx[workoutsWithEx.length - 2].exercises.find(e => e.exId === ex.id).sets
@@ -722,7 +741,8 @@ function _buildSparkline(values, type) {
   if (values.length < 2) return '';
   const max = Math.max(...values);
   if (max === 0) return '';
-  const color = type === 'cardio' ? 'orange' : type === 'stretch' ? '#64c8ff' : 'var(--accent)';
+  const color = type === 'cardio' ? 'orange' : type === 'stretch' ? '#64c8ff'
+              : type === 'isometric' ? '#b47cff' : type === 'time' ? '#3fd8c2' : 'var(--accent)';
   const barW = 8, gap = 3, h = 40;
   const bars = values.map((v, i) => {
     const bh = Math.max(3, Math.round((v / max) * h));
@@ -784,6 +804,14 @@ const EX_GRAPH_METRICS = {
   stretch: [
     { key: 'time', de: 'Zeit gesamt', en: 'Total time', unit: () => 'min',
       val: e => +_exEntryMinutes(e).toFixed(1) }
+  ],
+  time: [
+    { key: 'time', de: 'Zeit gesamt', en: 'Total time', unit: () => 'min',
+      val: e => +_exEntryMinutes(e).toFixed(1) },
+    { key: 'longest', de: 'Längster Satz', en: 'Longest set', unit: () => 's',
+      val: e => { let v = 0; (e.sets || []).forEach(s => { if (Number(s.secs) > v) v = Number(s.secs); }); return v; } },
+    { key: 'sets', de: 'Sätze', en: 'Sets', unit: () => '',
+      val: e => (e.sets || []).length }
   ],
   isometric: [
     { key: 'hold', de: 'Max. Haltezeit', en: 'Max hold', unit: () => 's',
@@ -860,7 +888,8 @@ function _renderExGraph() {
   const drawPoints = dataPoints.slice(-12);
   const unit   = metric.unit ? metric.unit() : '';
   const points = drawPoints.map(d => ({ x: `${d.date.getDate()}.${d.date.getMonth() + 1}.`, y: d.y }));
-  const color  = type === 'cardio' ? 'orange' : type === 'stretch' ? '#64c8ff' : type === 'isometric' ? '#b47cff' : 'var(--accent)';
+  const color  = type === 'cardio' ? 'orange' : type === 'stretch' ? '#64c8ff'
+               : type === 'isometric' ? '#b47cff' : type === 'time' ? '#3fd8c2' : 'var(--accent)';
   chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color, unit });
 }
 

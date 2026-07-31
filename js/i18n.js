@@ -28,9 +28,9 @@ const TR = {
     name: 'Name', category: 'Kategorie', save: 'Speichern', cancel: 'Abbrechen',
     deleteExercise: 'Übung löschen', namePlaceholder: 'z.B. Bankdrücken',
     cats: { Brust: 'Brust', Rücken: 'Rücken', Schultern: 'Schultern', Arme: 'Arme', Beine: 'Beine', Core: 'Core', Cardio: 'Cardio', Dehnen: 'Dehnen', new_custom: '+ Neue Kategorie...' },
-    catHint: { strength: '📊 Kraft: kg & Wiederholungen', cardio: '🏃 Cardio: Distanz (km) & Zeit → Tempo wird berechnet', stretch: '🧘 Dehnen: Dauer in Minuten', isometric: '🧱 Isometrie: Last (kg) & Haltezeit (Sekunden)' },
+    catHint: { strength: '📊 Kraft: kg & Wiederholungen', cardio: '🏃 Cardio: Distanz (km) & Zeit → Tempo wird berechnet', stretch: '🧘 Dehnen: Dauer in Minuten', isometric: '🧱 Isometrie: Last (kg) & Haltezeit (Sekunden)', time: '⏱ Zeit: nur die Dauer pro Satz (mm:ss) – direkt aus der Stoppuhr übernehmbar' },
     lastPerf: 'Letztes Mal', kg: 'kg', reps: 'Wdh', addSet: '+ Satz', saveSets: 'Speichern',
-    colKm: 'km', colTime: 'Zeit', colPace: 'Tempo', colMin: 'Min', colLoad: 'Last', colHold: 'Zeit (s)',
+    colKm: 'km', colTime: 'Zeit', colPace: 'Tempo', colMin: 'Min', colLoad: 'Last', colHold: 'Zeit (s)', colDuration: 'Dauer',
     exportTitle: 'Daten exportieren', exportDesc: 'Code kopieren, als Datei herunterladen oder direkt zu Notizen teilen.',
     copyCode: '📋 Code kopieren', copied: '✓ Kopiert!', close: 'Schließen',
     exportFileSuccess: '✓ Datei heruntergeladen!', exportFileError: 'Fehler beim Download.',
@@ -84,6 +84,13 @@ const TR = {
     swLabel: 'Stoppuhr', swBook: 'Buchen', swBookTitle: 'Zeit buchen',
     swBookTime: 'Gemessene Zeit:', swBookWhich: 'Auf welche Übung buchen?',
     swNoEx: 'Zuerst eine Übung hinzufügen!', swSaved: 'gespeichert',
+    swBookHow: 'Wie buchen?', swBookTotal: '⏱ Als Gesamtzeit der Übung',
+    swBookNewSet: '➕ Als neuer Satz', swBookIntoSet: '↳ In',
+    swBookOnlyTotal: 'Kraft-Übungen haben kein Zeitfeld – die Zeit wird als Gesamtzeit der Übung gebucht.',
+    swAdoptTitle: 'Zeit übernehmen', swAdoptTime: 'Gebuchte Zeit:',
+    swAdoptHint: 'Übernimm die gestoppte Zeit in einen Satz dieser Übung.',
+    swAdopted: '✓ In Satz übernommen', swAdoptBtn: 'Übernehmen',
+    swGrab: 'Stoppuhr-Zeit übernehmen',
     // Timer Targets
     targetCurrentEx: 'Aktuelle Übungen', targetMuscleGroup: 'Muskelgruppe (Freies Training)',
     targetGymLab: 'Aus GymLab wählen', targetNewEx: 'Neue Übung erstellen',
@@ -206,9 +213,9 @@ const TR = {
     name: 'Name', category: 'Category', save: 'Save', cancel: 'Cancel',
     deleteExercise: 'Delete Exercise', namePlaceholder: 'e.g. Bench Press',
     cats: { Brust: 'Chest', Rücken: 'Back', Schultern: 'Shoulders', Arme: 'Arms', Beine: 'Legs', Core: 'Core', Cardio: 'Cardio', Dehnen: 'Stretching', new_custom: '+ New Category...' },
-    catHint: { strength: '📊 Strength: kg & reps', cardio: '🏃 Cardio: distance (km) & time → pace calculated', stretch: '🧘 Stretching: duration in minutes', isometric: '🧱 Isometric: load (kg) & hold time (seconds)' },
+    catHint: { strength: '📊 Strength: kg & reps', cardio: '🏃 Cardio: distance (km) & time → pace calculated', stretch: '🧘 Stretching: duration in minutes', isometric: '🧱 Isometric: load (kg) & hold time (seconds)', time: '⏱ Time: just the duration per set (mm:ss) – can be taken straight from the stopwatch' },
     lastPerf: 'Last Time', kg: 'kg', reps: 'Reps', addSet: '+ Set', saveSets: 'Save',
-    colKm: 'km', colTime: 'Time', colPace: 'Pace', colMin: 'Min', colLoad: 'Load', colHold: 'Time (s)',
+    colKm: 'km', colTime: 'Time', colPace: 'Pace', colMin: 'Min', colLoad: 'Load', colHold: 'Time (s)', colDuration: 'Duration',
     exportTitle: 'Export Data', exportDesc: 'Copy code, download as file, or share directly to Notes.',
     copyCode: '📋 Copy Code', copied: '✓ Copied!', close: 'Close',
     exportFileSuccess: '✓ File downloaded!', exportFileError: 'Download failed.',
@@ -262,6 +269,13 @@ const TR = {
     swLabel: 'Stopwatch', swBook: 'Log', swBookTitle: 'Log Time',
     swBookTime: 'Measured time:', swBookWhich: 'Log to which exercise?',
     swNoEx: 'Add an exercise first!', swSaved: 'saved',
+    swBookHow: 'How to log it?', swBookTotal: '⏱ As the exercise total time',
+    swBookNewSet: '➕ As a new set', swBookIntoSet: '↳ Into',
+    swBookOnlyTotal: 'Strength exercises have no time field – the time is logged as the exercise total.',
+    swAdoptTitle: 'Move time into a set', swAdoptTime: 'Logged time:',
+    swAdoptHint: 'Move the stopwatch time into a set of this exercise.',
+    swAdopted: '✓ Moved into set', swAdoptBtn: 'Move',
+    swGrab: 'Take stopwatch time',
     // Timer Targets
     targetCurrentEx: 'Current Exercises', targetMuscleGroup: 'Muscle Group (Free Training)',
     targetGymLab: 'Choose from GymLab', targetNewEx: 'Create New Exercise',
@@ -513,6 +527,7 @@ function applyTranslations() {
   // Workout Stopwatch
   s('swLabel', 'swLabel'); s('swLogBtn', 'swBook');
   s('ttlLogTimer', 'swBookTitle'); s('logTimerWhich', 'swBookWhich');
+  s('logTimerTimeLabel', 'swBookTime');
 
   // Date & lang button
   const now = new Date();
