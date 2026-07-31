@@ -46,6 +46,7 @@ function _blankSetFor(type, prev) {
 // Write `sec` seconds into a set, in the unit that type's row actually shows.
 function _writeSecIntoSet(set, type, sec) {
   const v = Math.max(0, Math.round(Number(sec) || 0));
+  delete set._holdStart; // an overwritten set must not keep counting
   if (type === 'cardio')       set.time    = `${Math.floor(v / 60)}:${String(v % 60).padStart(2, '0')}`;
   else if (type === 'stretch') set.minutes = Math.round((v / 60) * 10) / 10;
   else                         set.secs    = v; // time + isometric
@@ -535,6 +536,7 @@ function renderActiveWorkout() {
 
   initRipples();
   _updateWorkoutLiveStats();
+  _ensureHoldTicker(); // keep any running per-set hold timer live after a re-render
   if (typeof refreshWakeLock === 'function') refreshWakeLock();
 }
 
@@ -587,7 +589,7 @@ function _renderInlineSetEditor(e, i, type) {
   let head;
   if (type === 'cardio') head = `<div class="il-head il-cardio"><span>#</span><span></span><span>${t('colKm')}</span><span>${t('colTime')}</span><span>${t('colPace')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else if (type === 'stretch') head = `<div class="il-head il-stretch"><span>#</span><span>${t('colMin')}</span><span>✓</span><span></span></div>`;
-  else if (type === 'isometric') head = `<div class="il-head"><span>#</span><span></span><span>${t('colLoad')} (${unitLabel()})</span><span>${t('colHold')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
+  else if (type === 'isometric') head = `<div class="il-head il-iso"><span>#</span><span></span><span>${t('colLoad')} (${unitLabel()})</span><span>${t('colHold')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
   else if (type === 'time') head = `<div class="il-head il-time"><span>#</span><span>${t('colDuration')}</span><span>⏱</span><span>✓</span><span></span></div>`;
   else head = `<div class="il-head"><span>#</span><span></span><span>${unitLabel()}</span><span>${t('reps')}</span><span>${rpeLbl}</span><span>✓</span><span></span></div>`;
 
@@ -613,25 +615,25 @@ function _renderInlineSetEditor(e, i, type) {
     } else if (type === 'stretch') {
       return `<div class="il-row il-stretch${done ? ' done' : ''}">
         <span class="il-num">${k + 1}</span>
-        <input class="il-in" type="text" inputmode="decimal" value="${s.minutes != null ? s.minutes : ''}" placeholder="${g && g.minutes != null ? g.minutes : '2'}" onchange="inlineSet(${i},${k},'minutes',this.value)">
+        ${_holdCell(i, k, s, g, type, 'minutes', '2')}
         ${done_cb}${rm}
       </div>`;
     } else if (type === 'isometric') {
-      return `<div class="il-row${done ? ' done' : ''}">
+      return `<div class="il-row il-iso${done ? ' done' : ''}">
         <span class="il-num">${k + 1}</span>
         ${typeBtn(s.type || 'N')}
         <input class="il-in" type="text" inputmode="decimal" value="${fmtWeightNum(s.weight)}" placeholder="${g && g.weight != null ? fmtWeightNum(g.weight) : '0'}" onchange="inlineSet(${i},${k},'weight',this.value)">
-        <input class="il-in" type="text" inputmode="numeric" value="${s.secs != null ? s.secs : ''}" placeholder="${g && g.secs != null ? g.secs : '30'}" onchange="inlineSet(${i},${k},'secs',this.value)">
+        ${_holdCell(i, k, s, g, type, 'secs', '30')}
         <input class="il-in il-rpe" type="text" inputmode="numeric" value="${_rpeToInput(s.rpe)}" placeholder="–" onchange="inlineSet(${i},${k},'rpe',this.value)">
         ${done_cb}${rm}
       </div>`;
     } else if (type === 'time') {
-      // Time-only: just the duration, plus a one-tap grab of the running/stopped
-      // workout stopwatch so a timed set never has to be typed by hand.
+      // Time-only: the duration with its own ▶/■ timer, plus a one-tap grab of
+      // the workout stopwatch so an already-measured time needn't be retyped.
       const grabTitle = t('swGrab') || 'Stoppuhr-Zeit übernehmen';
       return `<div class="il-row il-time${done ? ' done' : ''}">
         <span class="il-num">${k + 1}</span>
-        <input class="il-in" type="text" inputmode="numeric" value="${s.secs != null && s.secs !== '' ? fmtDurSec(s.secs) : ''}" placeholder="${g && g.secs != null ? fmtDurSec(g.secs) : '0:30'}" onchange="inlineDur(${i},${k},this)">
+        ${_holdCell(i, k, s, g, type, 'secs', '0:30')}
         <button class="il-grab" title="${grabTitle}" aria-label="${grabTitle}" ${swElapsed > 0 ? '' : 'disabled'} onclick="grabStopwatchIntoSet(${i},${k})">⏱</button>
         ${done_cb}${rm}
       </div>`;
@@ -832,6 +834,129 @@ function _recalcInlinePace(i, k) {
   if (el) el.textContent = pace;
 }
 
+/* ---- Per-set hold timer (time-based exercises) ----
+   For isometric holds and stretches the duration IS the metric, so let the
+   user time it right in the set row instead of using the separate stopwatch and
+   copying the value over. The source of truth is a wall-clock start timestamp
+   stored on the set (`_holdStart`): it is persisted via save() and, because it
+   is on db.currentWorkout (never synced), it stays device-local. Wall-clock
+   based means the count keeps running correctly across a screen lock or an app
+   restart, exactly like the workout stopwatch. */
+let _holdInterval = null;
+
+// Live seconds a set has been held (0 if it isn't running).
+function _holdElapsed(s) {
+  return s && s._holdStart ? Math.max(0, Math.floor((Date.now() - s._holdStart) / 1000)) : 0;
+}
+
+// Value to show in the row's field for a running set, in that type's unit.
+function _holdDisplay(type, elapsedSec) {
+  if (type === 'stretch') return (elapsedSec / 60).toFixed(2);
+  if (type === 'time')    return fmtDurSec(elapsedSec); // time-only rows read m:ss
+  return String(elapsedSec);
+}
+
+// A stored field value the way its row shows it.
+function _holdFieldFmt(type, v) {
+  if (v == null || v === '') return '';
+  return type === 'time' ? fmtDurSec(v) : String(v);
+}
+
+function toggleHoldTimer(i, k) {
+  const we = _we(i); if (!we || !we.sets[k]) return;
+  const s = we.sets[k];
+  // Commit & release any focused field so renderActiveWorkout's typing guard
+  // doesn't skip the re-render (blur fires the input's onchange → save).
+  const ae = document.activeElement;
+  if (ae && typeof ae.blur === 'function') ae.blur();
+  if (s._holdStart) {
+    _stopHold(we, s);          // running → stop and capture the time
+    save();
+    renderActiveWorkout();
+    haptic('success');
+    const val = _exType(we) === 'stretch' ? `${s.minutes} ${t('colMin')}` : `${s.secs}s`;
+    showToast(`⏱ ${val}`);
+  } else {
+    _stopAllHolds();           // only one hold runs at a time
+    s._holdStart = Date.now();
+    s.done = false;
+    save();
+    renderActiveWorkout();
+    _ensureHoldTicker();
+    haptic('light');
+  }
+}
+
+// Freeze a running set: write elapsed into the right field, mark it done.
+function _stopHold(we, s) {
+  if (!s || !s._holdStart) return;
+  const elapsed = Math.max(1, Math.round((Date.now() - s._holdStart) / 1000));
+  if (_exType(we) === 'stretch') s.minutes = +(elapsed / 60).toFixed(2);
+  else s.secs = elapsed; // isometric (and any other second-based hold)
+  delete s._holdStart;
+  s.done = true;
+}
+
+// Stop every running hold in the workout (used before starting a new one and
+// before finishing/canceling a workout so no timer leaks into history).
+function _stopAllHolds() {
+  const cw = db.currentWorkout;
+  if (!cw || !cw.exercises) return;
+  let changed = false;
+  cw.exercises.forEach(e => (e.sets || []).forEach(s => {
+    if (s._holdStart) { _stopHold(e, s); changed = true; }
+  }));
+  if (changed) save();
+  return changed;
+}
+
+function _ensureHoldTicker() {
+  const cw = db.currentWorkout;
+  const anyRunning = !!(cw && cw.exercises && cw.exercises.some(e => (e.sets || []).some(s => s._holdStart)));
+  if (anyRunning && !_holdInterval) {
+    _holdInterval = setInterval(_holdTick, 250);
+  } else if (!anyRunning && _holdInterval) {
+    clearInterval(_holdInterval); _holdInterval = null;
+  }
+}
+
+// Update just the running row's field (and its done-badge live stat) without a
+// full re-render, so typing elsewhere isn't disturbed.
+function _holdTick() {
+  const cw = db.currentWorkout;
+  let any = false;
+  if (cw && cw.exercises) {
+    cw.exercises.forEach((e, i) => {
+      const type = _exType(e);
+      (e.sets || []).forEach((s, k) => {
+        if (!s._holdStart) return;
+        any = true;
+        const el = document.getElementById(`hold-in-${i}-${k}`);
+        if (el) el.value = _holdDisplay(type, _holdElapsed(s));
+      });
+    });
+  }
+  if (!any && _holdInterval) { clearInterval(_holdInterval); _holdInterval = null; }
+}
+
+// Renders the timer button + value field for one duration set, inside a single
+// grid cell. `field` is 'secs' (isometric) or 'minutes' (stretch).
+function _holdCell(i, k, s, g, type, field, placeholder) {
+  const running = !!s._holdStart;
+  const ghost   = (g && g[field] != null) ? _holdFieldFmt(type, g[field]) : placeholder;
+  const val     = running ? _holdDisplay(type, _holdElapsed(s))
+                          : _holdFieldFmt(type, s[field]);
+  const inMode  = field === 'minutes' ? 'decimal' : 'numeric';
+  // Time-only rows go through inlineDur so "90" / "1:30" both normalise to m:ss.
+  const onChange = type === 'time'
+    ? `inlineDur(${i},${k},this)`
+    : `inlineSet(${i},${k},'${field}',this.value)`;
+  return `<span class="il-hold">
+    <input id="hold-in-${i}-${k}" class="il-in il-hold-in" type="text" inputmode="${inMode}" ${running ? 'readonly' : ''} value="${val}" placeholder="${ghost}" onchange="${onChange}">
+    <button type="button" class="il-hold-btn${running ? ' running' : ''}" onclick="toggleHoldTimer(${i},${k})" title="${t('holdTimer') || 'Zeit stoppen'}" aria-label="${t('holdTimer') || 'Zeit stoppen'}">${running ? '■' : '▶'}</button>
+  </span>`;
+}
+
 function _cycleInlineSetType(i, k, btn) {
   const we = _we(i); if (!we || !we.sets[k]) return;
   const types = ['N', 'W', 'D'];
@@ -1006,6 +1131,7 @@ function _forgottenFinish() {
   closeModal('forgottenWorkoutModal');
   const cw = db.currentWorkout;
   if (!cw) return;
+  _stopAllHolds(); // same as finishWorkout: no running timer may reach history
   cw.exercises.forEach(e => { if (Array.isArray(e.sets)) e.sets = e.sets.filter(_setHasData); });
   const hasEntries = e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0);
 
@@ -1171,6 +1297,7 @@ function unlinkSuperset(idx, silent) {
 async function finishWorkout() {
   const cw = db.currentWorkout;
   if (!cw) return;
+  _stopAllHolds(); // freeze any still-running per-set hold timer into its value
   // Drop empty inline set rows the user never filled in before evaluating entries.
   cw.exercises.forEach(e => { if (Array.isArray(e.sets)) e.sets = e.sets.filter(_setHasData); });
   const hasEntries = e => e.sets.length > 0 || e.timerSec > 0 || (e.hiitSets && e.hiitSets.length > 0);
@@ -1380,6 +1507,7 @@ function closeWorkoutSummary() {
 async function cancelWorkout() {
   if (!await showConfirm(t('confirmCancelWorkout'), { confirmText: t('cancelWorkout') })) return;
   db.currentWorkout = null;
+  if (_holdInterval) { clearInterval(_holdInterval); _holdInterval = null; }
   stopTimer();
   swReset();
   skipRestTimer();
