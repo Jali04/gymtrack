@@ -455,7 +455,60 @@ function renderMilestones() {
     </div>
   `).join('');
 }
-let _progressTemplateFilter = null;
+/* ---- "Tag" (training day) scoping for the exercise progress -------------
+   A day is the template a workout was started from. The same exercise can sit
+   on several days (e.g. Bankdrücken on "Push A" fresh and on "Push B" after
+   pressing), and those sessions are not comparable — so every trend, sparkline
+   and graph below only ever looks at one day at a time. */
+const PROG_FREE_DAY = '__free__';
+
+function _woDayKey(w) {
+  return (w && w.templateId != null && w.templateId !== '') ? String(w.templateId) : PROG_FREE_DAY;
+}
+
+function _progDayLabel(key) {
+  if (key === PROG_FREE_DAY) return lang === 'en' ? 'Free training' : 'Freies Training';
+  const tmpl = (db.templates || []).find(x => String(x.id) === key);
+  if (tmpl) return tmpl.name;
+  // Template was deleted — the workout still carries its name (see db.js).
+  const w = (db.workouts || []).find(x => _woDayKey(x) === key && x.templateName);
+  return w ? w.templateName : (lang === 'en' ? 'Deleted template' : 'Gelöschte Vorlage');
+}
+
+// Every day that can be picked in the filter: all templates (even brand-new
+// ones without a single logged session yet) plus deleted-but-logged days and
+// the free-training bucket.
+function _progressDayOptions() {
+  const counts = {};
+  (db.workouts || []).forEach(w => { const k = _woDayKey(w); counts[k] = (counts[k] || 0) + 1; });
+
+  const opts = (db.templates || []).map(tmpl => ({
+    id: String(tmpl.id), label: tmpl.name, count: counts[String(tmpl.id)] || 0
+  }));
+  const known = new Set(opts.map(o => o.id));
+  Object.keys(counts).forEach(k => {
+    if (k === PROG_FREE_DAY || known.has(k)) return;
+    opts.push({ id: k, label: _progDayLabel(k), count: counts[k] });
+  });
+  if (counts[PROG_FREE_DAY]) {
+    opts.push({ id: PROG_FREE_DAY, label: _progDayLabel(PROG_FREE_DAY), count: counts[PROG_FREE_DAY] });
+  }
+  return opts;
+}
+
+const PROG_DAY_LS_KEY = 'gymtrack_prog_day_filter';
+let _progressTemplateFilter = (() => {
+  try { return localStorage.getItem(PROG_DAY_LS_KEY) || null; } catch (e) { return null; }
+})();
+
+window.setProgressDayFilter = function(value) {
+  _progressTemplateFilter = value || null;
+  try {
+    if (_progressTemplateFilter) localStorage.setItem(PROG_DAY_LS_KEY, _progressTemplateFilter);
+    else localStorage.removeItem(PROG_DAY_LS_KEY);
+  } catch (e) {}
+  renderExerciseProgressTracker();
+};
 
 // C5: this-week training volume grouped by muscle group (exercise category).
 function renderWeeklyVolume() {
@@ -513,22 +566,48 @@ function renderExerciseProgressTracker() {
   renderWeeklyVolume();
   const progList  = document.getElementById('exerciseProgressTracker');
   if(!progList) return;
-  const activeExs = db.exercises.filter(ex => db.workouts.some(w => w.exercises.some(e => e.exId === ex.id)));
+  const de = lang !== 'en';
 
-  // Build template filter dropdown
+  // Build the day filter. It lists every template, so a day you just created
+  // shows up immediately instead of only after its first logged session.
+  const dayOptions = _progressDayOptions();
+  if (_progressTemplateFilter && !dayOptions.some(o => o.id === _progressTemplateFilter)) {
+    _progressTemplateFilter = null; // day was deleted meanwhile
+    try { localStorage.removeItem(PROG_DAY_LS_KEY); } catch (e) {}
+  }
+  const activeDay = _progressTemplateFilter
+    ? dayOptions.find(o => o.id === _progressTemplateFilter)
+    : null;
+
   let filterHtml = '';
-  const templatesWithWorkouts = (db.templates || []).filter(t => db.workouts.some(w => w.templateId === t.id));
-  if (templatesWithWorkouts.length > 0) {
+  if (dayOptions.length > 0) {
+    const noData = de ? 'noch keine Daten' : 'no data yet';
+    const hint = activeDay
+      ? (de ? `Nur Trainings von „${activeDay.label}“.` : `Only sessions from "${activeDay.label}".`)
+      : (de ? 'Jede Übung wird pro Tag verglichen — mit dem letzten Mal an genau diesem Tag.'
+            : 'Every exercise is compared per day — against the last time on that same day.');
     filterHtml = `<div class="prog-filter-bar">
-      <select class="form-input prog-filter-select" id="progressTemplateFilter" onchange="_progressTemplateFilter=this.value||null;renderExerciseProgressTracker();">
-        <option value="">Alle Vorlagen (Gesamtfortschritt)</option>
-        ${templatesWithWorkouts.map(t => `<option value="${t.id}" ${_progressTemplateFilter === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+      <select class="form-input prog-filter-select" id="progressTemplateFilter" onchange="setProgressDayFilter(this.value)">
+        <option value="">${de ? 'Alle Tage' : 'All days'}</option>
+        ${dayOptions.map(o => `<option value="${o.id}"${_progressTemplateFilter === o.id ? ' selected' : ''}>${o.label} ${o.count ? `(${o.count}×)` : `— ${noData}`}</option>`).join('')}
       </select>
+      <div class="prog-filter-hint">${hint}</div>
     </div>`;
   }
 
+  const scopedWorkouts = _progressTemplateFilter
+    ? db.workouts.filter(w => _woDayKey(w) === _progressTemplateFilter)
+    : db.workouts;
+  const activeExs = db.exercises.filter(ex => scopedWorkouts.some(w => (w.exercises || []).some(e => e.exId === ex.id)));
+
+  const emptyHtml = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📈</div><div class="empty-text">${
+    activeDay
+      ? (de ? `Für „${activeDay.label}“ ist noch kein Training geloggt.` : `No session logged for "${activeDay.label}" yet.`)
+      : (de ? 'Noch keine Trainingsdaten für Übungen verfügbar.' : 'No exercise training data yet.')
+  }</div></div>`;
+
   if (activeExs.length === 0) {
-    progList.innerHTML = filterHtml + `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📈</div><div class="empty-text">Noch keine Trainingsdaten für Übungen verfügbar.</div></div>`;
+    progList.innerHTML = filterHtml + emptyHtml;
     return;
   }
 
@@ -542,28 +621,30 @@ function renderExerciseProgressTracker() {
   
   const locale = lang === 'de' ? 'de-DE' : 'en-GB';
 
-  progList.innerHTML = filterHtml + cats.map(cat => {
+  const catsHtml = cats.map(cat => {
     const type     = getCatType(cat);
     const catClass = getCatClass(type);
     const catLabel = t('cats')[cat] || cat;
     const exs      = activeExs.filter(e => e.category === cat);
     // Sort exercises alphabetically
     exs.sort((a,b) => a.name.localeCompare(b.name));
-    
+
     const catId    = 'progCat_' + cat.replace(/[^a-z]/gi, '');
     const isOpen   = localStorage.getItem('gymtrack_acc_' + cat) === 'true';
 
-    const exCards = exs.map(ex => _buildExCard(ex, type, locale, catClass)).filter(Boolean).join('');
-    if (!exCards) return '';
+    const cards = exs.map(ex => _buildExCard(ex, type, locale, catClass)).filter(Boolean);
+    if (!cards.length) return '';
     return `<div class="prog-cat-group">
       <div class="prog-cat-header" onclick="toggleProgCat('${catId}', '${cat}')">
         <span class="cat-badge ${catClass}">${catLabel}</span>
-        <span class="prog-cat-count">${exs.length} ${t('exercises')}</span>
+        <span class="prog-cat-count">${cards.length} ${t('exercises')}</span>
         <span class="prog-cat-chevron" id="${catId}_chevron" style="transform:${isOpen ? 'rotate(180deg)' : 'none'};transition:0.2s;">▾</span>
       </div>
-      <div class="prog-cat-body" id="${catId}" style="display:${isOpen ? 'block' : 'none'};">${exCards}</div>
+      <div class="prog-cat-body" id="${catId}" style="display:${isOpen ? 'block' : 'none'};">${cards.join('')}</div>
     </div>`;
   }).filter(Boolean).join('');
+
+  progList.innerHTML = filterHtml + (catsHtml || emptyHtml);
 }
 
 window.toggleProgCat = function(id, rawCat) {
@@ -580,15 +661,24 @@ window.toggleProgCat = function(id, rawCat) {
 
 function _buildExCard(ex, type, locale, catClass) {
   let workoutsWithEx = db.workouts
-    .filter(w => w.exercises.some(e => e.exId === ex.id))
+    .filter(w => (w.exercises || []).some(e => e.exId === ex.id))
     .sort((a, b) => new Date(a.date||a.startTime).getTime() - new Date(b.date||b.startTime).getTime());
 
-  // Apply template filter if active
+  // Apply day filter if active
   if (_progressTemplateFilter) {
-    workoutsWithEx = workoutsWithEx.filter(w => w.templateId === _progressTemplateFilter);
+    workoutsWithEx = workoutsWithEx.filter(w => _woDayKey(w) === _progressTemplateFilter);
   }
 
   if (workoutsWithEx.length === 0) return '';
+
+  const totalSessions = workoutsWithEx.length;
+  // Per-day tracking: compare the last session only with earlier sessions of
+  // the SAME day, so an exercise done fresh on one day isn't measured against
+  // the same exercise done late on another day.
+  const dayKey  = _woDayKey(workoutsWithEx[workoutsWithEx.length - 1]);
+  const sameDay = workoutsWithEx.filter(w => _woDayKey(w) === dayKey);
+  const mixedDays = sameDay.length !== totalSessions;
+  workoutsWithEx = sameDay;
 
   const last      = workoutsWithEx[workoutsWithEx.length - 1];
   const lastEntry = last.exercises.find(e => e.exId === ex.id);
@@ -718,11 +808,18 @@ function _buildExCard(ex, type, locale, catClass) {
 
   const sparkSvg = _buildSparkline(sparkValues, type);
 
-  return `<div class="prog-ex-card" onclick="openExGraph('${ex.id}')" style="cursor:pointer;" title="Klicke für Fortschrittsgraph">
+  // Only worth showing when the exercise actually spans several days — then it
+  // says which day's series the number and the trend belong to.
+  const dayChip = mixedDays
+    ? `<span class="prog-day-chip">📅 ${_progDayLabel(dayKey)} · ${workoutsWithEx.length}×</span>`
+    : '';
+
+  return `<div class="prog-ex-card" onclick="openExGraph('${ex.id}','${dayKey}')" style="cursor:pointer;" title="Klicke für Fortschrittsgraph">
     <div class="prog-ex-top">
       <div class="prog-ex-info">
         <div style="font-weight:600;font-size:15px;">${ex.name}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${d} · ${workoutsWithEx.length}× ${t('trainedX').replace('×','').trim()}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${d} · ${totalSessions}× ${t('trainedX').replace('×','').trim()}</div>
+        ${dayChip}
         ${progressTag}
       </div>
       <div class="prog-ex-right">
@@ -755,8 +852,10 @@ function _buildSparkline(values, type) {
   return `<svg width="${totalW}" height="${h}" viewBox="0 0 ${totalW} ${h}" style="display:block;">${bars}</svg>`;
 }
 
-let _exGraphMetric = 'weight';
-let _exGraphExId   = null;
+let _exGraphMetric  = 'weight';
+let _exGraphExId    = null;
+let _exGraphDayKey  = null; // day the graph is scoped to (null = all days)
+let _exGraphCardDay = null; // day the card was opened from, for the toggle back
 
 // "mm:ss" (or plain minutes) -> minutes as a float.
 function _timeStrToMin(str) {
@@ -855,6 +954,26 @@ function _renderExGraphToggle(type) {
   ).join('');
 }
 
+// Scope line above the chart: says which day the curve is built from and lets
+// you flip between that day and all days at once.
+function _renderExGraphDayHint() {
+  const host = document.getElementById('exGraphDayHint');
+  if (!host) return;
+  const de = lang !== 'en';
+  if (!_exGraphCardDay) { host.style.display = 'none'; host.innerHTML = ''; return; }
+  const label = _progDayLabel(_exGraphCardDay);
+  host.style.display = 'block';
+  host.innerHTML = _exGraphDayKey
+    ? `${de ? 'Nur' : 'Only'} <b>${label}</b> · <button class="exg-scope-btn" onclick="setExGraphDayScope('')">${de ? 'alle Tage' : 'all days'}</button>`
+    : `${de ? 'Alle Tage zusammen' : 'All days combined'} · <button class="exg-scope-btn" onclick="setExGraphDayScope('${_exGraphCardDay}')">${de ? 'nur' : 'only'} ${label}</button>`;
+}
+
+window.setExGraphDayScope = function(key) {
+  _exGraphDayKey = key || null;
+  _renderExGraphDayHint();
+  _renderExGraph();
+};
+
 function _renderExGraph() {
   const exId = _exGraphExId;
   const ex = db.exercises.find(x => x.id === exId);
@@ -872,6 +991,7 @@ function _renderExGraph() {
 
   sortedWorkouts.forEach(w => {
     if (!w.exercises) return;
+    if (_exGraphDayKey && _woDayKey(w) !== _exGraphDayKey) return;
     const match = w.exercises.find(e => e.exId === exId);
     if (!match) return;
     const hasData = (match.sets && match.sets.length) || match.timerSec;
@@ -881,7 +1001,11 @@ function _renderExGraph() {
   });
 
   if (dataPoints.length < 2) {
-    chartContainer.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:13px;padding:40px 0;">${lang === 'en' ? 'Not enough data (min. 2)' : 'Nicht genug Daten (min. 2)'}</div>`;
+    const de = lang !== 'en';
+    const scopeNote = _exGraphDayKey
+      ? `<div style="margin-top:6px;font-size:12px;">${de ? `an diesem Tag („${_progDayLabel(_exGraphDayKey)}“)` : `on this day ("${_progDayLabel(_exGraphDayKey)}")`}</div>`
+      : '';
+    chartContainer.innerHTML = `<div style="text-align:center;width:100%;color:var(--muted);font-size:13px;padding:40px 0;">${de ? 'Nicht genug Daten (min. 2)' : 'Not enough data (min. 2)'}${scopeNote}</div>`;
     return;
   }
 
@@ -893,11 +1017,14 @@ function _renderExGraph() {
   chartContainer.innerHTML = _buildLineChart(points, { width: 320, height: 180, color, unit });
 }
 
-window.openExGraph = function(exId) {
+window.openExGraph = function(exId, dayKey) {
   const ex = db.exercises.find(x => x.id === exId);
   if (!ex) return;
-  _exGraphExId = exId;
+  _exGraphExId    = exId;
+  _exGraphCardDay = dayKey || null;
+  _exGraphDayKey  = _exGraphCardDay; // open on the same day the card showed
   _renderExGraphToggle(getCatType(ex.category));
+  _renderExGraphDayHint();
   _renderExGraph();
   openModal('exGraphModal');
 };
