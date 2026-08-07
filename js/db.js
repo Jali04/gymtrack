@@ -563,6 +563,28 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
+/* ---- Trainingstag ("day") of a workout -------------------------------------
+   A day is the template the workout was started from; everything logged
+   without a template shares one free-training bucket. Progress trends and the
+   "letztes Mal" ghost text both compare inside a single day, because the same
+   exercise behaves differently depending on the day it sits in (fresh on an
+   Upper day vs. late on a Pull day). */
+const PROG_FREE_DAY = '__free__';
+
+function _woDayKey(w) {
+  return (w && w.templateId != null && w.templateId !== '') ? String(w.templateId) : PROG_FREE_DAY;
+}
+
+// Same day? Falls back to the snapshotted template name, so a workout whose
+// template link was lost on an old cloud sync still matches its own day.
+function _woSameDay(a, b) {
+  if (!a || !b) return false;
+  const ka = _woDayKey(a), kb = _woDayKey(b);
+  if (ka === kb && ka !== PROG_FREE_DAY) return true;
+  if (a.templateName && b.templateName) return a.templateName === b.templateName;
+  return ka === kb;
+}
+
 function getEx(id) {
   return db.exercises.find(x => x.id === id);
 }

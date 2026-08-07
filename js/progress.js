@@ -456,16 +456,10 @@ function renderMilestones() {
   `).join('');
 }
 /* ---- "Tag" (training day) scoping for the exercise progress -------------
-   A day is the template a workout was started from. The same exercise can sit
-   on several days (e.g. Bankdrücken on "Push A" fresh and on "Push B" after
-   pressing), and those sessions are not comparable — so every trend, sparkline
-   and graph below only ever looks at one day at a time. */
-const PROG_FREE_DAY = '__free__';
-
-function _woDayKey(w) {
-  return (w && w.templateId != null && w.templateId !== '') ? String(w.templateId) : PROG_FREE_DAY;
-}
-
+   The same exercise can sit on several days (e.g. Bankdrücken on "Push A"
+   fresh and on "Push B" after pressing), and those sessions are not
+   comparable — so every trend, sparkline and graph below only ever looks at
+   one day at a time. _woDayKey()/PROG_FREE_DAY live in db.js. */
 function _progDayLabel(key) {
   if (key === PROG_FREE_DAY) return lang === 'en' ? 'Free training' : 'Freies Training';
   const tmpl = (db.templates || []).find(x => String(x.id) === key);
