@@ -651,7 +651,7 @@ function _renderInlineSetEditor(e, i, type) {
   // "Last time" summary line with a one-tap apply
   let lastLine = '';
   if (lp && lp.sets && lp.sets.length) {
-    lastLine = `<div class="il-last"><span class="il-last-txt">${t('lastPerf') || 'Letztes Mal'}: ${_lastPerfShort(lp.sets, type)}</span>
+    lastLine = `<div class="il-last"><span class="il-last-txt">${_lastPerfLabel(lp)}: ${_lastPerfShort(lp.sets, type)}</span>
       <button class="il-apply" onclick="applyLastPerformance(${i})">${t('applyLast')}</button></div>`;
   }
 
@@ -2128,7 +2128,7 @@ function openLogSets(idx) {
   if (lastPerf && lastPerf.sets.length > 0) {
     const setsHtml = _renderSetBadges(lastPerf.sets, type);
     const lastNoteHtml = lastPerf.note ? `<div style="margin-top:6px;font-size:12px;color:var(--muted);">💬 ${lastPerf.note}</div>` : '';
-    lpHtml += `<div class="exercise-last"><div class="label">${t('lastPerf') || 'Letztes Mal'}</div><div class="sets-row">${setsHtml}</div>${lastNoteHtml}</div>`;
+    lpHtml += `<div class="exercise-last"><div class="label">${_lastPerfLabel(lastPerf)}</div><div class="sets-row">${setsHtml}</div>${lastNoteHtml}</div>`;
   }
   lpDiv.innerHTML = lpHtml;
 
@@ -2142,26 +2142,61 @@ function openLogSets(idx) {
   openModal('logSetsModal');
 }
 
-function getLastPerformance(exId, currentWorkoutId) {
-  // Show the GENUINELY most recent time this exercise was done. We used to
-  // prefer workouts with the same templateId, but if the actual last workout
-  // had a different or missing templateId (e.g. lost on an old cloud sync) it
-  // got skipped and an older same-template session was shown instead — so
-  // "last time" displayed e.g. 20×3 from two workouts ago rather than the real
-  // last 20×6. Recency wins; the Progress tab still offers a template filter.
+// Ghost text / "letztes Mal" must come from the SAME training day: on an Upper
+// day you want the last Upper day, not the Pull day in between where the same
+// exercise sat in a different position and moved different weights. So the
+// newest session OF THE CURRENT DAY wins; only if this day has none yet (first
+// time doing the exercise here, or a workout without a template) do we fall
+// back to the genuinely most recent session — and the UI then names the day it
+// came from, so the numbers are never silently from somewhere else.
+//
+// Returns a shallow COPY of the logged entry, tagged with where it came from.
+// Never write to it — the sets array is still the stored one.
+function _pickLastPerformance(matches, currentWorkoutId) {
+  const cw = db.currentWorkout;
   const relevant = (db.workouts || [])
-    .filter(w => w.id !== currentWorkoutId && w.exercises && w.exercises.some(e => !e.isCustom && e.exId === exId))
+    .filter(w => w.id !== currentWorkoutId && w.exercises && w.exercises.some(matches))
     .sort((a, b) => (b.startTime || b.date || 0) - (a.startTime || a.date || 0));
   if (relevant.length === 0) return null;
-  return relevant[0].exercises.find(e => !e.isCustom && e.exId === exId);
+
+  const newest  = relevant[0];
+  const sameDay = cw ? relevant.find(w => _woSameDay(w, cw)) : null;
+  const src     = sameDay || newest;
+  const entry   = src.exercises.find(matches);
+  if (!entry) return null;
+
+  return Object.assign({}, entry, {
+    _srcDay:       _woDayKey(src),
+    _srcName:      src.templateName || null, // survives a lost template link
+    _srcDate:      src.startTime || src.date || 0,
+    _otherDay:     !sameDay,          // no session on this day yet → other day
+    _skippedNewer: src !== newest     // an even newer one exists on another day
+  });
+}
+
+function getLastPerformance(exId, currentWorkoutId) {
+  return _pickLastPerformance(e => !e.isCustom && e.exId === exId, currentWorkoutId);
 }
 
 function getLastCustomPerformance(name, category, currentWorkoutId) {
-  const relevant = (db.workouts || [])
-    .filter(w => w.id !== currentWorkoutId && w.exercises && w.exercises.some(e => e.isCustom && e.customName === name && e.customCategory === category))
-    .sort((a, b) => (b.startTime || b.date || 0) - (a.startTime || a.date || 0));
-  if (relevant.length === 0) return null;
-  return relevant[0].exercises.find(e => e.isCustom && e.customName === name && e.customCategory === category);
+  return _pickLastPerformance(
+    e => e.isCustom && e.customName === name && e.customCategory === category,
+    currentWorkoutId
+  );
+}
+
+// "Letztes Mal" — with the source day appended whenever the data is not simply
+// the last time on this very day.
+function _lastPerfLabel(lp) {
+  const base = t('lastPerf') || 'Letztes Mal';
+  if (!lp || (!lp._otherDay && !lp._skippedNewer)) return base;
+  const parts = [];
+  if (lp._srcDay === PROG_FREE_DAY && lp._srcName) parts.push(lp._srcName);
+  else if (typeof _progDayLabel === 'function') parts.push(_progDayLabel(lp._srcDay));
+  if (lp._skippedNewer && lp._srcDate) {
+    parts.push(new Date(lp._srcDate).toLocaleDateString(lang === 'en' ? 'en-GB' : 'de-DE', { day: 'numeric', month: 'short' }));
+  }
+  return parts.length ? `${base} (${parts.join(', ')})` : base;
 }
 
 function _setupSetColHeaders(type) {
