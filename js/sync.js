@@ -52,7 +52,23 @@ const SYNC_MAPPINGS = {
     }),
     getLocalId: item => item.id,
     getDbId: dbItem => dbItem.id,
-    getTimestamp: item => Number(item.updated_at || item.date || Date.now())
+    getTimestamp: item => Number(item.updated_at || item.date || Date.now()),
+
+    // The training day only started reaching the cloud in 2026-07. Older rows
+    // sit there with template_id null while the local copy still has it — and
+    // since both sides carry the same timestamp, neither ever wins: the link is
+    // never pushed up, and on the next fresh install those workouts come back
+    // as "Freies Training", taking their day comparison with them. These two
+    // hooks repair that in place.
+    needsRepush: (local, remote) =>
+      !!((local.templateId && remote.template_id == null) ||
+         (local.templateName && remote.template_name == null)),
+    // A remote row that predates the columns must never blank out a local link.
+    mergeLocal: (incoming, local) => {
+      if (!incoming.templateId && local.templateId) incoming.templateId = local.templateId;
+      if (!incoming.templateName && local.templateName) incoming.templateName = local.templateName;
+      return incoming;
+    }
   },
   templates: {
     toDb: item => ({
@@ -523,13 +539,20 @@ async function syncTable(table, userId) {
       const localTs = mapping.getTimestamp(localItem);
       const remoteTs = mapping.getTimestamp(remoteItem);
 
+      // A field the remote row simply never carried (written before the column
+      // existed) is not an intentional deletion — see the workouts mapping.
+      const repair = !!(mapping.needsRepush && mapping.needsRepush(localItem, remoteItem));
+
       if (remoteTs > localTs) {
-        // Remote is newer
-        mergedArray.push(mapping.toLocal(remoteItem));
+        // Remote is newer, but keep locally-known fields it predates
+        let incoming = mapping.toLocal(remoteItem);
+        if (mapping.mergeLocal) incoming = mapping.mergeLocal(incoming, localItem);
+        mergedArray.push(incoming);
+        if (repair) upsertQueue.push(mapping.toDb(incoming));
       } else {
         // Local is newer or equal
         mergedArray.push(localItem);
-        if (localTs > remoteTs) {
+        if (localTs > remoteTs || repair) {
           upsertQueue.push(mapping.toDb(localItem));
         }
       }
