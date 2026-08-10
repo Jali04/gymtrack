@@ -520,18 +520,30 @@ if (!localStorage.getItem('supp_sync_fix_v1')) {
   dbNeedsSave = true;
 }
 
-// One-time backfill: snapshot the template name onto past template-based
-// workouts so history keeps the real name even if the template is later
-// deleted or its id is lost on a cloud sync (was showing "Freies Training").
-if (!localStorage.getItem('workout_tmplname_fix_v1')) {
+// Snapshot the template name onto template-based workouts so history and the
+// per-day comparisons keep the real name even if the template is later deleted
+// or its id is lost on a cloud sync (was showing "Freies Training").
+// Deliberately NOT gated by a one-time flag: on a fresh install this runs
+// before the first cloud pull, so anything pulled afterwards would never get a
+// name. It is a cheap no-op once every workout carries one, and syncAll() calls
+// it again after each pull.
+// `touch` also bumps updated_at so the name is pushed to the cloud on the next
+// cycle — only safe right after a pull, when the local rows are current.
+function backfillTemplateNames(touch) {
+  let changed = false;
   (db.workouts || []).forEach(w => {
     if (w && w.templateId && !w.templateName) {
       const tmpl = (db.templates || []).find(x => String(x.id) === String(w.templateId));
-      if (tmpl && tmpl.name) { w.templateName = tmpl.name; dbNeedsSave = true; }
+      if (tmpl && tmpl.name) {
+        w.templateName = tmpl.name;
+        if (touch) w.updated_at = Date.now();
+        changed = true;
+      }
     }
   });
-  localStorage.setItem('workout_tmplname_fix_v1', '1');
+  return changed;
 }
+if (backfillTemplateNames()) dbNeedsSave = true;
 
 if (dbNeedsSave) {
   _persistDb();

@@ -490,19 +490,30 @@ function _progressDayOptions() {
   return opts;
 }
 
+// The picked day lives in db.settings, which syncs to the account (profiles.
+// settings) — so it survives a reinstall or a new device, like every other
+// setting. The old localStorage key is read once and migrated.
 const PROG_DAY_LS_KEY = 'gymtrack_prog_day_filter';
 let _progressTemplateFilter = (() => {
-  try { return localStorage.getItem(PROG_DAY_LS_KEY) || null; } catch (e) { return null; }
+  if (db.settings && db.settings.progDayFilter !== undefined) return db.settings.progDayFilter || null;
+  let legacy = null;
+  try { legacy = localStorage.getItem(PROG_DAY_LS_KEY) || null; localStorage.removeItem(PROG_DAY_LS_KEY); } catch (e) {}
+  if (legacy && db.settings) { db.settings.progDayFilter = legacy; save(); }
+  return legacy;
 })();
 
 window.setProgressDayFilter = function(value) {
   _progressTemplateFilter = value || null;
-  try {
-    if (_progressTemplateFilter) localStorage.setItem(PROG_DAY_LS_KEY, _progressTemplateFilter);
-    else localStorage.removeItem(PROG_DAY_LS_KEY);
-  } catch (e) {}
+  _persistProgDayFilter();
   renderExerciseProgressTracker();
 };
+
+function _persistProgDayFilter() {
+  if (!db.settings) return;
+  if (db.settings.progDayFilter === (_progressTemplateFilter || null)) return; // no write, no sync churn
+  db.settings.progDayFilter = _progressTemplateFilter || null;
+  save();
+}
 
 // C5: this-week training volume grouped by muscle group (exercise category).
 function renderWeeklyVolume() {
@@ -567,7 +578,7 @@ function renderExerciseProgressTracker() {
   const dayOptions = _progressDayOptions();
   if (_progressTemplateFilter && !dayOptions.some(o => o.id === _progressTemplateFilter)) {
     _progressTemplateFilter = null; // day was deleted meanwhile
-    try { localStorage.removeItem(PROG_DAY_LS_KEY); } catch (e) {}
+    _persistProgDayFilter();
   }
   const activeDay = _progressTemplateFilter
     ? dayOptions.find(o => o.id === _progressTemplateFilter)

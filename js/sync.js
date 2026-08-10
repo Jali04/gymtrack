@@ -30,9 +30,12 @@ const SYNC_MAPPINGS = {
       end_time: item.endTime ? Number(item.endTime) : null,
       date: Number(item.date),
       exercises: item.exercises,
-      // Persist the template link so "Freies Training" isn't shown after a
-      // cloud round-trip for workouts that were started from a template.
+      // Persist the training day so "Freies Training" isn't shown after a
+      // cloud round-trip, and so progress/ghost text can still compare per day
+      // on a fresh install. The name goes along: it survives the template being
+      // deleted or renamed, which the id alone does not.
       template_id: item.templateId != null ? String(item.templateId) : null,
+      template_name: item.templateName || null,
       notes: item.notes || null,
       updated_at: Number(item.updated_at || item.date || Date.now())
     }),
@@ -43,6 +46,7 @@ const SYNC_MAPPINGS = {
       date: Number(dbItem.date),
       exercises: dbItem.exercises,
       templateId: dbItem.template_id != null ? String(dbItem.template_id) : null,
+      templateName: dbItem.template_name || null,
       notes: dbItem.notes,
       updated_at: Number(dbItem.updated_at)
     }),
@@ -324,6 +328,13 @@ async function syncAll() {
     } catch (e) {
       console.error(`[Sync] Error syncing table ${table}:`, e);
     }
+  }
+
+  // Workouts pulled from the cloud can arrive without a template name (older
+  // rows written before the column existed). Re-derive it now that both
+  // workouts and templates are in sync, so the training day stays labelled.
+  if (typeof backfillTemplateNames === 'function' && backfillTemplateNames(true)) {
+    if (typeof _persistDb === 'function') _persistDb();
   }
 
   // Reload current page/UI elements if function exists

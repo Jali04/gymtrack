@@ -55,6 +55,7 @@ create table public.workouts (
   date bigint not null,
   exercises jsonb not null, -- Array of exercises inside workout: [{ exId, sets: [...] }]
   template_id text, -- Template the workout was started from (null = free workout)
+  template_name text, -- Its name at the time, so a deleted/renamed template stays readable
   notes text,
   updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint,
   primary key (id, user_id)
