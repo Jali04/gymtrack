@@ -142,6 +142,58 @@ function showConfirm(message, opts = {}) {
   });
 }
 
+/* A confirm with more than two ways out. Options are
+   [{ key, label, desc, style }] — the first one is rendered as the primary
+   action, "Abbrechen" always resolves to null. */
+function showChoice(message, options, opts = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('choiceModal');
+    if (!modal || !options || !options.length) { resolve(null); return; }
+
+    const titleEl = document.getElementById('choiceModalTitle');
+    const textEl  = document.getElementById('choiceModalText');
+    const listEl  = document.getElementById('choiceModalOptions');
+    const cancel  = document.getElementById('choiceModalCancel');
+
+    titleEl.textContent = opts.title || t('confirmTitle');
+    textEl.textContent  = message || '';
+    cancel.textContent  = opts.cancelText || t('cancel');
+
+    listEl.innerHTML = options.map((o, i) => `
+      <button class="choice-option${i === 0 ? ' primary' : ''}${o.style === 'danger' ? ' danger' : ''}" type="button" data-key="${o.key}">
+        <span class="choice-option-label">${o.label}</span>
+        ${o.desc ? `<span class="choice-option-desc">${o.desc}</span>` : ''}
+      </button>`).join('');
+
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      _confirmResolver = null;
+      listEl.removeEventListener('click', onPick);
+      cancel.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      closeModal('choiceModal');
+      try { haptic(result ? 'medium' : 'light'); } catch (e) {}
+      resolve(result);
+    };
+    const onPick = (e) => {
+      const btn = e.target.closest('.choice-option');
+      if (btn) finish(btn.dataset.key);
+    };
+    const onCancel   = () => finish(null);
+    const onBackdrop = (e) => { if (e.target === modal) finish(null); };
+
+    _confirmResolver = onCancel;
+
+    listEl.addEventListener('click', onPick);
+    cancel.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+
+    openModal('choiceModal');
+  });
+}
+
 // Non-blocking replacement for alert() — informational toast.
 function showAlert(message) {
   if (typeof showToast === 'function') showToast(message);

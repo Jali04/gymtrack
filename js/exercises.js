@@ -9,7 +9,7 @@ function renderExercises(searchQuery = '', categoryFilter = 'all') {
   if (!list) return;
   
   const q = searchQuery.toLowerCase().trim();
-  let filteredExercises = db.exercises;
+  let filteredExercises = activeExercises();
   
   if (q) {
     filteredExercises = filteredExercises.filter(e => e.name.toLowerCase().includes(q));
@@ -35,8 +35,10 @@ function renderExercises(searchQuery = '', categoryFilter = 'all') {
     filteredExercises = filteredExercises.filter(e => e.category === categoryFilter);
   }
   
+  const archivedHtml = _renderArchivedExercises(q, categoryFilter);
+
   if (filteredExercises.length === 0) {
-    list.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px;">${t('noSearchResults') || 'Keine Übungen gefunden.'}</div>`;
+    list.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px;">${t('noSearchResults') || 'Keine Übungen gefunden.'}</div>` + archivedHtml;
     return;
   }
   
@@ -61,15 +63,51 @@ function renderExercises(searchQuery = '', categoryFilter = 'all') {
         <div class="exercise-meta" style="margin-top:4px;">${getProgressSummary(e.id)}</div>
         ${e.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:8px 10px;">📝 ${e.notes}</div>` : ''}
       </div>`).join('') + '<div class="divider" style="margin: 12px 0;"></div>';
+  }).join('') + archivedHtml;
+}
+
+/* Archived exercises keep every set they were ever part of — they are only
+   taken out of the pickers. They stay listed here so they can be brought back
+   (or looked up) at any time. */
+function _renderArchivedExercises(q, categoryFilter) {
+  let archived = (db.exercises || []).filter(e => isArchivedEx(e.id));
+  if (q) archived = archived.filter(e => e.name.toLowerCase().includes(q));
+  if (categoryFilter && categoryFilter !== 'all') archived = archived.filter(e => e.category === categoryFilter);
+  if (archived.length === 0) return '';
+
+  const open  = !!window._showArchivedEx;
+  const label = lang === 'en' ? 'Archived' : 'Archiviert';
+  const head  = `<div class="cat-manage-row" style="margin-top:14px;" onclick="toggleArchivedExercises()">
+      <div class="cat-manage-main">
+        <div class="cat-manage-name">📦 ${label} <span style="font-size:11px;color:var(--muted);">(${archived.length})</span></div>
+      </div>
+      <div class="cat-manage-chevron">${open ? '⌄' : '›'}</div>
+    </div>`;
+  if (!open) return head;
+
+  return head + archived.sort((a, b) => a.name.localeCompare(b.name)).map(e => {
+    const type = getCatType(e.category);
+    return `<div class="exercise-card archived-ex-card" onclick="openEditExercise('${e.id}')">
+      <div class="exercise-name">${e.name} <span class="cat-badge ${getCatClass(type)}" style="font-size:10px;">${t('cats')[e.category] || e.category}</span></div>
+      <div class="exercise-meta" style="margin-top:4px;">${getProgressSummary(e.id)}</div>
+    </div>`;
   }).join('');
 }
 
+function toggleArchivedExercises() {
+  window._showArchivedEx = !window._showArchivedEx;
+  renderExercises(window._gymlabSearchQuery || '', window._gymlabCategoryFilter || 'all');
+  haptic('light');
+}
+
 function getProgressSummary(exId) {
-  const ex       = getEx(exId);
-  const type     = ex ? getCatType(ex.category) : 'strength';
-  const workouts = db.workouts.filter(w => w.exercises.some(e => e.exId === exId)).sort((a, b) => b.date - a.date);
+  const workouts = db.workouts
+    .filter(w => w.exercises.some(e => e.exId === exId && e.sets && e.sets.length))
+    .sort((a, b) => b.date - a.date);
   if (workouts.length === 0) return t('noTrainingYet');
-  const last = workouts[0].exercises.find(e => e.exId === exId);
+  const last = workouts[0].exercises.find(e => e.exId === exId && e.sets && e.sets.length);
+  // The units the entry was logged in — not necessarily today's category type.
+  const type = getEntryType(last);
   if (type === 'cardio') {
     const maxKm = Math.max(...last.sets.map(s => s.km));
     return `${t('lastTime')}: ${maxKm}km max`;
@@ -156,6 +194,23 @@ function _localizeBodyweightLabel() {
   if (d) d.textContent = 'Weight field = added weight; body weight counts toward volume';
 }
 
+/* Archiving is the safe alternative to deleting: the exercise leaves the
+   pickers, every set it was part of stays in the history. Only offered while
+   editing — a brand-new exercise has nothing to retire. */
+function _setupArchiveRow(exId) {
+  const row = document.getElementById('exArchivedRow');
+  const box = document.getElementById('exArchived');
+  if (!row || !box) return;
+  row.style.display = exId ? 'flex' : 'none';
+  box.checked = !!(exId && isArchivedEx(exId));
+  const l = document.getElementById('lblExArchived');
+  const d = document.getElementById('lblExArchivedDesc');
+  if (l) l.textContent = lang === 'en' ? 'Archive exercise' : 'Übung archivieren';
+  if (d) d.textContent = lang === 'en'
+    ? 'Hidden from the pickers — the logged history is kept'
+    : 'Wird in der Auswahl ausgeblendet — der aufgezeichnete Verlauf bleibt erhalten';
+}
+
 function openAddExercise() {
   editingExId = null;
   document.getElementById('addExerciseTitle').textContent = t('newExercise');
@@ -166,6 +221,7 @@ function openAddExercise() {
   document.getElementById('exNotes').value    = '';
   const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = false;
   _localizeBodyweightLabel();
+  _setupArchiveRow(null);
   document.getElementById('deleteExBtn').style.display = 'none';
 
   const container = document.getElementById('exerciseAiAnalysisContainer');
@@ -191,6 +247,7 @@ function openEditExercise(id) {
   document.getElementById('exNotes').value    = ex.notes || '';
   const bwEl = document.getElementById('exBodyweight'); if (bwEl) bwEl.checked = (typeof isBodyweightEx === 'function') && isBodyweightEx(id);
   _localizeBodyweightLabel();
+  _setupArchiveRow(id);
   document.getElementById('deleteExBtn').style.display = 'block';
   
   const customGroup = document.getElementById('customCategoryGroup');
@@ -240,11 +297,41 @@ async function saveExercise() {
   
   const bwEl = document.getElementById('exBodyweight');
   const bodyweight = !!(bwEl && bwEl.checked);
+  const archEl = document.getElementById('exArchived');
+  const archived = !!(archEl && archEl.checked);
   let newId = null;
+  let decision = null;
+
   if (editingExId) {
     const ex = getEx(editingExId);
-    ex.name = name; ex.category = category; ex.notes = notes;
-    if (typeof setBodyweightEx === 'function') setBodyweightEx(editingExId, bodyweight);
+    const oldType = getCatType(ex.category);
+    const newType = getCatType(category);
+
+    // Moving to a category of a different type would re-read every set that
+    // was ever logged here (kg suddenly meaning seconds). Ask first — and only
+    // when there is actually something logged that could be misread.
+    if (oldType !== newType) {
+      const affected = countLoggedEntries(matchExerciseEntry(editingExId));
+      if (affected > 0) {
+        decision = await askTrackingDecision(affected, oldType, newType, { allowNew: true, title: t('editExercise') });
+        if (!decision) return; // cancelled → nothing changes at all
+      }
+    }
+
+    if (decision === 'new') {
+      // The old exercise keeps its category, its type and its whole history;
+      // it just moves out of the way into the archive.
+      setArchivedEx(editingExId, true);
+      newId = uid();
+      db.exercises.push({ id: newId, name, category, notes });
+      if (typeof setBodyweightEx === 'function') setBodyweightEx(newId, bodyweight);
+    } else {
+      // Must run before the category moves — 'convert' reads the old type off it.
+      if (decision) applyTrackingDecision(decision, matchExerciseEntry(editingExId), oldType, newType);
+      ex.name = name; ex.category = category; ex.notes = notes;
+      if (typeof setBodyweightEx === 'function') setBodyweightEx(editingExId, bodyweight);
+      setArchivedEx(editingExId, archived);
+    }
   } else {
     newId = uid();
     db.exercises.push({ id: newId, name, category, notes });
@@ -260,7 +347,9 @@ async function saveExercise() {
     renderGymLabCategoryChips();
   }
   renderExercises();
-  showToast(t('save') + ' ✓');
+  showToast(decision === 'new'
+    ? (lang === 'en' ? 'New exercise created · old one archived ✓' : 'Neue Übung angelegt · alte archiviert ✓')
+    : t('save') + ' ✓');
 
   if (newId) {
     if (context === 'workout') {
@@ -285,7 +374,41 @@ function openAddExerciseFromTmplPicker() {
 }
 
 async function deleteExercise() {
-  if (!await showConfirm(t('confirmDeleteExercise'))) return;
+  const logged = countLoggedEntries(matchExerciseEntry(editingExId));
+
+  // Deleting an exercise that has been trained cuts its sets out of the
+  // history for good, so the archive is offered as the first way out.
+  if (logged > 0) {
+    const choice = await showChoice(
+      lang === 'en'
+        ? `This exercise carries ${logged} logged ${logged === 1 ? 'entry' : 'entries'}.`
+        : `An dieser Übung hängen ${logged} aufgezeichnete ${logged === 1 ? 'Eintrag' : 'Einträge'}.`,
+      [
+        { key: 'archive', label: lang === 'en' ? 'Archive' : 'Archivieren',
+          desc: lang === 'en'
+            ? 'Out of the pickers, history untouched — can be brought back any time.'
+            : 'Raus aus der Auswahl, Verlauf bleibt komplett erhalten — jederzeit reaktivierbar.' },
+        { key: 'delete', label: lang === 'en' ? 'Delete permanently' : 'Endgültig löschen',
+          desc: lang === 'en'
+            ? 'The exercise and its sets disappear from every past workout.'
+            : 'Die Übung und ihre Sätze verschwinden aus allen vergangenen Trainings.',
+          style: 'danger' }
+      ],
+      { title: t('deleteExercise') }
+    );
+    if (!choice) return;
+    if (choice === 'archive') {
+      setArchivedEx(editingExId, true);
+      save();
+      closeModal('addExerciseModal');
+      renderExercises();
+      showToast(lang === 'en' ? 'Archived ✓' : 'Archiviert ✓');
+      return;
+    }
+  } else if (!await showConfirm(t('confirmDeleteExercise'))) {
+    return;
+  }
+
   db.exercises = db.exercises.filter(e => e.id !== editingExId);
   save();
   closeModal('addExerciseModal');

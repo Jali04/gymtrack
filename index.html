@@ -43,7 +43,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DSCPLN">
   <meta name="theme-color" content="#0a0a0a">
-  <meta name="version" content="4.63">
+  <meta name="version" content="4.64">
   <title>DSCPLN</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
@@ -52,7 +52,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@300;400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4.60">
+  <link rel="stylesheet" href="css/styles.css?v=4.64">
 </head>
 
 <body>
@@ -239,7 +239,10 @@
     <div id="gymlab-exercises-wrapper" style="display:none;">
       <div class="gymlab-section-header">
         <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
-        <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-secondary btn-sm" id="btnManageCategories" style="margin:0;" onclick="openCategoryManager()">🗂 Kategorien</button>
+          <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
+        </div>
       </div>
       <div id="exercisesList"></div>
     </div>
@@ -762,6 +765,18 @@
         </div>
         <label class="toggle">
           <input type="checkbox" id="exBodyweight">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- Archive flag: retire an exercise without touching its history -->
+      <div class="settings-row-item" id="exArchivedRow" style="display:none;margin-bottom:16px;">
+        <div class="settings-row-info">
+          <div class="settings-row-label" id="lblExArchived">Übung archivieren</div>
+          <div class="settings-row-desc" id="lblExArchivedDesc">Wird in der Auswahl ausgeblendet — der aufgezeichnete Verlauf bleibt erhalten</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="exArchived">
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -1724,6 +1739,63 @@
     </div>
   </div>
 
+  <!-- Category Manager -->
+  <div class="modal-overlay" id="categoryManagerModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="modal-title" id="categoryManagerTitle">Kategorien</div>
+        <div class="close-btn" onclick="closeModal('categoryManagerModal')">✕</div>
+      </div>
+      <div id="categoryManagerDesc" style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px;"></div>
+      <div id="categoryManagerList"></div>
+      <button class="btn btn-primary" id="btnAddCategory" style="margin-top:8px;" onclick="openCategoryEditor()">+ Neue Kategorie</button>
+      <button class="btn btn-secondary" onclick="closeModal('categoryManagerModal')">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Category Editor -->
+  <div class="modal-overlay" id="categoryEditModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="modal-title" id="categoryEditTitle">Kategorie bearbeiten</div>
+        <div class="close-btn" onclick="closeModal('categoryEditModal')">✕</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblCatEditName">Name</label>
+        <input class="form-input" id="catEditName" autocomplete="off">
+        <div id="catEditNameHint" style="display:none;font-size:11px;color:var(--muted);line-height:1.45;margin-top:6px;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="lblCatEditType">Typ (für Trainings-Eingaben)</label>
+        <select class="form-input" id="catEditType"></select>
+      </div>
+      <div id="catEditUsage" style="font-size:12px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:14px;"></div>
+
+      <div id="catDeleteGroup" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+        <div id="catDeleteHint" style="font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:10px;"></div>
+        <select class="form-input" id="catDeleteTarget" style="height:38px;font-size:13px;padding:0 12px;margin-bottom:10px;"></select>
+        <button class="btn btn-danger btn-sm" id="btnConfirmDeleteCategory" onclick="confirmDeleteCategory()">Verschieben &amp; löschen</button>
+      </div>
+
+      <button class="btn btn-primary" id="btnSaveCategory" onclick="saveCategoryEdit()">Speichern</button>
+      <button class="btn btn-danger" id="btnDeleteCategory" style="display:none;" onclick="startDeleteCategory()">Kategorie löschen</button>
+      <button class="btn btn-secondary" id="btnCancelCategory" onclick="closeModal('categoryEditModal')">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Choice Dialog (confirm with more than two answers) -->
+  <div class="modal-overlay" id="choiceModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="confirm-title" id="choiceModalTitle">Bestätigen</div>
+      <div class="confirm-text" id="choiceModalText"></div>
+      <div id="choiceModalOptions"></div>
+      <button class="btn btn-secondary" id="choiceModalCancel" type="button" style="margin-top:6px;">Abbrechen</button>
+    </div>
+  </div>
+
   <!-- Template Update Dialog -->
   <div class="modal-overlay" id="tmplUpdateModal">
     <div class="modal" style="padding:20px;">
@@ -1992,31 +2064,32 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-  <script src="js/db.js?v=4.62"></script>
-  <script src="js/i18n.js?v=4.59"></script>
-  <script src="js/modals.js?v=4.59"></script>
-  <script src="js/nav.js?v=4.47"></script>
-  <script src="js/workout.js?v=4.61"></script>
-  <script src="js/exercises.js?v=4.59"></script>
+  <script src="js/db.js?v=4.64"></script>
+  <script src="js/i18n.js?v=4.64"></script>
+  <script src="js/modals.js?v=4.64"></script>
+  <script src="js/nav.js?v=4.64"></script>
+  <script src="js/workout.js?v=4.64"></script>
+  <script src="js/exercises.js?v=4.64"></script>
+  <script src="js/categories.js?v=4.64"></script>
   <script src="js/history.js?v=4.31"></script>
-  <script src="js/stats.js?v=4.31"></script>
-  <script src="js/templates.js?v=4.56"></script>
-  <script src="js/calendar.js?v=4.59"></script>
-  <script src="js/editWorkout.js?v=4.31"></script>
+  <script src="js/stats.js?v=4.64"></script>
+  <script src="js/templates.js?v=4.64"></script>
+  <script src="js/calendar.js?v=4.64"></script>
+  <script src="js/editWorkout.js?v=4.64"></script>
   <script src="js/timer.js?v=4.59"></script>
   <script src="js/ui.js?v=4.59"></script>
   <script src="js/wakelock.js?v=4.43"></script>
   <script src="js/splash.js?v=4.31"></script>
-  <script src="js/progress.js?v=4.62"></script>
+  <script src="js/progress.js?v=4.64"></script>
   <script src="js/programs.js?v=4.56"></script>
   <script src="js/supplements.js?v=4.31"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/nutrition.js?v=4.50"></script>
   <script src="js/tools.js?v=4.50"></script>
-  <script src="js/guide.js?v=4.34"></script>
-  <script src="js/achievements.js?v=4.47"></script>
-  <script src="js/app.js?v=4.59"></script>
-  <script src="js/aiCoach.js?v=4.59"></script>
+  <script src="js/guide.js?v=4.64"></script>
+  <script src="js/achievements.js?v=4.64"></script>
+  <script src="js/app.js?v=4.64"></script>
+  <script src="js/aiCoach.js?v=4.64"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.6"></script>
   <script src="js/config.js?v=4.31"></script>
   <script src="js/auth.js?v=4.51"></script>

@@ -56,9 +56,9 @@ function renderGymLabCategoryChips() {
   const wrapper = document.getElementById('gymlabCategoryChipsWrapper');
   if (!wrapper) return;
 
-  const standardCategories = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
-  const customCategories = db.customCategories ? Object.keys(db.customCategories) : [];
-  const allCategories = [...standardCategories, ...customCategories];
+  // getAllCategories() dedupes: a standard category that merely carries a type
+  // override also lives in customCategories and must not show up twice.
+  const allCategories = getAllCategories();
 
   const currentFilter = window._gymlabCategoryFilter || 'all';
 

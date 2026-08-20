@@ -602,6 +602,197 @@ function getEx(id) {
 }
 
 /* =============================================
+   EDITING CATEGORIES & EXERCISES WITHOUT LOSING TRACKING
+
+   A set only means something together with the type it was logged in: 82.5 is
+   kilos for a strength exercise, seconds for a hold, kilometres for cardio.
+   The type is derived from the exercise's category, so re-categorising an
+   exercise — or giving a category a new type — would silently re-read every
+   set that was ever logged for it.
+
+   Fix: whenever such a change touches data that already exists, the old
+   entries get stamped with `exType`, the type they were actually logged in.
+   Everything that renders history asks getEntryType() instead of the category,
+   so the past keeps its units while new sessions use the new type.
+   ============================================= */
+const STD_CATEGORIES = ['Brust', 'Rücken', 'Schultern', 'Arme', 'Beine', 'Core', 'Cardio', 'Dehnen'];
+// Types whose sets are pure durations — only those convert into each other
+// without inventing numbers that were never measured.
+const DURATION_TYPES = ['time', 'isometric', 'stretch'];
+
+function getEntryType(we) {
+  if (!we) return 'strength';
+  if (we.exType) return we.exType;
+  if (we.isCustom) return getCatType(we.customCategory);
+  const ex = getEx(we.exId);
+  return ex ? getCatType(ex.category) : 'strength';
+}
+
+function isStdCategory(cat) { return STD_CATEGORIES.includes(cat); }
+
+// Standard categories first (in their fixed order), then custom ones A→Z.
+// A standard category that only carries a type override must not show twice.
+function getAllCategories() {
+  const custom = db.customCategories ? Object.keys(db.customCategories) : [];
+  return STD_CATEGORIES.concat(custom.filter(c => !isStdCategory(c)).sort((a, b) => a.localeCompare(b)));
+}
+
+// A category's type lives in customCategories for custom AND standard ones;
+// a standard category put back on its native type drops the override again.
+function setCategoryType(cat, type) {
+  if (!db.customCategories) db.customCategories = {};
+  if (isStdCategory(cat) && CAT_TYPE[cat] === type) delete db.customCategories[cat];
+  else db.customCategories[cat] = type;
+}
+
+/* ---- Logged entries ---- */
+function _entryHasData(e) {
+  return !!(e && ((e.sets && e.sets.length) || (e.hiitSets && e.hiitSets.length) || e.timerSec));
+}
+
+// Past workouts plus the running one — a change mid-session must reach it too.
+function _allWorkoutsIncludingCurrent() {
+  const wos = (db.workouts || []).slice();
+  if (db.currentWorkout) wos.push(db.currentWorkout);
+  return wos;
+}
+
+// How many logged entries a change would touch. `match` gets a workout exercise.
+function countLoggedEntries(match) {
+  let n = 0;
+  _allWorkoutsIncludingCurrent().forEach(w => {
+    (w.exercises || []).forEach(e => { if (match(e) && _entryHasData(e)) n++; });
+  });
+  return n;
+}
+
+// Freeze the type of everything already logged, so it keeps its old units.
+function stampEntryType(match, type) {
+  let n = 0;
+  _allWorkoutsIncludingCurrent().forEach(w => {
+    (w.exercises || []).forEach(e => {
+      if (!match(e) || e.exType || !_entryHasData(e)) return;
+      e.exType = type;
+      n++;
+    });
+  });
+  return n;
+}
+
+function _setSeconds(s) {
+  if (!s) return 0;
+  if (s.secs != null && s.secs !== '') return Math.round(Number(s.secs) || 0);
+  if (s.minutes != null && s.minutes !== '') return Math.round((Number(s.minutes) || 0) * 60);
+  if (s.time) {
+    const p = String(s.time).split(':');
+    if (p.length === 2) return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
+  }
+  return 0;
+}
+
+// Converting is only offered where the measured value survives the move:
+// hold time ↔ pure duration ↔ stretch minutes. kg × reps or km simply have no
+// counterpart in seconds, so those changes keep their history stamped instead.
+function canConvertType(from, to) {
+  return from !== to && DURATION_TYPES.includes(from) && DURATION_TYPES.includes(to);
+}
+
+function convertSetToType(s, from, to) {
+  if (!s || from === to) return s;
+  const secs = _setSeconds(s);
+  if (to === 'time')    return { secs };
+  if (to === 'stretch') return { minutes: Math.round((secs / 60) * 10) / 10 };
+  if (to === 'isometric') {
+    const out = { weight: Number(s.weight) || 0, secs };
+    if (s.type) out.type = s.type;
+    if (s.rpe != null) out.rpe = s.rpe;
+    return out;
+  }
+  return s;
+}
+
+// Rewrite what can be rewritten into the new type and drop those stamps, so
+// the history is read in one unit again. An entry whose values have no
+// counterpart in the new type (kg × reps, kilometres) is never flattened —
+// it keeps its own type instead, exactly as the "keep" answer would leave it.
+function convertEntrySets(match, to) {
+  let n = 0;
+  _allWorkoutsIncludingCurrent().forEach(w => {
+    (w.exercises || []).forEach(e => {
+      if (!match(e)) return;
+      const from = getEntryType(e);
+      if (from === to) {
+        if (e.exType) { delete e.exType; n++; }
+      } else if (canConvertType(from, to)) {
+        if (e.sets && e.sets.length) e.sets = e.sets.map(s => convertSetToType(s, from, to));
+        if (e.exType) delete e.exType;
+        n++;
+      } else if (!e.exType && _entryHasData(e)) {
+        e.exType = from;
+      }
+    });
+  });
+  return n;
+}
+
+// Matchers for the two things that can be re-typed.
+function matchExerciseEntry(exId) {
+  return e => !e.isCustom && e.exId === exId;
+}
+function matchCategoryEntry(cat) {
+  const ids = (db.exercises || []).filter(x => x.category === cat).map(x => x.id);
+  return e => e.isCustom ? e.customCategory === cat : ids.includes(e.exId);
+}
+
+/* ---- Archiving ----
+   Retiring an exercise must never delete it: its sets are part of past
+   workouts. An archived exercise disappears from the pickers and from the
+   GymLab list, and stays readable everywhere its history is shown. */
+function isArchivedEx(exId) {
+  return !!(db.exerciseFlags && db.exerciseFlags[exId] && db.exerciseFlags[exId].archived);
+}
+function setArchivedEx(exId, on) {
+  if (!exId) return;
+  if (!db.exerciseFlags) db.exerciseFlags = {};
+  if (on) db.exerciseFlags[exId] = Object.assign({}, db.exerciseFlags[exId], { archived: true });
+  else if (db.exerciseFlags[exId]) delete db.exerciseFlags[exId].archived;
+}
+function activeExercises() {
+  return (db.exercises || []).filter(e => !isArchivedEx(e.id));
+}
+
+/* ---- Category edits (data only — the UI lives in categories.js) ---- */
+function renameCategory(oldName, newName) {
+  if (!oldName || !newName || oldName === newName) return 0;
+  let n = 0;
+  (db.exercises || []).forEach(e => { if (e.category === oldName) { e.category = newName; n++; } });
+  _allWorkoutsIncludingCurrent().forEach(w => {
+    (w.exercises || []).forEach(e => { if (e.isCustom && e.customCategory === oldName) e.customCategory = newName; });
+  });
+  if (db.customCategories && db.customCategories[oldName] != null) {
+    const type = db.customCategories[oldName];
+    delete db.customCategories[oldName];
+    setCategoryType(newName, type);
+  }
+  return n;
+}
+
+// Moves every exercise of `cat` to `targetCat`, then drops the category.
+// An empty category can be dropped without a target.
+function deleteCategory(cat, targetCat) {
+  if (!cat) return 0;
+  let n = 0;
+  if (targetCat && targetCat !== cat) {
+    (db.exercises || []).forEach(e => { if (e.category === cat) { e.category = targetCat; n++; } });
+    _allWorkoutsIncludingCurrent().forEach(w => {
+      (w.exercises || []).forEach(e => { if (e.isCustom && e.customCategory === cat) e.customCategory = targetCat; });
+    });
+  }
+  if (db.customCategories) delete db.customCategories[cat];
+  return n;
+}
+
+/* =============================================
    F2 — kg / lbs unit system.
    Weights are ALWAYS stored in kg. These helpers convert only for display and
    input, so switching units never rewrites stored data.

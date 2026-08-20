@@ -532,7 +532,7 @@ function renderWeeklyVolume() {
     (w.exercises || []).forEach(e => {
       const ex = e.isCustom ? null : getEx(e.exId);
       const cat = e.isCustom ? (e.customCategory || 'Sonstige') : (ex ? ex.category : 'Sonstige');
-      if (getCatType(cat) !== 'strength') return;
+      if (getEntryType(e) !== 'strength') return;
       let v = 0;
       (e.sets || []).forEach(s => { v += (Number(s.weight) || 0) * (Number(s.reps) || 0); });
       if (v > 0) vol[cat] = (vol[cat] || 0) + v;
@@ -665,8 +665,10 @@ window.toggleProgCat = function(id, rawCat) {
 }
 
 function _buildExCard(ex, type, locale, catClass) {
+  // Sessions logged before a type change carry their old units — they stay in
+  // the history, but they must not be mixed into this card's numbers.
   let workoutsWithEx = db.workouts
-    .filter(w => (w.exercises || []).some(e => e.exId === ex.id))
+    .filter(w => (w.exercises || []).some(e => e.exId === ex.id && getEntryType(e) === type))
     .sort((a, b) => new Date(a.date||a.startTime).getTime() - new Date(b.date||b.startTime).getTime());
 
   // Apply day filter if active
@@ -997,7 +999,7 @@ function _renderExGraph() {
   sortedWorkouts.forEach(w => {
     if (!w.exercises) return;
     if (_exGraphDayKey && _woDayKey(w) !== _exGraphDayKey) return;
-    const match = w.exercises.find(e => e.exId === exId);
+    const match = w.exercises.find(e => e.exId === exId && getEntryType(e) === type);
     if (!match) return;
     const hasData = (match.sets && match.sets.length) || match.timerSec;
     if (!hasData) return;

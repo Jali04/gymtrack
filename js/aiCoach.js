@@ -396,7 +396,7 @@ function detectPlateaus() {
     if (!w.exercises) return;
     w.exercises.forEach(we => {
       const ex = we.isCustom ? { category: we.customCategory } : getEx(we.exId);
-      if (!ex || getCatType(ex.category) !== 'strength') return;
+      if (!ex || getEntryType(we) !== 'strength') return;
       
       const exId = we.exId || `custom_${we.customName}`;
       const name = we.isCustom ? we.customName : ex.name;
@@ -470,8 +470,9 @@ function compileAiContext(provider = aiProvider) {
 
   // Exercises
   context += `VORHANDENE ÜBUNGEN IN DER DATENBANK:\n`;
-  if (db.exercises && db.exercises.length > 0) {
-    db.exercises.forEach(e => {
+  const coachExercises = activeExercises();
+  if (coachExercises.length > 0) {
+    coachExercises.forEach(e => {
       context += `- ID: "${e.id}", Name: "${e.name}", Kategorie: "${e.category}"${e.notes ? `, Notiz: "${e.notes}"` : ''}\n`;
     });
   } else {
@@ -590,7 +591,7 @@ function compileAiContext(provider = aiProvider) {
       (w.exercises || []).forEach(we => {
         const ex = db.exercises.find(x => x.id === we.exId);
         const exName = we.isCustom ? we.customName : (ex ? ex.name : 'Unbekannt');
-        const type = we.isCustom ? getCatType(we.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+        const type = getEntryType(we);
         
         let setsStr = '';
         if (type === 'cardio') {
