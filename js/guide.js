@@ -377,6 +377,14 @@ const GUIDE_CONTENT = {
         a: 'Beim Eintragen deiner Sätze kannst du den Typ umschalten:<br><strong>N (Normal)</strong>: Dein regulärer Arbeitssatz.<br><strong>W (Warmup)</strong>: Ein Aufwärmsatz, der in Statistiken gesondert markiert wird.<br><strong>D (Drop Set)</strong>: Ein Reduktionssatz, bei dem du das Gewicht sofort verringerst.'
       },
       {
+        q: 'Kann ich eine Übung nachträglich einer anderen Kategorie zuordnen?',
+        a: 'Ja. Tippe im <strong>GymLab</strong> auf die Übung und wähle eine andere Kategorie. Ändert sich dabei der Typ (z.B. von Kraft auf Zeit), fragt DSCPLN, was mit dem bereits aufgezeichneten Tracking passieren soll:<br><strong>Tracking behalten</strong>: Alte Einträge bleiben in ihrer alten Einheit gespeichert und werden weiter korrekt angezeigt.<br><strong>Verlauf umrechnen</strong>: Übertragbare Werte (Sekunden, Minuten) werden in die neue Einheit umgerechnet.<br><strong>Neu anfangen</strong>: Die Übung wird neu angelegt, die alte samt Verlauf wandert ins Archiv.'
+      },
+      {
+        q: 'Wie ändere ich den Typ einer Kategorie oder lösche sie?',
+        a: 'Im <strong>GymLab → Übungen</strong> öffnest du oben "🗂 Kategorien". Dort kannst du eigene Kategorien umbenennen, zusammenführen oder löschen (die Übungen ziehen dann in eine andere Kategorie um) und für jede Kategorie – auch für die Standard-Kategorien – den Typ neu festlegen. Bei jedem Typwechsel wird gefragt, was mit dem bestehenden Tracking passieren soll.'
+      },
+      {
         q: 'Wie funktioniert der Pausentimer?',
         a: 'Aktiviere auf dem Trainings-Bildschirm die "Satzpause" und stelle deine Wunschzeit ein (z.B. 1:30). Sobald du in einer Übung ein Häkchen bei einem Satz setzt, startet automatisch ein kreisförmiger Timer unten im Bildschirm, der per Sound/Vibration das Ende der Pause signalisiert.'
       },
@@ -399,6 +407,14 @@ const GUIDE_CONTENT = {
       {
         q: 'What do the set types (N, W, D) stand for?',
         a: 'When logging sets, tap the type button to toggle:<br><strong>N (Normal)</strong>: Your standard working set.<br><strong>W (Warmup)</strong>: A warmup set, tracked separately in stats.<br><strong>D (Drop Set)</strong>: A drop set, where you drop weight and immediately perform reps.'
+      },
+      {
+        q: 'Can I move an exercise to another category later on?',
+        a: 'Yes. Tap the exercise in the <strong>GymLab</strong> and pick another category. If that changes its type (e.g. strength → time), DSCPLN asks what should happen to the tracking you already logged:<br><strong>Keep tracking</strong>: old entries stay stored in their original unit and keep being shown correctly.<br><strong>Convert history</strong>: values that carry over (seconds, minutes) are converted to the new unit.<br><strong>Start fresh</strong>: the exercise is created anew, the old one is archived with its full history.'
+      },
+      {
+        q: 'How do I change a category type or delete a category?',
+        a: 'In <strong>GymLab → Exercises</strong>, open "🗂 Categories" at the top. There you can rename, merge or delete your own categories (their exercises move to another one) and set the type of any category — the standard ones included. Every type change asks what should happen to the existing tracking.'
       },
       {
         q: 'How does the rest timer countdown work?',

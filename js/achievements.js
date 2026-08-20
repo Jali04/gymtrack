@@ -100,9 +100,7 @@ function checkAchievements(justFinishedWorkout, opts) {
   if (justFinishedWorkout) {
     let vol = 0, cardioMin = 0;
     justFinishedWorkout.exercises.forEach(e => {
-      const isCardio = (e.isCustom
-        ? getCatType(e.customCategory)
-        : (getEx(e.exId)?.category === 'Cardio' ? 'cardio' : 'strength')) === 'cardio';
+      const isCardio = getEntryType(e) === 'cardio';
       (e.sets || []).forEach(s => {
         if (!isCardio && s.weight && s.reps && s.type !== 'W') vol += s.weight * s.reps;
         if (isCardio && s.time) {
@@ -385,9 +383,7 @@ function retroAwardGamification() {
     let vol = 0, cardioMin = 0;
     if (!w.exercises) return;
     w.exercises.forEach(e => {
-      const isCardio = (e.isCustom
-        ? getCatType(e.customCategory)
-        : (getEx(e.exId)?.category === 'Cardio' ? 'cardio' : 'strength')) === 'cardio';
+      const isCardio = getEntryType(e) === 'cardio';
       (e.sets || []).forEach(s => {
         if (!isCardio && s.weight && s.reps && s.type !== 'W') vol += s.weight * s.reps;
         if (isCardio && s.time) {

@@ -108,8 +108,7 @@ function renderCalendar() {
     if (hasW) {
       const types = new Set();
       workouts.forEach(w => w.exercises.forEach(e => {
-        const ex = getEx(e.exId);
-        if (ex) types.add(getCatType(ex.category));
+        if (e.isCustom || getEx(e.exId)) types.add(getEntryType(e));
       }));
       dots = `<div class="cal-dot-row">${[...types].slice(0, 3).map(tp => `<div class="cal-dot ${tp}"></div>`).join('')}</div>`;
     }
@@ -160,11 +159,12 @@ function renderMonthlyRecap() {
   const exIds = [...new Set(thisMonthWos.flatMap(w => w.exercises.map(e => e.exId).filter(Boolean)))];
   exIds.forEach(exId => {
     const ex = getEx(exId);
-    if (!ex || getCatType(ex.category) !== 'strength') return;
+    if (!ex) return;
     let allTimeMax = 0, thisMonthMax = 0;
     db.workouts.forEach(w => {
       const match = w.exercises.find(e => e.exId === exId);
-      if (!match) return;
+      // Only sessions actually logged as kg × reps can hold a weight record.
+      if (!match || getEntryType(match) !== 'strength') return;
       const mx = Math.max(...match.sets.filter(s => s.type !== 'W' && s.weight).map(s => s.weight), 0);
       if (mx > allTimeMax) allTimeMax = mx;
       if (inMonth(w, y, m) && mx > thisMonthMax) thisMonthMax = mx;
@@ -238,7 +238,7 @@ function openCalDay(year, month, day) {
 
     const exHtml = w.exercises.map(e => {
       const ex       = getEx(e.exId);
-      const type     = ex ? getCatType(ex.category) : 'strength';
+      const type     = getEntryType(e);
       const catClass = getCatClass(type);
       const catLabel = ex ? (t('cats')[ex.category] || ex.category) : '';
       let setsHtml   = '';

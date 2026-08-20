@@ -5,7 +5,7 @@
 function renderStats() {
   const total      = db.workouts.length;
   const totalSets  = db.workouts.reduce((a, w) => a + w.exercises.reduce((b, e) => b + e.sets.length, 0), 0);
-  const totalExs   = db.exercises.length;
+  const totalExs   = activeExercises().length;
   const thisWeek   = db.workouts.filter(w => (Date.now() - w.date) < 7 * 86400000).length;
 
   const grid = document.getElementById('statsGrid');

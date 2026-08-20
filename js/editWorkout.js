@@ -29,7 +29,7 @@ function renderEditWorkout() {
   container.innerHTML = ex.map((e, i) => {
     const exDef    = getEx(e.exId);
     const name     = e.isCustom ? e.customName : (exDef ? exDef.name : t('noEntries'));
-    const type     = e.isCustom ? getCatType(e.customCategory) : (exDef ? getCatType(exDef.category) : 'strength');
+    const type     = getEntryType(e);
     const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (exDef ? (t('cats')[exDef.category] || exDef.category) : '');
     const catClass = getCatClass(type);
     const hiits = e.hiitSets || [];
@@ -65,7 +65,7 @@ function openEditWorkoutSets(idx) {
   currentWorkoutExIdx = null; // signals saveSets that we're in edit mode
   const we   = editingWorkoutCopy.exercises[idx];
   const ex   = getEx(we.exId);
-  const type = we.isCustom ? getCatType(we.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+  const type = getEntryType(we);
   const name = we.isCustom ? we.customName : (ex ? ex.name : '');
   currentExCategory = type;
   document.getElementById('logSetsTitle').textContent = name;

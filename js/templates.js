@@ -165,12 +165,13 @@ function _filterTmplExPicker() {
 function _renderTmplExPickerList(query) {
   const list = document.getElementById('tmplExPickerList');
   const q = (query || '').toLowerCase().trim();
-  const categories = [...new Set(db.exercises.map(e => e.category))];
+  const pickable = activeExercises();
+  const categories = [...new Set(pickable.map(e => e.category))];
   list.innerHTML = categories.map(cat => {
     const catLabel = t('cats')[cat] || cat;
     const type     = getCatType(cat);
     const catClass = getCatClass(type);
-    let exs = db.exercises.filter(e => e.category === cat);
+    let exs = pickable.filter(e => e.category === cat);
     if (q) {
       exs = exs.filter(e => e.name.toLowerCase().includes(q));
       

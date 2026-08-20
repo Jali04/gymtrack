@@ -162,7 +162,7 @@ function _renderCoachTip() {
 
       for (const we of lastWorkout.exercises) {
         const ex = getEx(we.exId);
-        if (!ex || getCatType(ex.category) !== 'strength') continue;
+        if (!ex || getEntryType(we) !== 'strength') continue;
 
         const maxWeightThisSession = Math.max(...(we.sets || []).map(s => Number(s.weight) || 0));
         if (maxWeightThisSession <= 0) continue;
@@ -434,7 +434,7 @@ function renderActiveWorkout() {
   container.innerHTML = (cw.exercises || []).map((e, i) => {
       const ex       = getEx(e.exId);
       const name     = e.isCustom ? e.customName : (ex ? ex.name : t('noEntries'));
-      const type     = e.isCustom ? getCatType(e.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+      const type     = getEntryType(e);
       const catLabel = e.isCustom ? (t('cats')[e.customCategory] || e.customCategory) : (ex ? (t('cats')[ex.category] || ex.category) : '');
       const catClass = getCatClass(type);
 
@@ -545,9 +545,7 @@ function _we(i) {
   return db.currentWorkout && db.currentWorkout.exercises ? db.currentWorkout.exercises[i] : null;
 }
 function _exType(we) {
-  if (!we) return 'strength';
-  const ex = getEx(we.exId);
-  return we.isCustom ? getCatType(we.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+  return getEntryType(we);
 }
 function _parseNum(v) {
   if (v == null) return null;
@@ -565,9 +563,10 @@ function _setHasData(s) {
 }
 function _lastPerf(we) {
   if (!we || !db.currentWorkout) return null;
+  const type = getEntryType(we);
   return we.isCustom
-    ? getLastCustomPerformance(we.customName, we.customCategory, db.currentWorkout.id)
-    : getLastPerformance(we.exId, db.currentWorkout.id);
+    ? getLastCustomPerformance(we.customName, we.customCategory, db.currentWorkout.id, type)
+    : getLastPerformance(we.exId, db.currentWorkout.id, type);
 }
 
 // F3: some lifters think in RIR (Reps in Reserve) = 10 − RPE. Stored value is
@@ -1344,6 +1343,7 @@ function _getHistoricalMaxWeight(exId, excludeWorkoutId) {
     if (w.id === excludeWorkoutId || !w.exercises) return;
     w.exercises.forEach(e => {
       if (e.isCustom || e.exId !== exId || !e.sets) return;
+      if (getEntryType(e) !== 'strength') return; // logged in other units — not a weight record
       e.sets.forEach(s => {
         if (s.type === 'W') return; // warmup sets don't count as records
         const wgt = Number(s.weight) || 0;
@@ -1370,7 +1370,7 @@ function _buildWorkoutSummary(cw) {
     });
     if (!e.isCustom && e.exId) {
       const ex = getEx(e.exId);
-      if (ex && getCatType(ex.category) === 'strength') {
+      if (ex && getEntryType(e) === 'strength') {
         // Weight PR
         const maxNow = Math.max(0, ...(e.sets || []).filter(s => s.type !== 'W').map(s => Number(s.weight) || 0));
         const prior  = _getHistoricalMaxWeight(e.exId, cw.id);
@@ -1883,7 +1883,7 @@ function _getFrequentExercises(limit = 5) {
   db.workouts.forEach(w => {
     if (!w.exercises) return;
     w.exercises.forEach(e => {
-      if (e.isCustom) return;
+      if (e.isCustom || isArchivedEx(e.exId)) return;
       freq[e.exId] = (freq[e.exId] || 0) + 1;
     });
   });
@@ -1896,7 +1896,8 @@ function _getFrequentExercises(limit = 5) {
 
 function _buildExPickerListHtml(query) {
   const q = (query || '').toLowerCase().trim();
-  const categories = [...new Set(db.exercises.map(e => e.category))];
+  const pickable = activeExercises();
+  const categories = [...new Set(pickable.map(e => e.category))];
   const alreadyIn = db.currentWorkout ? db.currentWorkout.exercises.map(e => e.exId) : [];
 
   // Frequent exercises section
@@ -1923,7 +1924,7 @@ function _buildExPickerListHtml(query) {
     const catLabel = t('cats')[cat] || cat;
     const type = getCatType(cat);
     const catClass = getCatClass(type);
-    let exs = db.exercises.filter(e => e.category === cat);
+    let exs = pickable.filter(e => e.category === cat);
     if (q) {
       exs = exs.filter(e => e.name.toLowerCase().includes(q));
       
@@ -2107,15 +2108,16 @@ function openLogSets(idx) {
   const cw   = db.currentWorkout;
   const we   = cw.exercises[idx];
   const ex   = getEx(we.exId);
-  const type = we.isCustom ? getCatType(we.customCategory) : (ex ? getCatType(ex.category) : 'strength');
+  const type = getEntryType(we);
   const name = we.isCustom ? we.customName : (ex ? ex.name : '');
   currentExCategory = type;
   document.getElementById('logSetsTitle').textContent = name;
 
   _setupSetColHeaders(type);
 
-  // Last performance + exercise notes
-  const lastPerf = we.isCustom ? getLastCustomPerformance(we.customName, we.customCategory, cw.id) : getLastPerformance(we.exId, cw.id);
+  // Last performance + exercise notes. Only sessions logged in the same units
+  // may fill the ghost text — a seconds hold must not seed a kg field.
+  const lastPerf = we.isCustom ? getLastCustomPerformance(we.customName, we.customCategory, cw.id, type) : getLastPerformance(we.exId, cw.id, type);
   const lpDiv    = document.getElementById('lastPerformance');
   let lpHtml = '';
 
@@ -2174,13 +2176,17 @@ function _pickLastPerformance(matches, currentWorkoutId) {
   });
 }
 
-function getLastPerformance(exId, currentWorkoutId) {
-  return _pickLastPerformance(e => !e.isCustom && e.exId === exId, currentWorkoutId);
+function getLastPerformance(exId, currentWorkoutId, type) {
+  return _pickLastPerformance(
+    e => !e.isCustom && e.exId === exId && (!type || getEntryType(e) === type),
+    currentWorkoutId
+  );
 }
 
-function getLastCustomPerformance(name, category, currentWorkoutId) {
+function getLastCustomPerformance(name, category, currentWorkoutId, type) {
   return _pickLastPerformance(
-    e => e.isCustom && e.customName === name && e.customCategory === category,
+    e => e.isCustom && e.customName === name && e.customCategory === category &&
+         (!type || getEntryType(e) === type),
     currentWorkoutId
   );
 }
@@ -2439,7 +2445,7 @@ function _showNextExSuggestions() {
   // Build suggestions: same-category exercises not yet added + frequent
   let suggestions = [];
   if (lastCat) {
-    suggestions = db.exercises
+    suggestions = activeExercises()
       .filter(e => e.category === lastCat && !addedIds.includes(e.id))
       .slice(0, 3);
   }
