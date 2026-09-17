@@ -341,6 +341,63 @@ const SYNC_MAPPINGS = {
 };
 
 // Map Table Names to Local db.js structures
+/* =============================================
+   SICHERHEITSNETZ: fehlende Spalten in der Cloud
+
+   Der Client kann vor der SQL-Migration ausgerollt werden (oder ein Nutzer
+   öffnet eine gecachte neue Version, bevor die Migration lief). PostgREST
+   lehnt den ganzen Upsert ab, wenn auch nur eine Spalte fehlt — damit würden
+   Übungen, Vorlagen und Workouts komplett nicht mehr synchronisieren, also
+   genau die Daten, die geschützt werden sollen.
+
+   Deshalb: erkennt eine fehlende Spalte, entfernt sie aus der Nutzlast und
+   schickt den Upsert erneut. Sobald die Migration läuft, greift das nie wieder.
+   ============================================= */
+const OPTIONAL_COLUMNS = ['domain', 'current_workout', 'current_workout_at'];  // erst ab Migration 20260917
+const _missingColumns = new Set();     // pro Sitzung gemerkt, spart Fehlversuche
+
+function _isMissingColumnError(error) {
+  if (!error) return null;
+  // PostgREST: PGRST204 (Spalte im Schema-Cache unbekannt), Postgres: 42703
+  const msg = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`;
+  const m = msg.match(/'([^']+)' column|column "([^"]+)"/i);
+  const name = m ? (m[1] || m[2]) : null;
+  if (error.code === 'PGRST204' || error.code === '42703' || /column/i.test(msg)) {
+    return name || (OPTIONAL_COLUMNS.find(c => msg.includes(c)) || null);
+  }
+  return null;
+}
+
+function _stripKnownMissing(payload) {
+  const strip = row => {
+    if (!row || typeof row !== 'object') return row;
+    const copy = Object.assign({}, row);
+    _missingColumns.forEach(c => { delete copy[c]; });
+    return copy;
+  };
+  return Array.isArray(payload) ? payload.map(strip) : strip(payload);
+}
+
+/* Upsert mit einem Wiederholungsversuch ohne die fehlende Spalte. */
+async function safeUpsert(table, payload, options) {
+  const send = body => options
+    ? window.supabaseClient.from(table).upsert(body, options)
+    : window.supabaseClient.from(table).upsert(body);
+
+  let body = _missingColumns.size ? _stripKnownMissing(payload) : payload;
+  let { error } = await send(body);
+  if (!error) return { error: null };
+
+  const missing = _isMissingColumnError(error);
+  if (!missing || !OPTIONAL_COLUMNS.includes(missing)) return { error };
+
+  console.warn(`[Sync] Spalte "${missing}" fehlt in der Cloud — bitte die SQL-Migration ausführen. ` +
+               `Es wird vorerst ohne diese Spalte synchronisiert.`);
+  _missingColumns.add(missing);
+  const retry = await send(_stripKnownMissing(payload));
+  return { error: retry.error };
+}
+
 const LOCAL_DB_KEYS = {
   exercises: 'exercises',
   workouts: 'workouts',
@@ -480,9 +537,7 @@ async function syncUserProfile(userId) {
     } else if (localNeedsPush) {
       console.log('[Sync] Pushing profile updates to remote');
       const now = Date.now();
-      const { error: upsertError } = await window.supabaseClient
-        .from('profiles')
-        .upsert({
+      const { error: upsertError } = await safeUpsert('profiles', {
           id: userId,
           active_program_id: db.activeProgram?.id || null,
           week_status: db.weekStatus || {"weekKey": 0, "mode": "normal"},
@@ -492,7 +547,7 @@ async function syncUserProfile(userId) {
           current_workout: db.currentWorkout || null,
           current_workout_at: db.currentWorkout ? now : null,
           updated_at: now
-        });
+      });
       if (upsertError) throw upsertError;
       localStorage.setItem('gym_profile_updated_at', String(now));
     }
@@ -654,10 +709,8 @@ async function syncTable(table, userId) {
   if (upsertQueue.length > 0) {
     console.log(`[Sync] Pushing ${upsertQueue.length} records to ${table}`);
     const rows = upsertQueue.map(row => ({ ...row, user_id: userId }));
-    const { error: upsertError } = await window.supabaseClient
-      .from(table)
-      .upsert(rows);
-    
+    const { error: upsertError } = await safeUpsert(table, rows);
+
     if (upsertError) throw upsertError;
   }
 }
@@ -740,12 +793,9 @@ async function syncTableItem(tableName, item) {
   console.log(`[Sync Background] Upserting item into ${tableName}:`, dbItem.id);
   
   // Asynchronous background call
-  window.supabaseClient
-    .from(tableName)
-    .upsert(dbItem)
-    .then(({ error }) => {
-      if (error) console.error(`[Sync Background Error] Table ${tableName}:`, error);
-    });
+  safeUpsert(tableName, dbItem).then(({ error }) => {
+    if (error) console.error(`[Sync Background Error] Table ${tableName}:`, error);
+  });
 }
 
 // Background Sync Trigger for user profile updates
@@ -756,9 +806,7 @@ async function syncProfileUpdate() {
 
   console.log(`[Sync Background] Upserting profile data`);
   
-  window.supabaseClient
-    .from('profiles')
-    .upsert({
+  safeUpsert('profiles', {
       id: userId,
       active_program_id: db.activeProgram?.id || null,
       week_status: db.weekStatus || {"weekKey": 0, "mode": "normal"},
