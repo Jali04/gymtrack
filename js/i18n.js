@@ -399,7 +399,15 @@ function toggleLang() {
   if (!active) return;
   const id = active.id.replace('page-', '');
   const renders = {
-    log: renderLog, gymlab: renderGymLab,
+    // Abteilungen: die Seiten-IDs heißen jetzt gym/mobility.
+    gym: () => {
+      renderGymDepartment();
+      switchGymSubTab(localStorage.getItem('gymtrack_gym_subtab') || 'today');
+    },
+    mobility: () => {
+      renderMobilityDepartment();
+      switchMobilitySubTab(localStorage.getItem('gymtrack_mobility_subtab') || 'today');
+    },
     stats: renderStats,
     supps: () => {
       const activeSub = localStorage.getItem('gymtrack_nutrition_subtab') || 'calories';

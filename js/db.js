@@ -28,15 +28,32 @@ const DOMAIN_MIXED    = 'mixed';   // nur für Vorlagen/Workouts
 // Kategorien, die inhaltlich zur Mobility-Abteilung gehören.
 const MOBILITY_CATEGORIES = ['Dehnen', 'Mobility', 'Stretching'];
 
-// Die Abteilung einer Übung. Bestandsdaten ohne `domain` werden über Kategorie
-// bzw. Typ hergeleitet, damit auch ungespeicherte Objekte korrekt einsortiert
-// werden (Import, Cloud-Pull von einem alten Client).
+/* Die Abteilung einer Übung wird IMMER aus ihrer Kategorie hergeleitet, nie aus
+   einem gespeicherten Feld gelesen. Sonst bliebe eine Übung, die der Nutzer von
+   "Brust" nach "Dehnen" umkategorisiert, für immer in der Gym-Abteilung hängen.
+   `ex.domain` ist nur die denormalisierte Kopie für SQL-Abfragen; save() hält
+   sie über refreshExerciseDomains() nach.
+
+   Eine eigene Kategorie vom Typ 'stretch' zählt ebenfalls als Mobility — so
+   kann der Nutzer die Abteilung um eigene Kategorien erweitern. */
 function getExerciseDomain(ex) {
   if (!ex) return DOMAIN_GYM;
-  if (ex.domain === DOMAIN_MOBILITY || ex.domain === DOMAIN_GYM) return ex.domain;
   if (MOBILITY_CATEGORIES.includes(ex.category)) return DOMAIN_MOBILITY;
   if (getCatType(ex.category) === 'stretch') return DOMAIN_MOBILITY;
   return DOMAIN_GYM;
+}
+
+/* Gleicht die gespeicherte Kopie an die Herleitung an. updated_at wird nur
+   angefasst, wenn sich wirklich etwas ändert — sonst würde jeder save() eine
+   überflüssige Sync-Runde auslösen. */
+function refreshExerciseDomains() {
+  (db.exercises || []).forEach(ex => {
+    const d = getExerciseDomain(ex);
+    if (ex.domain !== d) {
+      ex.domain = d;
+      ex.updated_at = Date.now();
+    }
+  });
 }
 
 // Die Abteilung einer Sammlung von Übungs-IDs: 'gym', 'mobility' oder 'mixed'.
@@ -52,10 +69,30 @@ function resolveDomainForExerciseIds(exerciseIds) {
   return DOMAIN_GYM;
 }
 
-// Die Abteilung eines Workouts aus seinen geloggten Blöcken.
+/* Die Abteilung eines Workouts aus seinen geloggten Blöcken.
+
+   `intendedDomain` hält fest, aus welcher Abteilung die Einheit gestartet
+   wurde. Sie zählt mit: eine frisch gestartete, noch leere Mobility-Session
+   bleibt Mobility, und wer in einer Gym-Einheit eine Dehnübung loggt, bekommt
+   'mixed' — die Einheit taucht dann in beiden Abteilungen auf. */
 function resolveWorkoutDomain(workout) {
   if (!workout) return DOMAIN_GYM;
-  return resolveDomainForExerciseIds((workout.exercises || []).map(e => e.exId));
+  const fromExercises = resolveDomainForExerciseIds((workout.exercises || []).map(e => e.exId));
+  const intended = workout.intendedDomain;
+  if (!intended || intended === DOMAIN_MIXED) {
+    return (workout.exercises || []).length ? fromExercises : (intended || DOMAIN_GYM);
+  }
+  if (!(workout.exercises || []).length) return intended;
+  if (fromExercises === DOMAIN_MIXED || fromExercises !== intended) return DOMAIN_MIXED;
+  return intended;
+}
+
+/* Hält workout.domain aktuell. Wird bei jedem save() für die laufende Einheit
+   aufgerufen, damit die Abteilung stimmt, egal über welchen Weg eine Übung
+   hinzugekommen ist (Picker, Vorlage, HIIT-Timer, Programm). */
+function refreshWorkoutDomain(workout) {
+  if (!workout) return;
+  workout.domain = resolveWorkoutDomain(workout);
 }
 
 // Zählt ein Workout für die angegebene Abteilung? 'mixed' zählt für beide —
@@ -776,6 +813,11 @@ setTimeout(() => { try { maybeAutoBackup(false); } catch (e) {} }, 3000);
 
 function save() {
   runMigrations(db); // fast path: no-op once already at SCHEMA_VERSION (F10)
+  // Abteilungen nachziehen, bevor irgendetwas weggeschrieben wird: eine
+  // umkategorisierte Übung wechselt so sofort die Abteilung, und die laufende
+  // Einheit trägt immer die Abteilung ihrer tatsächlichen Blöcke.
+  refreshExerciseDomains();
+  refreshWorkoutDomain(db.currentWorkout);
   _persistDb();
 
   if (typeof syncProfileUpdate === 'function') {

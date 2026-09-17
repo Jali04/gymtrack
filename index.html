@@ -95,156 +95,256 @@
   <!-- ===== PAGES ===== -->
 
   <!-- Training / Log -->
-  <div class="page active" id="page-log">
-    <div class="section-title" id="ttlStartTraining">Training starten</div>
-    <div id="quickStart">
-      <!-- Welcome Onboarding Banner -->
-      <div id="guideWelcomeBanner" class="guide-welcome-card" style="display:none;">
-        <div class="guide-welcome-close" onclick="dismissGuideBanner(event)">✕</div>
-        <div class="guide-welcome-title" id="lblGuideBannerTitle">Neu bei DSCPLN? 🚀</div>
-        <p class="guide-welcome-text" id="lblGuideBannerText">Lerne in 2 Minuten, wie du dein Training loggst, Vorlagen erstellst und den AI Coach nutzt!</p>
-        <div style="display:flex;gap:10px;margin-top:12px;">
-          <button class="btn btn-primary btn-sm" onclick="openGuideModal('tour')" id="btnGuideBannerStart" style="margin:0;flex:1;">Tour starten</button>
-          <button class="btn btn-secondary btn-sm" onclick="dismissGuideBanner(event)" id="btnGuideBannerDismiss" style="margin:0;width:auto;border-color:transparent;background:rgba(255,255,255,0.05);">Schließen</button>
-        </div>
-      </div>
-
-      <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;"
-        onclick="startNextProgramDay()">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Aktuelles Programm
-        </div>
-        <div style="font-weight:700;font-size:18px;color:var(--accent);margin-bottom:4px;" id="activeProgramName">Push
-          Pull Legs</div>
-        <div style="font-size:13px;color:var(--text);" id="activeProgramNext">Nächstes: Tag 1 (Push)</div>
-      </div>
-
-      <div id="streakBanner" style="display:none;text-align:center;margin-bottom:10px;"></div>
-
-      <!-- Quick Metrics Dashboard -->
-      <div class="quick-metrics-row" style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px; margin-top: 8px;">
-        <div class="metric-card" onclick="openAchievements()" role="button" tabindex="0" aria-label="Erfolge und Ränge öffnen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAchievements();}" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px; cursor: pointer;">
-          <div style="font-size: 18px; margin-bottom: 4px; line-height: 1;">🏆</div>
-          <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Trophäen</div>
-          <div style="font-size: 15px; font-weight: 700; font-family: 'Orbitron', sans-serif; color: var(--text); margin-top: 2px;" id="lblMetricTrophies">0</div>
-        </div>
-        <div class="metric-card" onclick="openAchievements()" role="button" tabindex="0" aria-label="Erfolge und Ränge öffnen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAchievements();}" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px; cursor: pointer;">
-          <div style="font-size: 18px; margin-bottom: 4px; line-height: 1;">🔥</div>
-          <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Wochen 🔥</div>
-          <div style="font-size: 15px; font-weight: 700; font-family: 'Orbitron', sans-serif; color: var(--accent); margin-top: 2px;" id="lblMetricStreak">0</div>
-        </div>
-        <div class="metric-card" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px;">
-          <div style="font-size: 18px; margin-bottom: 4px; line-height: 1;">🏋️</div>
-          <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Workouts (7t)</div>
-          <div style="font-size: 15px; font-weight: 700; font-family: 'Orbitron', sans-serif; color: var(--accent2); margin-top: 2px;" id="lblMetricWorkouts7d">0</div>
-        </div>
-      </div>
-
-      <div id="weekStatusWidget" style="margin-bottom:16px;"></div>
-      <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
-      <div id="quickStartTemplates" style="display:none;"></div>
-      <!-- Recent workouts (B2) -->
-      <div id="recentWorkouts" style="display:none;"></div>
-      <!-- Rest Timer Config -->
-      <div class="rest-config-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <div class="rest-config-title" id="lblRestConfig">Satzpause</div>
-            <div class="rest-config-sub" id="lblRestSub">Countdown nach jedem Satz</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="restToggle" onchange="restTimerToggle(this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div id="restDurationRow" class="rest-duration-row">
-          <button class="rest-adj-btn" onclick="restTimerAdj(-15)">−</button>
-          <span id="restDurationDisplay" class="rest-duration-display">1:30</span>
-          <button class="rest-adj-btn" onclick="restTimerAdj(+15)">+</button>
-        </div>
-      </div>
-      <!-- AI Coach Tip of the Day -->
-      <div class="card coach-tip-card" style="margin-top: 16px; margin-bottom: 12px; background: linear-gradient(135deg, rgba(155,92,246,0.12), rgba(232,255,71,0.04)); border: 1px solid rgba(155,92,246,0.25); border-radius: 14px; padding: 12px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <div style="font-size: 24px; line-height: 1; flex-shrink: 0; filter: drop-shadow(0 2px 8px rgba(155,92,246,0.4));">🤖</div>
-          <div>
-            <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; color: var(--accent2);">AI Coach · Tipp des Tages</div>
-            <p id="coachTipText" style="font-size: 13px; line-height: 1.45; color: var(--text); margin: 6px 0 0 0; font-family: 'DM Sans', sans-serif; font-weight: 400;"></p>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="activeWorkout" style="display:none;">
-      <div class="workout-header">
-        <div>
-          <div id="activeWorkoutLabel" style="font-size:13px;color:var(--muted);">Aktives Training</div>
-          <div class="timer-display" id="timerDisplay">00:00</div>
-          <div id="workoutLiveStats" style="font-size:12px;color:var(--muted);margin-top:2px;min-height:15px;"></div>
-        </div>
-        <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;"
-          onclick="finishWorkout()">Fertig ✓</button>
-      </div>
-      <div id="workoutExercises"></div>
-      <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
-      <button id="btnWorkoutHiit" class="btn btn-secondary" onclick="openHiitTimer()" style="margin-top:8px;">⚡ HIIT /
-        Cardio Timer</button>
-      <button id="btnWorkoutTools" class="btn btn-secondary" onclick="openToolsModal()" style="margin-top:8px;">🛠
-        Rechner & Tools</button>
-      <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:16px;">Training
-        abbrechen</button>
-    </div>
-  </div>
-
-  <!-- GymLab (Vorlagen + Übungen + Programme) -->
-  <div class="page" id="page-gymlab">
-    <div class="gymlab-tabs">
-      <button class="gymlab-tab active" data-tab="templates" onclick="switchGymLabTab('templates')"
-        id="tabGymLabTemplates">Vorlagen</button>
-      <button class="gymlab-tab" data-tab="programs" onclick="switchGymLabTab('programs')"
-        id="tabGymLabPrograms">Programme</button>
-      <button class="gymlab-tab" data-tab="exercises" onclick="switchGymLabTab('exercises')"
-        id="tabGymLabExercises">Übungen</button>
+  <!-- ===================================================================
+       GYM-ABTEILUNG
+       Training, Vorlagen, Programme und Übungen an einem Ort. Die drei
+       Unterseiten ersetzen die früher getrennten Tabs "Training" und "GymLab".
+       =================================================================== -->
+  <div class="page active" id="page-gym">
+    <div class="dept-subtabs" role="tablist" aria-label="Gym-Bereiche">
+      <button class="dept-subtab active" data-sub="today" role="tab" onclick="switchGymSubTab('today')" id="tabGymToday">🏋️ Heute</button>
+      <button class="dept-subtab" data-sub="plans" role="tab" onclick="switchGymSubTab('plans')" id="tabGymPlans">📋 Pläne</button>
+      <button class="dept-subtab" data-sub="exercises" role="tab" onclick="switchGymSubTab('exercises')" id="tabGymExercises">💪 Übungen</button>
     </div>
 
+    <!-- Suchfeld: gilt für Pläne und Übungen, auf "Heute" ausgeblendet -->
+    <div id="gymSearchWrapper" style="display:none;">
     <!-- GymLab search bar -->
-    <div class="gymlab-search-container" style="margin-bottom: 12px;">
-      <input type="text" id="gymlabSearch" class="form-input" placeholder="Suchen..." oninput="onGymLabSearchInput()" autocomplete="off" style="height: 42px; font-size: 14px;">
+        <div class="gymlab-search-container" style="margin-bottom: 12px;">
+          <input type="text" id="gymlabSearch" class="form-input" placeholder="Suchen..." oninput="onGymLabSearchInput()" autocomplete="off" style="height: 42px; font-size: 14px;">
+        </div>
     </div>
 
     <!-- GymLab exercise category chips -->
-    <div class="gymlab-category-chips-wrapper" id="gymlabCategoryChipsWrapper" style="display:none; margin-bottom: 16px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
-      <!-- Dynamically rendered by renderGymLabCategoryChips() -->
-    </div>
+        <div class="gymlab-category-chips-wrapper" id="gymlabCategoryChipsWrapper" style="display:none; margin-bottom: 16px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
+          <!-- Dynamically rendered by renderGymLabCategoryChips() -->
+        </div>
 
-    <!-- Templates -->
-    <div id="gymlab-templates-wrapper">
-      <div class="gymlab-section-header">
-        <div class="section-title" style="margin:0;" id="ttlTemplates">Vorlagen</div>
-        <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+</button>
-      </div>
-      <div id="templatesList"></div>
-      <div class="divider"></div>
-    </div>
+    <!-- ---- Heute: Training starten / laufende Einheit ---- -->
+    <div class="dept-subpage" id="gym-subpage-today">
+  <div class="section-title" id="ttlStartTraining">Training starten</div>
+      <div id="quickStart">
+        <!-- Welcome Onboarding Banner -->
+        <div id="guideWelcomeBanner" class="guide-welcome-card" style="display:none;">
+          <div class="guide-welcome-close" onclick="dismissGuideBanner(event)">✕</div>
+          <div class="guide-welcome-title" id="lblGuideBannerTitle">Neu bei DSCPLN? 🚀</div>
+          <p class="guide-welcome-text" id="lblGuideBannerText">Lerne in 2 Minuten, wie du dein Training loggst, Vorlagen erstellst und den AI Coach nutzt!</p>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="btn btn-primary btn-sm" onclick="openGuideModal('tour')" id="btnGuideBannerStart" style="margin:0;flex:1;">Tour starten</button>
+            <button class="btn btn-secondary btn-sm" onclick="dismissGuideBanner(event)" id="btnGuideBannerDismiss" style="margin:0;width:auto;border-color:transparent;background:rgba(255,255,255,0.05);">Schließen</button>
+          </div>
+        </div>
 
-    <!-- Programs -->
-    <div id="gymlab-programs-wrapper" style="display:none;">
-      <div class="gymlab-section-header">
-        <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
-        <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
-      </div>
-      <div id="programsList"></div>
-      <div class="divider"></div>
-    </div>
+        <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;"
+          onclick="startNextProgramDay()">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Aktuelles Programm
+          </div>
+          <div style="font-weight:700;font-size:18px;color:var(--accent);margin-bottom:4px;" id="activeProgramName">Push
+            Pull Legs</div>
+          <div style="font-size:13px;color:var(--text);" id="activeProgramNext">Nächstes: Tag 1 (Push)</div>
+        </div>
 
-    <!-- Exercises -->
-    <div id="gymlab-exercises-wrapper" style="display:none;">
-      <div class="gymlab-section-header">
-        <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <button class="btn btn-secondary btn-sm" id="btnManageCategories" style="margin:0;" onclick="openCategoryManager()">🗂 Kategorien</button>
-          <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
+        <div id="streakBanner" style="display:none;text-align:center;margin-bottom:10px;"></div>
+
+        <!-- Quick Metrics Dashboard -->
+        <div class="quick-metrics-row" style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px; margin-top: 8px;">
+          <div class="metric-card" onclick="openAchievements()" role="button" tabindex="0" aria-label="Erfolge und Ränge öffnen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAchievements();}" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px; cursor: pointer;">
+            <div style="font-size: 18px; margin-bottom: 4px; line-height: 1;">🏆</div>
+            <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Trophäen</div>
+            <div style="font-size: 15px; font-weight: 700; font-family: 'Orbitron', sans-serif; color: var(--text); margin-top: 2px;" id="lblMetricTrophies">0</div>
+          </div>
+          <div class="metric-card" onclick="openAchievements()" role="button" tabindex="0" aria-label="Erfolge und Ränge öffnen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAchievements();}" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px; cursor: pointer;">
+            <div style="font-size: 18px; margin-bottom: 4px; line-height: 1;">🔥</div>
+            <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Wochen 🔥</div>
+            <div style="font-size: 15px; font-weight: 700; font-family: 'Orbitron', sans-serif; color: var(--accent); margin-top: 2px;" id="lblMetricStreak">0</div>
+          </div>
+          <div class="metric-card" style="flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 68px;">
+            <div style="font-size: 18px; margin-bottom: 4px; line-height: 1;">🏋️</div>
+            <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Workouts (7t)</div>
+            <div style="font-size: 15px; font-weight: 700; font-family: 'Orbitron', sans-serif; color: var(--accent2); margin-top: 2px;" id="lblMetricWorkouts7d">0</div>
+          </div>
+        </div>
+
+        <div id="weekStatusWidget" style="margin-bottom:16px;"></div>
+        <button class="btn btn-primary" id="btnNewWorkout" onclick="openStartOptionsModal()">+ Neues Training</button>
+        <div id="quickStartTemplates" style="display:none;"></div>
+        <!-- Recent workouts (B2) -->
+        <div id="recentWorkouts" style="display:none;"></div>
+        <!-- Rest Timer Config -->
+        <div class="rest-config-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="rest-config-title" id="lblRestConfig">Satzpause</div>
+              <div class="rest-config-sub" id="lblRestSub">Countdown nach jedem Satz</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="restToggle" onchange="restTimerToggle(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div id="restDurationRow" class="rest-duration-row">
+            <button class="rest-adj-btn" onclick="restTimerAdj(-15)">−</button>
+            <span id="restDurationDisplay" class="rest-duration-display">1:30</span>
+            <button class="rest-adj-btn" onclick="restTimerAdj(+15)">+</button>
+          </div>
+        </div>
+        <!-- AI Coach Tip of the Day -->
+        <div class="card coach-tip-card" style="margin-top: 16px; margin-bottom: 12px; background: linear-gradient(135deg, rgba(155,92,246,0.12), rgba(232,255,71,0.04)); border: 1px solid rgba(155,92,246,0.25); border-radius: 14px; padding: 12px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="font-size: 24px; line-height: 1; flex-shrink: 0; filter: drop-shadow(0 2px 8px rgba(155,92,246,0.4));">🤖</div>
+            <div>
+              <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; color: var(--accent2);">AI Coach · Tipp des Tages</div>
+              <p id="coachTipText" style="font-size: 13px; line-height: 1.45; color: var(--text); margin: 6px 0 0 0; font-family: 'DM Sans', sans-serif; font-weight: 400;"></p>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="exercisesList"></div>
+      <div id="gymActiveMount">
+      <div id="activeWorkout" style="display:none;">
+        <div class="workout-header">
+          <div>
+            <div id="activeWorkoutLabel" style="font-size:13px;color:var(--muted);">Aktives Training</div>
+            <div class="timer-display" id="timerDisplay">00:00</div>
+            <div id="workoutLiveStats" style="font-size:12px;color:var(--muted);margin-top:2px;min-height:15px;"></div>
+          </div>
+          <button id="btnFinishWorkout" class="btn btn-primary" style="width:auto;padding:10px 20px;"
+            onclick="finishWorkout()">Fertig ✓</button>
+        </div>
+        <div id="workoutExercises"></div>
+        <button id="btnAddExercise" class="btn btn-secondary" onclick="openExercisePicker()">+ Übung hinzufügen</button>
+        <button id="btnWorkoutHiit" class="btn btn-secondary" onclick="openHiitTimer()" style="margin-top:8px;">⚡ HIIT /
+          Cardio Timer</button>
+        <button id="btnWorkoutTools" class="btn btn-secondary" onclick="openToolsModal()" style="margin-top:8px;">🛠
+          Rechner & Tools</button>
+        <button id="btnCancelWorkout" class="btn btn-danger" onclick="cancelWorkout()" style="margin-top:16px;">Training
+          abbrechen</button>
+      </div>
+    </div>
+    </div>
+
+    <!-- ---- Pläne: Vorlagen und Programme gemeinsam ---- -->
+    <div class="dept-subpage" id="gym-subpage-plans" style="display:none;">
+  <!-- Templates -->
+      <div id="gymlab-templates-wrapper">
+        <div class="gymlab-section-header">
+          <div class="section-title" style="margin:0;" id="ttlTemplates">Vorlagen</div>
+          <button class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="openCreateTemplate()">+</button>
+        </div>
+        <div id="templatesList"></div>
+        <div class="divider"></div>
+      </div>
+
+  <!-- Programs -->
+      <div id="gymlab-programs-wrapper">
+        <div class="gymlab-section-header">
+          <div class="section-title" style="margin:0;" id="ttlPrograms">Programme</div>
+          <button class="btn btn-primary btn-sm" id="btnCreateProgram" onclick="openCreateProgram()">+</button>
+        </div>
+        <div id="programsList"></div>
+        <div class="divider"></div>
+      </div>
+    </div>
+
+    <!-- ---- Übungen ---- -->
+    <div class="dept-subpage" id="gym-subpage-exercises" style="display:none;">
+  <!-- Exercises -->
+      <div id="gymlab-exercises-wrapper">
+        <div class="gymlab-section-header">
+          <div class="section-title" style="margin:0;font-size:20px;" id="ttlExercises">Meine Übungen</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn btn-secondary btn-sm" id="btnManageCategories" style="margin:0;" onclick="openCategoryManager()">🗂 Kategorien</button>
+            <button class="btn btn-primary btn-sm" id="btnCreateExercise" onclick="openAddExercise()">+</button>
+          </div>
+        </div>
+        <div id="exercisesList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       MOBILITY-ABTEILUNG
+       Teilt sich Übungen, Routinen und Sessions mit der Gym-Abteilung — nur
+       über `domain` getrennt. Eine laufende Einheit wird deshalb in beiden
+       Abteilungen angezeigt (siehe mountActiveWorkout in nav.js).
+       =================================================================== -->
+  <div class="page" id="page-mobility">
+    <div class="dept-subtabs" role="tablist" aria-label="Mobility-Bereiche">
+      <button class="dept-subtab active" data-sub="today" role="tab" onclick="switchMobilitySubTab('today')" id="tabMobToday">🧘 Heute</button>
+      <button class="dept-subtab" data-sub="routines" role="tab" onclick="switchMobilitySubTab('routines')" id="tabMobRoutines">🌀 Routinen</button>
+      <button class="dept-subtab" data-sub="exercises" role="tab" onclick="switchMobilitySubTab('exercises')" id="tabMobExercises">🤸 Übungen</button>
+    </div>
+
+    <div id="mobilitySearchWrapper" style="display:none;">
+      <div class="gymlab-search-container" style="margin-bottom: 12px;">
+        <input type="text" id="mobilitySearch" class="form-input" placeholder="Suchen..." oninput="onMobilitySearchInput()" autocomplete="off" style="height: 42px; font-size: 14px;">
+      </div>
+    </div>
+
+    <div class="gymlab-category-chips-wrapper" id="mobilityCategoryChipsWrapper" style="display:none; margin-bottom: 16px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
+      <!-- von renderMobilityCategoryChips() gefüllt -->
+    </div>
+
+    <!-- ---- Heute ---- -->
+    <div class="dept-subpage" id="mobility-subpage-today">
+      <div class="section-title" id="ttlStartMobility">Mobility starten</div>
+      <div id="mobilityQuickStart">
+        <div id="mobilityStatsRow" class="quick-metrics-row" style="display:flex;justify-content:space-between;gap:8px;margin-bottom:16px;margin-top:8px;"></div>
+
+        <button class="btn btn-primary" id="btnNewMobility" onclick="startMobilitySession()">+ Neue Mobility-Session</button>
+
+        <div id="mobilityQuickRoutines"></div>
+
+        <!-- Interconnect: Mobility lässt sich in eine laufende Gym-Einheit einhängen -->
+        <div class="card" id="mobilityInterconnectCard" style="display:none;margin-top:16px;background:linear-gradient(135deg, rgba(56,189,248,0.12), rgba(232,255,71,0.04));border:1px solid rgba(56,189,248,0.25);border-radius:14px;padding:14px;cursor:pointer;" onclick="addMobilityToActiveWorkout()">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="font-size:24px;line-height:1;flex-shrink:0;">🔗</div>
+            <div>
+              <div style="font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:0.8px;color:var(--accent2);">Läuft gerade</div>
+              <p style="font-size:13px;line-height:1.45;color:var(--text);margin:6px 0 0 0;font-family:'DM Sans', sans-serif;" id="mobilityInterconnectText">
+                Du trainierst gerade. Häng eine Mobility-Übung direkt in diese Einheit ein.
+              </p>
+              <div style="font-size:11.5px;font-weight:600;color:var(--accent);margin-top:8px;">Übung hinzufügen ➔</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;background:linear-gradient(135deg, rgba(155,92,246,0.12), rgba(232,255,71,0.04));border:1px solid rgba(155,92,246,0.25);border-radius:14px;padding:14px;cursor:pointer;" onclick="askCoachAboutMobility()">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="font-size:24px;line-height:1;flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(155,92,246,0.4));">🤖</div>
+            <div>
+              <div style="font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:0.8px;color:var(--accent2);">AI Coach · Mobility</div>
+              <p style="font-size:13px;line-height:1.45;color:var(--text);margin:6px 0 0 0;font-family:'DM Sans', sans-serif;" id="mobilityCoachText">
+                Lass dir eine Mobility-Routine für deine Schwachstellen bauen — passend zu dem, was du im Gym trainierst.
+              </p>
+              <div style="font-size:11.5px;font-weight:600;color:var(--accent);margin-top:8px;">Routine vorschlagen ➔</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Läuft eine Einheit, wird #activeWorkout hierher verschoben -->
+      <div id="mobilityActiveMount"></div>
+    </div>
+
+    <!-- ---- Routinen ---- -->
+    <div class="dept-subpage" id="mobility-subpage-routines" style="display:none;">
+      <div class="gymlab-section-header">
+        <div class="section-title" style="margin:0;" id="ttlMobilityRoutines">Meine Routinen</div>
+        <button class="btn btn-primary btn-sm" id="btnCreateMobilityRoutine" onclick="openCreateMobilityRoutine()">+</button>
+      </div>
+      <div id="mobilityRoutinesList"></div>
+    </div>
+
+    <!-- ---- Übungen ---- -->
+    <div class="dept-subpage" id="mobility-subpage-exercises" style="display:none;">
+      <div class="gymlab-section-header">
+        <div class="section-title" style="margin:0;font-size:20px;" id="ttlMobilityExercises">Mobility-Übungen</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-secondary btn-sm" style="margin:0;" onclick="openCategoryManager()">🗂 Kategorien</button>
+          <button class="btn btn-primary btn-sm" id="btnCreateMobilityExercise" onclick="openAddMobilityExercise()">+</button>
+        </div>
+      </div>
+      <div id="mobilityExercisesList"></div>
     </div>
   </div>
 
@@ -347,18 +447,18 @@
 
   <!-- ===== NAV ===== -->
   <nav class="nav" aria-label="Hauptnavigation">
-    <button class="nav-btn active" data-page="log" onclick="showPage('log',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    <button class="nav-btn active" data-page="gym" onclick="showPage('gym',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
       </svg>
-      Training
+      Gym
     </button>
-    <button class="nav-btn" data-page="gymlab" onclick="showPage('gymlab',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+    <button class="nav-btn" data-page="mobility" onclick="showPage('mobility',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="4.5" r="2" />
+        <path d="M12 6.5v6M12 12.5l-4 5M12 12.5l4 5M7 9.5l5-1 5 1" />
       </svg>
-      GymLab
+      Mobility
     </button>
     <button class="nav-btn" data-page="supps" onclick="showPage('supps',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -393,7 +493,7 @@
         <button class="btn btn-secondary" id="btnStartRepeatLast" style="display:none;"
           onclick="repeatLastWorkout()">🔁 Letztes Training wiederholen</button>
         <button class="btn btn-secondary"
-          onclick="closeModal('startOptionsModal');showPage('gymlab', document.querySelector('.nav-btn[data-page=gymlab]'))"
+          onclick="closeModal('startOptionsModal');showPage('gym', document.querySelector('.nav-btn[data-page=gym]'));switchGymSubTab('plans')"
           id="btnStartTemplate">Aus Vorlage</button>
         <button class="btn btn-secondary" id="btnStartProgOpt" style="display:none;"
           onclick="closeModal('startOptionsModal');startNextProgramDay()">Gemäß Programm</button>
@@ -2064,36 +2164,37 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-  <script src="js/db.js?v=4.64"></script>
-  <script src="js/i18n.js?v=4.64"></script>
-  <script src="js/modals.js?v=4.64"></script>
-  <script src="js/nav.js?v=4.64"></script>
-  <script src="js/workout.js?v=4.64"></script>
-  <script src="js/exercises.js?v=4.64"></script>
-  <script src="js/categories.js?v=4.64"></script>
-  <script src="js/history.js?v=4.31"></script>
-  <script src="js/stats.js?v=4.64"></script>
-  <script src="js/templates.js?v=4.64"></script>
-  <script src="js/calendar.js?v=4.64"></script>
-  <script src="js/editWorkout.js?v=4.64"></script>
-  <script src="js/timer.js?v=4.59"></script>
-  <script src="js/ui.js?v=4.59"></script>
-  <script src="js/wakelock.js?v=4.43"></script>
-  <script src="js/splash.js?v=4.31"></script>
-  <script src="js/progress.js?v=4.64"></script>
-  <script src="js/programs.js?v=4.56"></script>
-  <script src="js/supplements.js?v=4.31"></script>
+  <script src="js/db.js?v=5.00"></script>
+  <script src="js/i18n.js?v=5.00"></script>
+  <script src="js/modals.js?v=5.00"></script>
+  <script src="js/nav.js?v=5.00"></script>
+  <script src="js/workout.js?v=5.00"></script>
+  <script src="js/exercises.js?v=5.00"></script>
+  <script src="js/categories.js?v=5.00"></script>
+  <script src="js/history.js?v=5.00"></script>
+  <script src="js/stats.js?v=5.00"></script>
+  <script src="js/templates.js?v=5.00"></script>
+  <script src="js/calendar.js?v=5.00"></script>
+  <script src="js/editWorkout.js?v=5.00"></script>
+  <script src="js/timer.js?v=5.00"></script>
+  <script src="js/ui.js?v=5.00"></script>
+  <script src="js/wakelock.js?v=5.00"></script>
+  <script src="js/splash.js?v=5.00"></script>
+  <script src="js/progress.js?v=5.00"></script>
+  <script src="js/programs.js?v=5.00"></script>
+  <script src="js/mobility.js?v=5.00"></script>
+  <script src="js/supplements.js?v=5.00"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="js/nutrition.js?v=4.50"></script>
-  <script src="js/tools.js?v=4.50"></script>
-  <script src="js/guide.js?v=4.64"></script>
-  <script src="js/achievements.js?v=4.64"></script>
-  <script src="js/app.js?v=4.64"></script>
-  <script src="js/aiCoach.js?v=4.64"></script>
+  <script src="js/nutrition.js?v=5.00"></script>
+  <script src="js/tools.js?v=5.00"></script>
+  <script src="js/guide.js?v=5.00"></script>
+  <script src="js/achievements.js?v=5.00"></script>
+  <script src="js/app.js?v=5.00"></script>
+  <script src="js/aiCoach.js?v=5.00"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.6"></script>
-  <script src="js/config.js?v=4.31"></script>
-  <script src="js/auth.js?v=4.51"></script>
-  <script src="js/sync.js?v=4.63"></script>
+  <script src="js/config.js?v=5.00"></script>
+  <script src="js/auth.js?v=5.00"></script>
+  <script src="js/sync.js?v=5.00"></script>
 
 </body>
 

@@ -2,7 +2,7 @@
    GYMTRACK — App Initialisation
    ============================================= */
 
-const CURRENT_VERSION = '4.64';
+const CURRENT_VERSION = '5.00';
 const savedVersion    = localStorage.getItem('dscpln_version');
 
 if (savedVersion && savedVersion !== CURRENT_VERSION) {
@@ -32,6 +32,14 @@ function initUI() {
     }
   } catch (e) {
     console.error("Error in renderPrograms:", e);
+  }
+
+  // Mobility-Abteilung: teilt sich Übungen und Routinen mit dem Gym, hat aber
+  // eigene Kennzahlen und einen eigenen Schnellstart.
+  try {
+    if (typeof renderMobilityDepartment === 'function') renderMobilityDepartment();
+  } catch (e) {
+    console.error("Error in renderMobilityDepartment:", e);
   }
 
   try {
@@ -72,6 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initUI();
   } catch (e) {
     console.error("Error in initUI:", e);
+  }
+
+  // Nach einem Neuladen die zuletzt gewählte Abteilung wiederherstellen und die
+  // laufende Einheit dort einhängen, wo sie gestartet wurde.
+  try {
+    const running = db.currentWorkout;
+    const startPage = (running && running.intendedDomain === DOMAIN_MOBILITY) ? 'mobility' : 'gym';
+    showPage(startPage, document.querySelector(`.nav-btn[data-page="${startPage}"]`));
+  } catch (e) {
+    console.error("Error restoring department:", e);
   }
 });
 

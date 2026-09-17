@@ -6,12 +6,27 @@ let editingTemplateId = null;
 let tmplExercises     = [];
 let tmplPickerPending = [];
 
+/* Wie bei den Übungen: ein Aufruf bedient beide Abteilungen. Gym-Vorlagen
+   landen in #templatesList, Mobility-Routinen in #mobilityRoutinesList.
+   'mixed' erscheint in beiden Listen — eine Einheit mit Kraft- UND
+   Mobility-Blöcken gehört auch in beide Abteilungen. */
 function renderTemplates(searchQuery = '') {
-  const list = document.getElementById('templatesList');
+  _renderTemplatesInto('templatesList', DOMAIN_GYM, searchQuery);
+  _renderTemplatesInto('mobilityRoutinesList', DOMAIN_MOBILITY, window._mobilitySearchQuery || '');
+}
+
+function _templateMatchesDomain(tmpl, domain) {
+  const d = tmpl.domain || (typeof resolveDomainForExerciseIds === 'function'
+    ? resolveDomainForExerciseIds(tmpl.exerciseIds) : DOMAIN_GYM);
+  return d === domain || d === DOMAIN_MIXED;
+}
+
+function _renderTemplatesInto(listId, domain, searchQuery = '') {
+  const list = document.getElementById(listId);
   if (!list) return;
   
   const q = searchQuery.toLowerCase().trim();
-  let filteredTemplates = db.templates || [];
+  let filteredTemplates = (db.templates || []).filter(tm => _templateMatchesDomain(tm, domain));
   
   if (q) {
     filteredTemplates = filteredTemplates.filter(tmpl => 
@@ -46,7 +61,11 @@ function renderTemplates(searchQuery = '') {
   }
   
   if (filteredTemplates.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">${t('noTemplatesYet') || 'Keine Vorlagen gefunden.'}</div></div>`;
+    const emptyIcon = domain === DOMAIN_MOBILITY ? '🧘' : '📋';
+    const emptyText = domain === DOMAIN_MOBILITY
+      ? (lang === 'en' ? 'No mobility routines yet.' : 'Noch keine Mobility-Routinen.')
+      : (t('noTemplatesYet') || 'Keine Vorlagen gefunden.');
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">${emptyIcon}</div><div class="empty-text">${emptyText}</div></div>`;
     return;
   }
   list.innerHTML = filteredTemplates.map(tmpl => {
@@ -268,12 +287,23 @@ function saveTemplate() {
   // If it's a rest day, we don't necessarily NEED exercise IDs.
   if (type === 'training' && tmplExercises.length === 0) { showAlert(t('minOneExercise')); return; }
   
+  /* Die Abteilung ergibt sich aus den enthaltenen Übungen. Nur solange die
+     Vorlage noch leer ist, entscheidet die Abteilung, aus der heraus sie
+     angelegt wurde (window._newTemplateDomain) — sonst landete eine leere
+     Mobility-Routine in der Gym-Abteilung. */
+  const resolvedDomain = tmplExercises.length
+    ? resolveDomainForExerciseIds(tmplExercises)
+    : (window._newTemplateDomain || DOMAIN_GYM);
+
   if (editingTemplateId) {
     const tmpl = db.templates.find(x => String(x.id) === String(editingTemplateId));
     tmpl.name = name; tmpl.type = type; tmpl.exerciseIds = [...tmplExercises];
+    tmpl.domain = tmplExercises.length ? resolvedDomain : (tmpl.domain || resolvedDomain);
+    tmpl.updated_at = Date.now();
   } else {
-    db.templates.push({ id: uid(), name, type, exerciseIds: [...tmplExercises] });
+    db.templates.push({ id: uid(), name, type, exerciseIds: [...tmplExercises], domain: resolvedDomain, updated_at: Date.now() });
   }
+  window._newTemplateDomain = null;
   save();
   closeModal('templateModal');
   renderTemplates();

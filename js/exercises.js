@@ -4,12 +4,22 @@
 
 let editingExId = null;
 
+/* Rendert die Übungsliste BEIDER Abteilungen in einem Durchgang: Gym nach
+   #exercisesList, Mobility nach #mobilityExercisesList. Dadurch bleibt jeder
+   bestehende Aufruf von renderExercises() unverändert gültig und hält trotzdem
+   beide Abteilungen aktuell. Fehlt ein Container, wird er still übersprungen. */
 function renderExercises(searchQuery = '', categoryFilter = 'all') {
-  const list = document.getElementById('exercisesList');
+  _renderExercisesInto('exercisesList', DOMAIN_GYM, searchQuery, categoryFilter);
+  _renderExercisesInto('mobilityExercisesList', DOMAIN_MOBILITY,
+                       window._mobilitySearchQuery || '', window._mobilityCategoryFilter || 'all');
+}
+
+function _renderExercisesInto(listId, domain, searchQuery = '', categoryFilter = 'all') {
+  const list = document.getElementById(listId);
   if (!list) return;
   
   const q = searchQuery.toLowerCase().trim();
-  let filteredExercises = activeExercises();
+  let filteredExercises = activeExercises().filter(e => getExerciseDomain(e) === domain);
   
   if (q) {
     filteredExercises = filteredExercises.filter(e => e.name.toLowerCase().includes(q));
@@ -35,7 +45,7 @@ function renderExercises(searchQuery = '', categoryFilter = 'all') {
     filteredExercises = filteredExercises.filter(e => e.category === categoryFilter);
   }
   
-  const archivedHtml = _renderArchivedExercises(q, categoryFilter);
+  const archivedHtml = _renderArchivedExercises(q, categoryFilter, domain);
 
   if (filteredExercises.length === 0) {
     list.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px;">${t('noSearchResults') || 'Keine Übungen gefunden.'}</div>` + archivedHtml;
@@ -69,8 +79,9 @@ function renderExercises(searchQuery = '', categoryFilter = 'all') {
 /* Archived exercises keep every set they were ever part of — they are only
    taken out of the pickers. They stay listed here so they can be brought back
    (or looked up) at any time. */
-function _renderArchivedExercises(q, categoryFilter) {
+function _renderArchivedExercises(q, categoryFilter, domain) {
   let archived = (db.exercises || []).filter(e => isArchivedEx(e.id));
+  if (domain) archived = archived.filter(e => getExerciseDomain(e) === domain);
   if (q) archived = archived.filter(e => e.name.toLowerCase().includes(q));
   if (categoryFilter && categoryFilter !== 'all') archived = archived.filter(e => e.category === categoryFilter);
   if (archived.length === 0) return '';
