@@ -623,8 +623,9 @@ function compileAiContext(provider = aiProvider) {
       context += `- Körperdaten des Nutzers: Gewicht: ${db.nutritionGoals.weight} kg, Größe: ${db.nutritionGoals.height} cm, Alter: ${db.nutritionGoals.age} Jahre, Geschlecht: ${gLabel}, Aktivitätsniveau: ${actLabels[db.nutritionGoals.activity] || db.nutritionGoals.activity || 'Standard'}, Ziel-Einstellung: ${goalLabels[db.nutritionGoals.goal] || db.nutritionGoals.goal || 'Standard'}\n`;
     }
   }
-  if (db.mealPlanText) {
-    context += `- Aktiver Ernährungsplan:\n"${db.mealPlanText}"\n`;
+  const _activePlanText = (typeof getActiveMealPlanText === 'function') ? getActiveMealPlanText() : '';
+  if (_activePlanText) {
+    context += `- Aktiver Ernährungsplan:\n"${_activePlanText}"\n`;
   }
   
   context += `\nLETZTE ERNÄHRUNGS-LOGS (Ernährungsverlauf):\n`;

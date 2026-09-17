@@ -10,6 +10,9 @@ const SYNC_MAPPINGS = {
       name: item.name,
       category: item.category,
       notes: item.notes || null,
+      // Abteilung (gym | mobility). Fällt auf die Herleitung aus der Kategorie
+      // zurück, falls ein Objekt das Feld noch nicht trägt.
+      domain: item.domain || (typeof getExerciseDomain === 'function' ? getExerciseDomain(item) : 'gym'),
       updated_at: Number(item.updated_at || Date.now())
     }),
     toLocal: dbItem => ({
@@ -17,6 +20,7 @@ const SYNC_MAPPINGS = {
       name: dbItem.name,
       category: dbItem.category,
       notes: dbItem.notes,
+      domain: dbItem.domain || 'gym',
       updated_at: Number(dbItem.updated_at)
     }),
     getLocalId: item => item.id,
@@ -37,6 +41,7 @@ const SYNC_MAPPINGS = {
       template_id: item.templateId != null ? String(item.templateId) : null,
       template_name: item.templateName || null,
       notes: item.notes || null,
+      domain: item.domain || (typeof resolveWorkoutDomain === 'function' ? resolveWorkoutDomain(item) : 'gym'),
       updated_at: Number(item.updated_at || item.date || Date.now())
     }),
     toLocal: dbItem => ({
@@ -48,6 +53,7 @@ const SYNC_MAPPINGS = {
       templateId: dbItem.template_id != null ? String(dbItem.template_id) : null,
       templateName: dbItem.template_name || null,
       notes: dbItem.notes,
+      domain: dbItem.domain || 'gym',
       updated_at: Number(dbItem.updated_at)
     }),
     getLocalId: item => item.id,
@@ -76,6 +82,7 @@ const SYNC_MAPPINGS = {
       name: item.name,
       type: item.type,
       exercise_ids: item.exerciseIds,
+      domain: item.domain || (typeof resolveDomainForExerciseIds === 'function' ? resolveDomainForExerciseIds(item.exerciseIds) : 'gym'),
       updated_at: Number(item.updated_at || Date.now())
     }),
     toLocal: dbItem => ({
@@ -83,6 +90,7 @@ const SYNC_MAPPINGS = {
       name: dbItem.name,
       type: dbItem.type,
       exerciseIds: dbItem.exercise_ids,
+      domain: dbItem.domain || 'gym',
       updated_at: Number(dbItem.updated_at)
     }),
     getLocalId: item => item.id,
@@ -306,6 +314,29 @@ const SYNC_MAPPINGS = {
     getLocalId: item => item.id,
     getDbId: dbItem => dbItem.id,
     getTimestamp: item => Number(item.updated_at || Date.now())
+  },
+  // Ernährungspläne. Lagen bis Schema-Version 5 als einzelner Textblock rein
+  // lokal in `db.mealPlanText` und gingen beim Gerätewechsel verloren.
+  meal_plans: {
+    toDb: item => ({
+      id: item.id,
+      name: item.name || 'Mein Plan',
+      content: item.content || '',
+      active: item.active === true,
+      sort_order: Number(item.sortOrder || 0),
+      updated_at: Number(item.updated_at || Date.now())
+    }),
+    toLocal: dbItem => ({
+      id: dbItem.id,
+      name: dbItem.name,
+      content: dbItem.content || '',
+      active: dbItem.active === true,
+      sortOrder: Number(dbItem.sort_order || 0),
+      updated_at: Number(dbItem.updated_at)
+    }),
+    getLocalId: item => item.id,
+    getDbId: dbItem => dbItem.id,
+    getTimestamp: item => Number(item.updated_at || Date.now())
   }
 };
 
@@ -321,7 +352,8 @@ const LOCAL_DB_KEYS = {
   supplement_log: 'supplementLog',
   achievements: 'achievements',
   nutrition_logs: 'nutritionLog',
-  food_library: 'foodLibrary'
+  food_library: 'foodLibrary',
+  meal_plans: 'mealPlans'
 };
 
 async function syncAll() {
@@ -353,10 +385,53 @@ async function syncAll() {
     if (typeof _persistDb === 'function') _persistDb();
   }
 
+  // Theme und Sprache können aus der Cloud gekommen sein (profiles.settings) —
+  // erst anwenden, dann neu rendern, damit beides sofort greift.
+  try {
+    if (db.settings && db.settings.lang && typeof lang !== 'undefined' && db.settings.lang !== lang) {
+      lang = db.settings.lang;
+      localStorage.setItem('gymLang', lang);
+      if (typeof applyTranslations === 'function') applyTranslations();
+    }
+    if (db.settings && db.settings.theme) {
+      localStorage.setItem('gymtrack_theme', db.settings.theme);
+    }
+    if (typeof applyStoredTheme === 'function') applyStoredTheme();
+  } catch (e) {
+    console.warn('[Sync] Theme/Sprache konnten nicht angewendet werden:', e);
+  }
+
   // Reload current page/UI elements if function exists
   if (typeof initUI === 'function') {
     initUI();
   }
+}
+
+/* Laufende Session aus der Cloud übernehmen.
+
+   Eine laufende Session ist der einzige Datensatz, bei dem ein blindes
+   "remote gewinnt" schaden würde: sie darf ein bereits beendetes Training nicht
+   wiederbeleben und ein laufendes nicht überschreiben. Übernommen wird deshalb
+   nur, wenn hier gerade nichts läuft, das Training nicht längst abgeschlossen
+   in der Historie steht und es frisch genug ist, um plausibel noch zu laufen. */
+const CURRENT_WORKOUT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function _adoptRemoteCurrentWorkout(remoteProfile) {
+  const remoteCw = remoteProfile && remoteProfile.current_workout;
+  if (!remoteCw || typeof remoteCw !== 'object') return false;
+
+  // Hier läuft bereits ein Training — das gewinnt immer.
+  if (db.currentWorkout) return false;
+
+  // Bereits beendet: liegt schon als abgeschlossenes Workout in der Historie.
+  if (remoteCw.id && (db.workouts || []).some(w => String(w.id) === String(remoteCw.id))) return false;
+
+  const startedAt = Number(remoteCw.startTime || remoteProfile.current_workout_at || 0);
+  if (!startedAt || Date.now() - startedAt > CURRENT_WORKOUT_MAX_AGE_MS) return false;
+
+  db.currentWorkout = remoteCw;
+  console.log('[Sync] Laufende Session vom anderen Gerät übernommen:', remoteCw.id);
+  return true;
 }
 
 async function syncUserProfile(userId) {
@@ -399,6 +474,7 @@ async function syncUserProfile(userId) {
       // Merge settings so keys the remote doesn't carry keep their local
       // defaults (barWeight, plates, …) instead of becoming undefined.
       if (remoteProfile.settings != null) db.settings = Object.assign({}, db.settings, remoteProfile.settings);
+      _adoptRemoteCurrentWorkout(remoteProfile);
       localStorage.setItem('gym_profile_updated_at', String(remoteProfile.updated_at));
       save(); // local save
     } else if (localNeedsPush) {
@@ -413,6 +489,8 @@ async function syncUserProfile(userId) {
           custom_categories: db.customCategories || {},
           exercise_flags: db.exerciseFlags || {},
           settings: db.settings || {},
+          current_workout: db.currentWorkout || null,
+          current_workout_at: db.currentWorkout ? now : null,
           updated_at: now
         });
       if (upsertError) throw upsertError;
@@ -687,6 +765,11 @@ async function syncProfileUpdate() {
       custom_categories: db.customCategories || {},
       exercise_flags: db.exerciseFlags || {},
       settings: db.settings || {},
+      // Laufende Session mitschreiben: ein Gerätewechsel mitten im Training
+      // kostet sie dadurch nicht mehr. null räumt sie auf allen Geräten ab,
+      // sobald das Training beendet oder verworfen wurde.
+      current_workout: db.currentWorkout || null,
+      current_workout_at: db.currentWorkout ? now : null,
       updated_at: now
     })
     .then(({ error }) => {

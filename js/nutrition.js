@@ -1029,7 +1029,7 @@ function renderMealPlans() {
   if (!container) return;
 
   const goals = db.nutritionGoals || { calories: 2000, protein: 150, carbs: 200, fat: 70 };
-  const mealPlanText = db.mealPlanText || (lang === 'de' 
+  const mealPlanText = (typeof getActiveMealPlanText === 'function' ? getActiveMealPlanText() : '') || (lang === 'de' 
     ? 'Hier kannst du deinen Ernährungsplan festhalten. Tippe unten auf "Bearbeiten", um deinen eigenen Plan zu schreiben oder kopiere Vorschläge deines AI Coaches hierher.' 
     : 'You can write your meal plan here. Tap "Edit" below to write your own plan or copy suggestions from your AI Coach.');
 
@@ -1133,7 +1133,7 @@ window.cancelEditMealPlan = cancelEditMealPlan;
 
 function saveMealPlan() {
   const text = document.getElementById('mealPlanTextarea').value;
-  db.mealPlanText = text;
+  setActiveMealPlanText(text);
   save();
   isEditingMealPlan = false;
   renderMealPlans();

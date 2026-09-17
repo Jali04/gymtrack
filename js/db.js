@@ -14,6 +14,103 @@ function getCatType(category) {
   return CAT_TYPE[category] || 'strength';
 }
 
+/* =============================================
+   ABTEILUNGEN (Domains)
+   Gym und Mobility teilen sich ein Datenmodell: Übungen, Vorlagen und Workouts
+   tragen ein `domain`-Feld statt in getrennten Tabellen zu leben. Dadurch kann
+   eine Gym-Session Mobility-Blöcke enthalten ('mixed'), und Progress, Kalender
+   und AI Coach lesen beide Abteilungen ohne Sonderlogik.
+   ============================================= */
+const DOMAIN_GYM      = 'gym';
+const DOMAIN_MOBILITY = 'mobility';
+const DOMAIN_MIXED    = 'mixed';   // nur für Vorlagen/Workouts
+
+// Kategorien, die inhaltlich zur Mobility-Abteilung gehören.
+const MOBILITY_CATEGORIES = ['Dehnen', 'Mobility', 'Stretching'];
+
+// Die Abteilung einer Übung. Bestandsdaten ohne `domain` werden über Kategorie
+// bzw. Typ hergeleitet, damit auch ungespeicherte Objekte korrekt einsortiert
+// werden (Import, Cloud-Pull von einem alten Client).
+function getExerciseDomain(ex) {
+  if (!ex) return DOMAIN_GYM;
+  if (ex.domain === DOMAIN_MOBILITY || ex.domain === DOMAIN_GYM) return ex.domain;
+  if (MOBILITY_CATEGORIES.includes(ex.category)) return DOMAIN_MOBILITY;
+  if (getCatType(ex.category) === 'stretch') return DOMAIN_MOBILITY;
+  return DOMAIN_GYM;
+}
+
+// Die Abteilung einer Sammlung von Übungs-IDs: 'gym', 'mobility' oder 'mixed'.
+function resolveDomainForExerciseIds(exerciseIds) {
+  let hasGym = false, hasMob = false;
+  (exerciseIds || []).forEach(id => {
+    const ex = (db.exercises || []).find(e => String(e.id) === String(id));
+    if (!ex) return;
+    if (getExerciseDomain(ex) === DOMAIN_MOBILITY) hasMob = true; else hasGym = true;
+  });
+  if (hasMob && hasGym) return DOMAIN_MIXED;
+  if (hasMob) return DOMAIN_MOBILITY;
+  return DOMAIN_GYM;
+}
+
+// Die Abteilung eines Workouts aus seinen geloggten Blöcken.
+function resolveWorkoutDomain(workout) {
+  if (!workout) return DOMAIN_GYM;
+  return resolveDomainForExerciseIds((workout.exercises || []).map(e => e.exId));
+}
+
+// Zählt ein Workout für die angegebene Abteilung? 'mixed' zählt für beide —
+// genau das macht den Interconnect aus.
+/* =============================================
+   ERNÄHRUNGSPLÄNE
+   Zugriff läuft ausschliesslich über diese Helfer, damit der Plan in
+   `db.mealPlans` liegt (und damit synchronisiert wird) statt im alten,
+   rein lokalen `db.mealPlanText`.
+   ============================================= */
+function getMealPlans() {
+  if (!Array.isArray(db.mealPlans)) db.mealPlans = [];
+  return db.mealPlans;
+}
+
+// Der aktive Plan, oder der erste vorhandene. Gibt null zurück, wenn der Nutzer
+// noch keinen Plan angelegt hat.
+function getActiveMealPlan() {
+  const plans = getMealPlans();
+  return plans.find(p => p && p.active) || plans[0] || null;
+}
+
+function getActiveMealPlanText() {
+  const plan = getActiveMealPlan();
+  return plan ? (plan.content || '') : '';
+}
+
+// Schreibt den Text in den aktiven Plan und legt ihn an, falls noch keiner
+// existiert. Ruft save() NICHT selbst auf — der Aufrufer entscheidet, wann
+// gespeichert wird.
+function setActiveMealPlanText(text) {
+  const plans = getMealPlans();
+  let plan = getActiveMealPlan();
+  if (!plan) {
+    plan = {
+      id: 'mp_' + uid(),
+      name: 'Mein Plan',
+      active: true,
+      sortOrder: 0,
+      content: ''
+    };
+    plans.push(plan);
+  }
+  plan.content = text;
+  plan.active = true;
+  plan.updated_at = Date.now();
+  return plan;
+}
+
+function workoutMatchesDomain(workout, domain) {
+  if (!domain || domain === 'all') return true;
+  const d = workout && workout.domain ? workout.domain : resolveWorkoutDomain(workout);
+  return d === domain || d === DOMAIN_MIXED;
+}
+
 const TYPE_COLORS = { 'N': 'var(--text)', 'W': '#f5a623', 'D': '#d0021b' };
 function getCatClass(type) {
   return type === 'cardio' ? 'cat-cardio'
@@ -78,6 +175,9 @@ if (typeof db.settings.rir === 'undefined') db.settings.rir = false;
 if (db.settings.unit !== 'lbs' && db.settings.unit !== 'kg') db.settings.unit = 'kg';
 if (!db.nutritionGoals) db.nutritionGoals = { calories: 2000, protein: 150, carbs: 200, fat: 70 };
 if (!db.nutritionLog) db.nutritionLog = [];
+// Ernährungspläne der Ernährungs-Abteilung. Ersetzt das frühere, rein lokale
+// `db.mealPlanText` (siehe Migration 5) und wird mit Supabase synchronisiert.
+if (!db.mealPlans) db.mealPlans = [];
 const DEFAULT_FOODS = [
   { id: 'f1', name: 'Haferflocken', calories: 370, protein: 13, carbs: 59, fat: 7, servingSize: 100, isCustom: false },
   { id: 'f2', name: 'Hähnchenbrust (roh)', calories: 110, protein: 23, carbs: 0, fat: 1.5, servingSize: 100, isCustom: false },
@@ -339,7 +439,7 @@ async function restoreAutoBackup() {
   setTimeout(() => location.reload(), 400);
 }
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 6;
 
 const MIGRATIONS = {
   1: (data) => {
@@ -443,6 +543,125 @@ const MIGRATIONS = {
         if (data.currentWorkout.id !== orig) changed = true;
       }
     }
+    return changed;
+  },
+
+  /* -------------------------------------------------------------
+     5 — Persistenz-Lücken schließen.
+
+     Diese Werte lagen bisher ausserhalb von `db.settings` bzw. nur im
+     localStorage und wurden deshalb NIE in die Cloud synchronisiert: beim
+     Gerätewechsel oder Leeren des Caches waren sie weg. `db.settings` landet
+     über syncUserProfile() in profiles.settings — alles, was hier hineinzieht,
+     ist ab sofort gesichert.
+
+     Der API-Key des AI-Coaches bleibt bewusst rein lokal: ein Geheimnis gehört
+     nicht in eine synchronisierte Profilspalte.
+     ------------------------------------------------------------- */
+  5: (data) => {
+    let changed = false;
+    if (!data.settings) data.settings = {};
+
+    // Rest-Timer lag als Top-Level-Key neben settings statt darin.
+    if (data.restTimer && typeof data.settings.restTimer === 'undefined') {
+      data.settings.restTimer = data.restTimer;
+      changed = true;
+    }
+
+    // Ernährungsplan: einzelner lokaler Textblock -> synchronisierte Liste.
+    if (typeof data.mealPlanText === 'string' && data.mealPlanText.trim()) {
+      if (!Array.isArray(data.mealPlans)) data.mealPlans = [];
+      const alreadyMigrated = data.mealPlans.some(p => p && p.migratedFromText);
+      if (!alreadyMigrated) {
+        data.mealPlans.push({
+          id: 'mp_' + (typeof uid === 'function' ? uid() : Date.now().toString(36)),
+          name: 'Mein Plan',
+          content: data.mealPlanText,
+          active: true,
+          sortOrder: 0,
+          migratedFromText: true,
+          updated_at: Date.now()
+        });
+        changed = true;
+      }
+    }
+
+    // Einstellungen, die nur im localStorage lagen. Nur übernehmen, wenn in
+    // settings noch nichts steht — sonst überschreibt ein alter lokaler Wert
+    // bei jedem Boot die frisch aus der Cloud gezogene Einstellung.
+    if (typeof localStorage !== 'undefined') {
+      const pull = (lsKey, settingsKey) => {
+        if (typeof data.settings[settingsKey] !== 'undefined') return;
+        const v = localStorage.getItem(lsKey);
+        if (v === null) return;
+        data.settings[settingsKey] = v;
+        changed = true;
+      };
+      pull('gymtrack_theme',    'theme');
+      pull('gymLang',           'lang');
+      pull('gym_ai_provider',   'aiProvider');
+      pull('gym_ai_model',      'aiModel');
+      pull('gym_ai_custom_model','aiCustomModel');
+      pull('gym_ai_persona',    'aiPersona');
+    }
+
+    return changed;
+  },
+
+  /* -------------------------------------------------------------
+     6 — Abteilungen: `domain` auf Übungen, Vorlagen und Workouts.
+
+     Bestehende Dehn-Übungen wandern in die Mobility-Abteilung; alles andere
+     bleibt Gym. Historische Workouts behalten ihre Sätze unverändert, sie
+     bekommen nur ihre Abteilung angeheftet, damit Progress und Kalender sie
+     ohne Neuberechnung filtern können.
+
+     Läuft bei jedem Start über den Catch-up-Pass und muss darum idempotent
+     sein: gesetzt wird ausschliesslich, was noch kein `domain` trägt.
+     ------------------------------------------------------------- */
+  6: (data) => {
+    let changed = false;
+
+    (data.exercises || []).forEach(ex => {
+      if (ex && !ex.domain) {
+        ex.domain = MOBILITY_CATEGORIES.includes(ex.category) ? DOMAIN_MOBILITY : DOMAIN_GYM;
+        changed = true;
+      }
+    });
+
+    // Vorlagen und Workouts leiten ihre Abteilung aus ihren Übungen ab. Die
+    // Übungen oben tragen an dieser Stelle bereits ein domain.
+    const domainOfIds = (ids) => {
+      let hasGym = false, hasMob = false;
+      (ids || []).forEach(id => {
+        const ex = (data.exercises || []).find(e => String(e.id) === String(id));
+        if (!ex) return;
+        if (ex.domain === DOMAIN_MOBILITY) hasMob = true; else hasGym = true;
+      });
+      if (hasMob && hasGym) return DOMAIN_MIXED;
+      if (hasMob) return DOMAIN_MOBILITY;
+      return DOMAIN_GYM;
+    };
+
+    (data.templates || []).forEach(t => {
+      if (t && !t.domain) {
+        t.domain = domainOfIds(t.exerciseIds);
+        changed = true;
+      }
+    });
+
+    (data.workouts || []).forEach(w => {
+      if (w && !w.domain) {
+        w.domain = domainOfIds((w.exercises || []).map(e => e.exId));
+        changed = true;
+      }
+    });
+
+    if (data.currentWorkout && !data.currentWorkout.domain) {
+      data.currentWorkout.domain = domainOfIds((data.currentWorkout.exercises || []).map(e => e.exId));
+      changed = true;
+    }
+
     return changed;
   }
 };

@@ -2486,10 +2486,15 @@ let restTimerEndAt    = 0; // timestamp when rest ends (background-safe)
 let _restLastSec      = null; // for once-per-second audio/haptic ticks
 
 /* ---- Rest Timer Config ---- */
+/* Die Konfiguration lebt in db.settings, weil nur settings über
+   profiles.settings in die Cloud synchronisiert wird — als eigener Top-Level-
+   Key (db.restTimer) ging sie bei jedem Gerätewechsel verloren. Migration 5
+   zieht bestehende Werte um; der Fallback hier fängt alles Übrige ab. */
 function _getRestCfg() {
-  if (!db.restTimer) db.restTimer = { enabled: true, sec: 90 };
-  if (typeof db.restTimer.sound === 'undefined') db.restTimer.sound = true;
-  return db.restTimer;
+  if (!db.settings) db.settings = {};
+  if (!db.settings.restTimer) db.settings.restTimer = db.restTimer || { enabled: true, sec: 90 };
+  if (typeof db.settings.restTimer.sound === 'undefined') db.settings.restTimer.sound = true;
+  return db.settings.restTimer;
 }
 
 /* ---- Audio cues (WebAudio; ignores the ringer/mute switch on some devices) ---- */

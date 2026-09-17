@@ -377,7 +377,9 @@ const TR = {
   }
 };
 
-let lang = localStorage.getItem('gymLang') || 'de';
+// Sprache ebenfalls in db.settings gespiegelt, damit sie synchronisiert wird.
+// localStorage bleibt der Schnellzugriff für den Start vor dem ersten Rendern.
+let lang = ((typeof db !== 'undefined' && db && db.settings && db.settings.lang) || localStorage.getItem('gymLang') || 'de');
 
 function t(key) {
   const val = TR[lang][key];
@@ -387,6 +389,11 @@ function t(key) {
 function toggleLang() {
   lang = lang === 'de' ? 'en' : 'de';
   localStorage.setItem('gymLang', lang);
+  if (typeof db !== 'undefined' && db) {
+    if (!db.settings) db.settings = {};
+    db.settings.lang = lang;
+    if (typeof save === 'function') save();
+  }
   try { applyTranslations(); } catch(e) { console.warn('applyTranslations error:', e); }
   const active = document.querySelector('.page.active');
   if (!active) return;
