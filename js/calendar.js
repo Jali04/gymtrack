@@ -18,7 +18,8 @@ function calNextMonth() {
 }
 
 function getWorkoutsOnDay(year, month, day) {
-  return db.workouts.filter(w => {
+  const source = (typeof progressWorkouts === 'function') ? progressWorkouts() : db.workouts;
+  return source.filter(w => {
     const d = new Date(w.date || w.startTime);
     return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
   });

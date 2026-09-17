@@ -3,10 +3,15 @@
    ============================================= */
 
 function renderStats() {
-  const total      = db.workouts.length;
-  const totalSets  = db.workouts.reduce((a, w) => a + w.exercises.reduce((b, e) => b + e.sets.length, 0), 0);
-  const totalExs   = activeExercises().length;
-  const thisWeek   = db.workouts.filter(w => (Date.now() - w.date) < 7 * 86400000).length;
+  // Respektiert den Abteilungs-Filter der Progress-Abteilung.
+  const ws         = (typeof progressWorkouts === 'function') ? progressWorkouts() : db.workouts;
+  const domain     = (typeof getProgressDomain === 'function') ? getProgressDomain() : 'all';
+  const total      = ws.length;
+  const totalSets  = ws.reduce((a, w) => a + w.exercises.reduce((b, e) => b + e.sets.length, 0), 0);
+  const totalExs   = domain === 'all'
+    ? activeExercises().length
+    : activeExercises().filter(e => getExerciseDomain(e) === domain).length;
+  const thisWeek   = ws.filter(w => (Date.now() - w.date) < 7 * 86400000).length;
 
   const grid = document.getElementById('statsGrid');
   grid.innerHTML = `

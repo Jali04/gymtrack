@@ -53,7 +53,33 @@ function showPage(id, btn) {
 /* ---------------------------------------------
    PROGRESS-ABTEILUNG
    --------------------------------------------- */
+/* Abteilungs-Filter der Progress-Abteilung. "Alle" ist die Voreinstellung;
+   gemischte Einheiten erscheinen in Gym UND Mobility. */
+function renderProgressDomainChips() {
+  const wrap = document.getElementById('progressDomainChips');
+  if (!wrap) return;
+  const cur = (typeof getProgressDomain === 'function') ? getProgressDomain() : 'all';
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+  const opts = [
+    ['all',            en ? 'All'      : 'Alle'],
+    [DOMAIN_GYM,       en ? '🏋️ Gym'   : '🏋️ Gym'],
+    [DOMAIN_MOBILITY,  en ? '🧘 Mobility' : '🧘 Mobility']
+  ];
+  wrap.innerHTML = opts.map(([val, label]) =>
+    `<button class="filter-chip ${cur === val ? 'active' : ''}" data-progdomain="${val}" onclick="setProgressDomainFilter('${val}')">${label}</button>`
+  ).join('');
+}
+
+function setProgressDomainFilter(domain) {
+  if (typeof setProgressDomain === 'function') setProgressDomain(domain);
+  renderProgressDomainChips();
+  // Die aktive Unterseite neu aufbauen, damit der Filter sofort greift.
+  switchProgressSubTab(localStorage.getItem('gymtrack_progress_subtab') || 'calendar-stats');
+  if (typeof haptic === 'function') haptic('light');
+}
+
 function switchProgressSubTab(subTabId) {
+  renderProgressDomainChips();
   document.querySelectorAll('.progress-subtab').forEach(btn => {
     const isTarget = (subTabId === 'calendar-stats' && btn.id === 'tabProgCalendar') ||
                      (subTabId === 'body-photos' && btn.id === 'tabProgBody') ||
@@ -333,6 +359,8 @@ document.addEventListener('touchend', e => {
 window.showPage = showPage;
 window.mountActiveWorkout = mountActiveWorkout;
 window.switchProgressSubTab = switchProgressSubTab;
+window.renderProgressDomainChips = renderProgressDomainChips;
+window.setProgressDomainFilter = setProgressDomainFilter;
 
 // Gym-Abteilung
 window.renderGymDepartment = renderGymDepartment;

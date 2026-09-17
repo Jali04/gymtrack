@@ -603,7 +603,11 @@ function renderExerciseProgressTracker() {
   const scopedWorkouts = _progressTemplateFilter
     ? db.workouts.filter(w => _woDayKey(w) === _progressTemplateFilter)
     : db.workouts;
-  const activeExs = db.exercises.filter(ex => scopedWorkouts.some(w => (w.exercises || []).some(e => e.exId === ex.id)));
+  // Auch die Übungs-Charts folgen dem Abteilungs-Filter der Progress-Abteilung.
+  const progDomain = (typeof getProgressDomain === 'function') ? getProgressDomain() : 'all';
+  const activeExs = db.exercises
+    .filter(ex => progDomain === 'all' || getExerciseDomain(ex) === progDomain)
+    .filter(ex => scopedWorkouts.some(w => (w.exercises || []).some(e => e.exId === ex.id)));
 
   const emptyHtml = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📈</div><div class="empty-text">${
     activeDay

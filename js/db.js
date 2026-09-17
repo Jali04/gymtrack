@@ -98,6 +98,31 @@ function refreshWorkoutDomain(workout) {
 // Zählt ein Workout für die angegebene Abteilung? 'mixed' zählt für beide —
 // genau das macht den Interconnect aus.
 /* =============================================
+   PROGRESS-ABTEILUNG — Filter über die Abteilungen
+
+   Der Fortschritt liest immer aus derselben Workout-Liste; der Filter
+   entscheidet nur, welche Abteilung gezeigt wird. Gemischte Einheiten zählen
+   in beiden Ansichten (siehe workoutMatchesDomain).
+   ============================================= */
+function getProgressDomain() {
+  const v = (db.settings && db.settings.progressDomain) || 'all';
+  return ['all', DOMAIN_GYM, DOMAIN_MOBILITY].includes(v) ? v : 'all';
+}
+
+function setProgressDomain(domain) {
+  if (!db.settings) db.settings = {};
+  db.settings.progressDomain = domain;
+  save();
+}
+
+// Die Workouts, die der Fortschritt gerade betrachtet.
+function progressWorkouts() {
+  const d = getProgressDomain();
+  if (d === 'all') return db.workouts || [];
+  return (db.workouts || []).filter(w => workoutMatchesDomain(w, d));
+}
+
+/* =============================================
    ERNÄHRUNGSPLÄNE
    Zugriff läuft ausschliesslich über diese Helfer, damit der Plan in
    `db.mealPlans` liegt (und damit synchronisiert wird) statt im alten,

@@ -1896,14 +1896,22 @@ function _getFrequentExercises(limit = 5) {
 
 function _buildExPickerListHtml(query) {
   const q = (query || '').toLowerCase().trim();
-  const pickable = activeExercises();
+  // Aus der Mobility-Abteilung heraus geöffnet zeigt der Picker zunächst nur
+  // Mobility-Übungen. Der Filter lässt sich im Picker aufheben — eine
+  // Gym-Einheit darf natürlich Mobility-Blöcke bekommen und umgekehrt.
+  const pickerDomain = window._pickerDomain || null;
+  const pickable = pickerDomain
+    ? activeExercises().filter(e => getExerciseDomain(e) === pickerDomain)
+    : activeExercises();
   const categories = [...new Set(pickable.map(e => e.category))];
   const alreadyIn = db.currentWorkout ? db.currentWorkout.exercises.map(e => e.exId) : [];
 
   // Frequent exercises section
   let freqHtml = '';
   if (!q) {
-    const freqs = _getFrequentExercises(5).filter(e => !alreadyIn.includes(e.id));
+    const freqs = _getFrequentExercises(5)
+      .filter(e => !alreadyIn.includes(e.id))
+      .filter(e => !pickerDomain || getExerciseDomain(e) === pickerDomain);
     if (freqs.length > 0) {
       freqHtml = `<div class="picker-section-label">⭐ ${t('frequentlyUsed')}</div>` +
         freqs.map(e => {
@@ -1971,6 +1979,11 @@ function filterExercisePicker() {
 }
 
 function openExercisePicker() {
+  // Einmalige Vorauswahl der Abteilung (von addMobilityToActiveWorkout gesetzt).
+  // Sie gilt nur für dieses Öffnen des Pickers.
+  window._pickerDomain = window._exercisePickerDomain || null;
+  window._exercisePickerDomain = null;
+
   const list = document.getElementById('exercisePickerList');
   const ttl  = document.getElementById('ttlChooseExercise');
   if (ttl) ttl.textContent = window._pickerMode === 'replace' ? t('swapExercise') : t('chooseExercise');
@@ -2000,7 +2013,14 @@ function openExercisePicker() {
   }
   quickAddCatOptions += `<option value="new_custom">${t('cats')['new_custom'] || '+ Neue Kategorie...'}</option>`;
 
-  bar.innerHTML = `
+  const domainNotice = window._pickerDomain === DOMAIN_MOBILITY
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:8px;">
+         <span style="font-size:12px;color:var(--muted);">🧘 ${lang === 'en' ? 'Mobility only' : 'Nur Mobility'}</span>
+         <button class="close-btn" style="width:auto;padding:3px 9px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;" onclick="clearExercisePickerDomain()">${lang === 'en' ? 'Show all' : 'Alle zeigen'}</button>
+       </div>`
+    : '';
+
+  bar.innerHTML = domainNotice + `
     <input class="form-input picker-search" id="exPickerSearch" type="text" placeholder="${t('searchExercise')}" oninput="filterExercisePicker()" autocomplete="off">
     <div class="quick-add-row" id="exPickerQuickAdd">
       <input class="form-input quick-add-input" id="quickAddName" type="text" placeholder="${t('quickAddPlaceholder')}" autocomplete="off">
@@ -2017,6 +2037,18 @@ function openExercisePicker() {
   // Focus search after modal animation
   setTimeout(() => { const s = document.getElementById('exPickerSearch'); if (s) s.focus(); }, 320);
 }
+
+/* Hebt die Abteilungs-Vorauswahl im offenen Picker auf und rendert neu. */
+function clearExercisePickerDomain() {
+  window._pickerDomain = null;
+  const bar = document.getElementById('exPickerSearchBar');
+  const notice = bar && bar.firstElementChild;
+  if (notice && notice.tagName === 'DIV') notice.remove();
+  const list = document.getElementById('exercisePickerList');
+  const search = document.getElementById('exPickerSearch');
+  if (list) list.innerHTML = _buildExPickerListHtml(search ? search.value : '');
+}
+window.clearExercisePickerDomain = clearExercisePickerDomain;
 
 function quickAddExercise() {
   const nameInput = document.getElementById('quickAddName');
