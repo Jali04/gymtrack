@@ -18,6 +18,10 @@ create table public.profiles (
   custom_categories jsonb not null default '{}'::jsonb, -- { "Kategorie": "isometric" | "strength" | … }
   exercise_flags jsonb not null default '{}'::jsonb,     -- { exId: { bodyweight: true } }
   settings jsonb not null default '{}'::jsonb,            -- unit, rir, barWeight, plates, weeklyGoal, …
+  -- Laufende Session. Lag früher nur im localStorage, womit ein Gerätewechsel
+  -- mitten im Training die Session gekostet hat.
+  current_workout jsonb,
+  current_workout_at bigint,
   updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint
 );
 
@@ -35,6 +39,8 @@ create table public.exercises (
   name text not null,
   category text not null,
   notes text,
+  -- Abteilung: 'gym' | 'mobility'. Gemeinsames Rückgrat statt zwei Silos.
+  domain text not null default 'gym',
   updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint,
   primary key (id, user_id)
 );
@@ -57,6 +63,9 @@ create table public.workouts (
   template_id text, -- Template the workout was started from (null = free workout)
   template_name text, -- Its name at the time, so a deleted/renamed template stays readable
   notes text,
+  -- 'gym' | 'mobility' | 'mixed' — 'mixed' trägt Blöcke beider Abteilungen,
+  -- z. B. ein Mobility-Warmup vor der Krafteinheit.
+  domain text not null default 'gym',
   updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint,
   primary key (id, user_id)
 );
@@ -75,6 +84,8 @@ create table public.templates (
   name text not null,
   type text not null,
   exercise_ids jsonb not null, -- Array of exercise IDs
+  -- 'gym' | 'mobility' | 'mixed'
+  domain text not null default 'gym',
   updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint,
   primary key (id, user_id)
 );
@@ -216,6 +227,36 @@ create policy "Users can manage their own ai chats" on public.ai_chats
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+
+
+-- 12. MEAL_PLANS Table
+-- Ernährungspläne der Nutzer. Lagen früher als einzelner Textblock nur im
+-- localStorage und gingen beim Leeren des Caches verloren.
+create table if not exists public.meal_plans (
+  id text not null,
+  user_id uuid references auth.users on delete cascade not null,
+  name text not null default 'Mein Plan',
+  content text not null default '',
+  active boolean not null default false,
+  sort_order integer not null default 0,
+  updated_at bigint not null default (extract(epoch from now()) * 1000)::bigint,
+  primary key (id, user_id)
+);
+
+alter table public.meal_plans enable row level security;
+
+create policy "Users can manage their own meal plans" on public.meal_plans
+  for all to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+
+-- =============================================
+-- INDEXES — Abfragen filtern fast immer nach Abteilung
+-- =============================================
+create index if not exists exercises_user_domain_idx on public.exercises (user_id, domain);
+create index if not exists templates_user_domain_idx on public.templates (user_id, domain);
+create index if not exists workouts_user_domain_idx  on public.workouts  (user_id, domain);
 
 -- =============================================
 -- AUTOMATIC PROFILE CREATION TRIGGER

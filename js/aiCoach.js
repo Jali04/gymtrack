@@ -612,6 +612,27 @@ function compileAiContext(provider = aiProvider) {
     context += `Noch kein Training absolviert.\n`;
   }
   
+  // Mobility-Abteilung. Mobility läuft über dasselbe Datenmodell wie das Gym
+  // (nur über `domain` getrennt), deshalb kann der Coach beide zusammen
+  // betrachten und z. B. Mobility gezielt auf das Krafttraining abstimmen.
+  context += `\nMOBILITY:\n`;
+  if (typeof getMobilityStats === 'function') {
+    const ms = getMobilityStats();
+    context += `- Mobility-Einheiten gesamt: ${ms.total}, letzte 7 Tage: ${ms.last7}\n`;
+    context += `- Haltezeit letzte 7 Tage: ${Math.round(ms.heldSeconds / 60)} Minuten\n`;
+    context += `- Tage-Serie: ${ms.streak}\n`;
+    const mobRoutines = (db.templates || []).filter(tm =>
+      typeof resolveDomainForExerciseIds === 'function' &&
+      [DOMAIN_MOBILITY, DOMAIN_MIXED].includes(tm.domain || resolveDomainForExerciseIds(tm.exerciseIds)));
+    if (mobRoutines.length) {
+      context += `- Mobility-Routinen: ${mobRoutines.map(tm => `"${tm.name}" (${tm.exerciseIds.length} Übungen)`).join(', ')}\n`;
+    } else {
+      context += `- Noch keine Mobility-Routinen angelegt.\n`;
+    }
+    const mixed = (db.workouts || []).filter(w => w.domain === DOMAIN_MIXED).length;
+    if (mixed) context += `- Einheiten, die Kraft und Mobility kombinieren: ${mixed}\n`;
+  }
+
   // Nutrition & Calories context
   context += `\nERNÄHRUNG & KALORIEN ZIELE:\n`;
   if (db.nutritionGoals) {
@@ -623,8 +644,9 @@ function compileAiContext(provider = aiProvider) {
       context += `- Körperdaten des Nutzers: Gewicht: ${db.nutritionGoals.weight} kg, Größe: ${db.nutritionGoals.height} cm, Alter: ${db.nutritionGoals.age} Jahre, Geschlecht: ${gLabel}, Aktivitätsniveau: ${actLabels[db.nutritionGoals.activity] || db.nutritionGoals.activity || 'Standard'}, Ziel-Einstellung: ${goalLabels[db.nutritionGoals.goal] || db.nutritionGoals.goal || 'Standard'}\n`;
     }
   }
-  if (db.mealPlanText) {
-    context += `- Aktiver Ernährungsplan:\n"${db.mealPlanText}"\n`;
+  const _activePlanText = (typeof getActiveMealPlanText === 'function') ? getActiveMealPlanText() : '';
+  if (_activePlanText) {
+    context += `- Aktiver Ernährungsplan:\n"${_activePlanText}"\n`;
   }
   
   context += `\nLETZTE ERNÄHRUNGS-LOGS (Ernährungsverlauf):\n`;

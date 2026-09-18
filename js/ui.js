@@ -196,7 +196,7 @@ function toggleRirSetting(checked) {
 }
 
 function toggleRestSoundSetting(checked) {
-  const cfg = (typeof _getRestCfg === 'function') ? _getRestCfg() : (db.restTimer = db.restTimer || {});
+  const cfg = (typeof _getRestCfg === 'function') ? _getRestCfg() : ((db.settings = db.settings || {}).restTimer = db.settings.restTimer || {});
   cfg.sound = checked;
   save();
   haptic('light');
@@ -204,16 +204,35 @@ function toggleRestSoundSetting(checked) {
   showToast(checked ? t('restSoundOn') : t('restSoundOff'));
 }
 
-/* ---- Dark / Light Theme Toggle ---- */
+/* ---- Dark / Light Theme Toggle ----
+   Doppelt gespeichert, mit Absicht: localStorage wird noch vor dem ersten Paint
+   gelesen (kein Aufblitzen des falschen Themes), db.settings ist die Kopie, die
+   über profiles.settings in die Cloud wandert und den Gerätewechsel übersteht. */
+function getStoredTheme() {
+  const fromSettings = db && db.settings ? db.settings.theme : null;
+  return fromSettings || localStorage.getItem('gymtrack_theme') || 'dark';
+}
+
+function applyStoredTheme() {
+  document.body.classList.toggle('light-mode', getStoredTheme() === 'light');
+}
+window.applyStoredTheme = applyStoredTheme;
+
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');
-  localStorage.setItem('gymtrack_theme', isLight ? 'light' : 'dark');
+  const theme = isLight ? 'light' : 'dark';
+  localStorage.setItem('gymtrack_theme', theme);
+  if (db) {
+    if (!db.settings) db.settings = {};
+    db.settings.theme = theme;
+    if (typeof save === 'function') save();
+  }
 }
 
 // Apply on load
 (function() {
-  if (localStorage.getItem('gymtrack_theme') === 'light') {
-    document.body.classList.add('light-mode');
+  try { applyStoredTheme(); } catch (e) {
+    if (localStorage.getItem('gymtrack_theme') === 'light') document.body.classList.add('light-mode');
   }
 })();
 

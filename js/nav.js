@@ -2,21 +2,44 @@
    GYMTRACK — Navigation + Swipe
    ============================================= */
 
-const PAGE_ORDER = ['log', 'gymlab', 'supps', 'progress'];
+const PAGE_ORDER = ['gym', 'mobility', 'supps', 'progress'];
+
+/* Alte Seiten-IDs auf die neuen Abteilungen abbilden. Der Guide, die Tour und
+   ältere Deep-Links rufen weiterhin showPage('log') bzw. showPage('gymlab') —
+   beides landet jetzt in der Gym-Abteilung, nur auf unterschiedlichen
+   Unterseiten. */
+const LEGACY_PAGE_ALIASES = {
+  log:    { page: 'gym', sub: 'today' },
+  gymlab: { page: 'gym', sub: 'plans' }
+};
 
 function showPage(id, btn) {
+  let sub = null;
+  if (LEGACY_PAGE_ALIASES[id]) {
+    sub = LEGACY_PAGE_ALIASES[id].sub;
+    id  = LEGACY_PAGE_ALIASES[id].page;
+    if (!btn) btn = document.querySelector(`.nav-btn[data-page="${id}"]`);
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
   const pg = document.getElementById('page-' + id);
   if (pg) pg.classList.add('active');
   if (btn) { btn.classList.add('active'); btn.setAttribute('aria-current', 'page'); }
-  if (id === 'log')      renderLog();
-  if (id === 'gymlab')   renderGymLab();
+
+  if (id === 'gym') {
+    renderGymDepartment();
+    switchGymSubTab(sub || localStorage.getItem('gymtrack_gym_subtab') || 'today');
+  }
+  if (id === 'mobility') {
+    renderMobilityDepartment();
+    switchMobilitySubTab(sub || localStorage.getItem('gymtrack_mobility_subtab') || 'today');
+  }
   if (id === 'progress') {
     const activeSub = localStorage.getItem('gymtrack_progress_subtab') || 'calendar-stats';
     switchProgressSubTab(activeSub);
   }
-  if (id === 'supps')    {
+  if (id === 'supps') {
     const activeSub = localStorage.getItem('gymtrack_nutrition_subtab') || 'calories';
     if (typeof switchNutritionSubTab === 'function') {
       switchNutritionSubTab(activeSub);
@@ -27,7 +50,36 @@ function showPage(id, btn) {
   }
 }
 
+/* ---------------------------------------------
+   PROGRESS-ABTEILUNG
+   --------------------------------------------- */
+/* Abteilungs-Filter der Progress-Abteilung. "Alle" ist die Voreinstellung;
+   gemischte Einheiten erscheinen in Gym UND Mobility. */
+function renderProgressDomainChips() {
+  const wrap = document.getElementById('progressDomainChips');
+  if (!wrap) return;
+  const cur = (typeof getProgressDomain === 'function') ? getProgressDomain() : 'all';
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+  const opts = [
+    ['all',            en ? 'All'      : 'Alle'],
+    [DOMAIN_GYM,       en ? '🏋️ Gym'   : '🏋️ Gym'],
+    [DOMAIN_MOBILITY,  en ? '🧘 Mobility' : '🧘 Mobility']
+  ];
+  wrap.innerHTML = opts.map(([val, label]) =>
+    `<button class="filter-chip ${cur === val ? 'active' : ''}" data-progdomain="${val}" onclick="setProgressDomainFilter('${val}')">${label}</button>`
+  ).join('');
+}
+
+function setProgressDomainFilter(domain) {
+  if (typeof setProgressDomain === 'function') setProgressDomain(domain);
+  renderProgressDomainChips();
+  // Die aktive Unterseite neu aufbauen, damit der Filter sofort greift.
+  switchProgressSubTab(localStorage.getItem('gymtrack_progress_subtab') || 'calendar-stats');
+  if (typeof haptic === 'function') haptic('light');
+}
+
 function switchProgressSubTab(subTabId) {
+  renderProgressDomainChips();
   document.querySelectorAll('.progress-subtab').forEach(btn => {
     const isTarget = (subTabId === 'calendar-stats' && btn.id === 'tabProgCalendar') ||
                      (subTabId === 'body-photos' && btn.id === 'tabProgBody') ||
@@ -51,6 +103,155 @@ function switchProgressSubTab(subTabId) {
   
   localStorage.setItem('gymtrack_progress_subtab', subTabId);
 }
+
+/* =============================================
+   LAUFENDE EINHEIT — geteilt zwischen den Abteilungen
+
+   Es gibt nur EINEN #activeWorkout-Block. Statt ihn zu duplizieren (und damit
+   doppelte IDs und doppeltes Event-Wiring zu erzeugen), wird derselbe Knoten in
+   die "Heute"-Unterseite der Abteilung verschoben, die gerade angezeigt wird.
+   Eine gemischte Einheit ist damit aus Gym UND Mobility bedienbar — genau das
+   macht den Interconnect aus.
+   ============================================= */
+function mountActiveWorkout(departmentId) {
+  const node = document.getElementById('activeWorkout');
+  if (!node) return;
+  const mountId = departmentId === 'mobility' ? 'mobilityActiveMount' : 'gymActiveMount';
+  const mount = document.getElementById(mountId);
+  if (mount && node.parentElement !== mount) mount.appendChild(node);
+}
+
+/* ---------------------------------------------
+   GYM-ABTEILUNG
+   --------------------------------------------- */
+function renderGymDepartment() {
+  renderTemplates();
+  renderExercises();
+  if (typeof renderPrograms === 'function') renderPrograms();
+  renderGymLabCategoryChips();
+}
+
+function switchGymSubTab(sub) {
+  if (!['today', 'plans', 'exercises'].includes(sub)) sub = 'today';
+
+  document.querySelectorAll('#page-gym .dept-subtab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.sub === sub);
+  });
+  ['today', 'plans', 'exercises'].forEach(key => {
+    const pane = document.getElementById('gym-subpage-' + key);
+    if (pane) pane.style.display = key === sub ? 'block' : 'none';
+  });
+
+  // Suchfeld nur dort, wo es etwas zu suchen gibt.
+  const searchWrapper = document.getElementById('gymSearchWrapper');
+  if (searchWrapper) searchWrapper.style.display = sub === 'today' ? 'none' : 'block';
+  const chips = document.getElementById('gymlabCategoryChipsWrapper');
+  if (chips) {
+    chips.style.display = sub === 'exercises' ? 'block' : 'none';
+    if (sub === 'exercises') renderGymLabCategoryChips();
+  }
+
+  if (sub === 'today') {
+    mountActiveWorkout('gym');
+    if (typeof renderLog === 'function') renderLog();
+  }
+
+  if (typeof initRipples === 'function') initRipples();
+  localStorage.setItem('gymtrack_gym_subtab', sub);
+}
+
+/* Kompatibilität: switchGymLabTab() wird noch aus Guide, Tour und einigen
+   Modals heraus aufgerufen. Vorlagen und Programme teilen sich jetzt eine
+   Unterseite. */
+function switchGymLabTab(tab) {
+  switchGymSubTab(tab === 'exercises' ? 'exercises' : 'plans');
+}
+
+/* ---------------------------------------------
+   MOBILITY-ABTEILUNG
+   --------------------------------------------- */
+function renderMobilityDepartment() {
+  renderTemplates();
+  renderExercises();
+  renderMobilityCategoryChips();
+  renderMobilityStats();
+  renderMobilityQuickRoutines();
+  updateMobilityInterconnectCard();
+}
+window.renderMobilityDepartment = renderMobilityDepartment;
+
+function switchMobilitySubTab(sub) {
+  if (!['today', 'routines', 'exercises'].includes(sub)) sub = 'today';
+
+  document.querySelectorAll('#page-mobility .dept-subtab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.sub === sub);
+  });
+  ['today', 'routines', 'exercises'].forEach(key => {
+    const pane = document.getElementById('mobility-subpage-' + key);
+    if (pane) pane.style.display = key === sub ? 'block' : 'none';
+  });
+
+  const searchWrapper = document.getElementById('mobilitySearchWrapper');
+  if (searchWrapper) searchWrapper.style.display = sub === 'today' ? 'none' : 'block';
+  const chips = document.getElementById('mobilityCategoryChipsWrapper');
+  if (chips) {
+    chips.style.display = sub === 'exercises' ? 'block' : 'none';
+    if (sub === 'exercises') renderMobilityCategoryChips();
+  }
+
+  if (sub === 'today') {
+    mountActiveWorkout('mobility');
+    updateMobilityInterconnectCard();
+    renderMobilityStats();
+    renderMobilityQuickRoutines();
+  }
+
+  if (typeof initRipples === 'function') initRipples();
+  localStorage.setItem('gymtrack_mobility_subtab', sub);
+}
+
+function onMobilitySearchInput() {
+  const el = document.getElementById('mobilitySearch');
+  window._mobilitySearchQuery = el ? el.value.trim().toLowerCase() : '';
+  const sub = localStorage.getItem('gymtrack_mobility_subtab') || 'today';
+  if (sub === 'routines') renderTemplates();
+  else if (sub === 'exercises') renderExercises();
+}
+
+function renderMobilityCategoryChips() {
+  const wrapper = document.getElementById('mobilityCategoryChipsWrapper');
+  if (!wrapper) return;
+
+  // Nur Kategorien, in denen es tatsächlich Mobility-Übungen gibt.
+  const cats = [...new Set(
+    activeExercises()
+      .filter(e => getExerciseDomain(e) === DOMAIN_MOBILITY)
+      .map(e => e.category)
+  )];
+
+  const current = window._mobilityCategoryFilter || 'all';
+  let html = `<div style="display:inline-flex;gap:8px;">`;
+  html += `<button class="filter-chip ${current === 'all' ? 'active' : ''}" data-mobcat="all" onclick="filterMobilityByCategory('all')">${t('allLabel') || 'Alle'}</button>`;
+  cats.forEach(cat => {
+    const catsObj = t('cats');
+    const label = (catsObj && typeof catsObj === 'object') ? (catsObj[cat] || cat) : cat;
+    html += `<button class="filter-chip ${current === cat ? 'active' : ''}" data-mobcat="${cat}" onclick="filterMobilityByCategory('${cat}')">${label}</button>`;
+  });
+  html += `</div>`;
+  wrapper.innerHTML = html;
+}
+
+function filterMobilityByCategory(category) {
+  window._mobilityCategoryFilter = category;
+  document.querySelectorAll('[data-mobcat]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mobcat === category);
+  });
+  renderExercises();
+  if (typeof haptic === 'function') haptic('light');
+}
+
+window._mobilitySearchQuery   = '';
+window._mobilityCategoryFilter = 'all';
 
 function renderGymLabCategoryChips() {
   const wrapper = document.getElementById('gymlabCategoryChipsWrapper');
@@ -76,63 +277,23 @@ function renderGymLabCategoryChips() {
 }
 window.renderGymLabCategoryChips = renderGymLabCategoryChips;
 
-function renderGymLab() {
-  const savedTab = localStorage.getItem('gymtrack_gymlab_tab') || 'templates';
-  
-  const searchInput = document.getElementById('gymlabSearch');
-  if (searchInput) searchInput.value = '';
-  window._gymlabSearchQuery = '';
-  window._gymlabCategoryFilter = 'all';
-  
-  renderGymLabCategoryChips();
-
-  renderTemplates();
-  renderExercises();
-  if (typeof renderPrograms === 'function') renderPrograms();
-  switchGymLabTab(savedTab);
-}
-
-function switchGymLabTab(tab) {
-  if (tab === 'all') tab = 'templates';
-  
-  document.querySelectorAll('.gymlab-tab').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tab);
-  });
-  
-  const prog = document.getElementById('gymlab-programs-wrapper');
-  const tmpl = document.getElementById('gymlab-templates-wrapper');
-  const ex   = document.getElementById('gymlab-exercises-wrapper');
-  const chipsWrapper = document.getElementById('gymlabCategoryChipsWrapper');
-  
-  if (prog) prog.style.display = tab === 'programs' ? 'block' : 'none';
-  if (tmpl) tmpl.style.display = tab === 'templates' ? 'block' : 'none';
-  if (ex) ex.style.display = tab === 'exercises' ? 'block' : 'none';
-  
-  if (chipsWrapper) {
-    chipsWrapper.style.display = tab === 'exercises' ? 'block' : 'none';
-    if (tab === 'exercises' && typeof renderGymLabCategoryChips === 'function') {
-      renderGymLabCategoryChips();
-    }
-  }
-  
-  if (typeof initRipples === 'function') initRipples();
-  localStorage.setItem('gymtrack_gymlab_tab', tab);
-}
 
 window._gymlabSearchQuery = '';
 window._gymlabCategoryFilter = 'all';
 
 function onGymLabSearchInput() {
-  const searchVal = document.getElementById('gymlabSearch').value.trim().toLowerCase();
+  const el = document.getElementById('gymlabSearch');
+  const searchVal = el ? el.value.trim().toLowerCase() : '';
   window._gymlabSearchQuery = searchVal;
-  
-  const tab = localStorage.getItem('gymtrack_gymlab_tab') || 'templates';
-  if (tab === 'templates') {
-    renderTemplates(searchVal);
-  } else if (tab === 'programs') {
-    if (typeof renderPrograms === 'function') renderPrograms(searchVal);
-  } else if (tab === 'exercises') {
+
+  // Vorlagen und Programme teilen sich jetzt die Unterseite "Pläne" — die Suche
+  // muss dort beide Listen filtern.
+  const sub = localStorage.getItem('gymtrack_gym_subtab') || 'today';
+  if (sub === 'exercises') {
     renderExercises(searchVal, window._gymlabCategoryFilter || 'all');
+  } else {
+    renderTemplates(searchVal);
+    if (typeof renderPrograms === 'function') renderPrograms(searchVal);
   }
 }
 
@@ -196,6 +357,20 @@ document.addEventListener('touchend', e => {
 
 // Export global functions explicitly for HTML handlers
 window.showPage = showPage;
-window.switchGymLabTab = switchGymLabTab;
+window.mountActiveWorkout = mountActiveWorkout;
+window.switchProgressSubTab = switchProgressSubTab;
+window.renderProgressDomainChips = renderProgressDomainChips;
+window.setProgressDomainFilter = setProgressDomainFilter;
+
+// Gym-Abteilung
+window.renderGymDepartment = renderGymDepartment;
+window.switchGymSubTab = switchGymSubTab;
+window.switchGymLabTab = switchGymLabTab;           // Kompatibilität (Guide/Tour)
 window.filterGymLabExercisesByCategory = filterGymLabExercisesByCategory;
 window.onGymLabSearchInput = onGymLabSearchInput;
+
+// Mobility-Abteilung
+window.switchMobilitySubTab = switchMobilitySubTab;
+window.onMobilitySearchInput = onMobilitySearchInput;
+window.renderMobilityCategoryChips = renderMobilityCategoryChips;
+window.filterMobilityByCategory = filterMobilityByCategory;

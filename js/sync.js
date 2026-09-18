@@ -2,6 +2,31 @@
    GYMTRACK / DSCPLN — Synchronization Layer
    ============================================= */
 
+/* Reparatur der Abteilung nach der domain-Migration.
+
+   Die Spalte kam mit `not null default 'gym'` dazu, also liest sich jede Zeile,
+   die vorher existierte, als 'gym'. Die echte Abteilung berechnet der Client
+   aus den enthaltenen Übungen. Da beide Seiten denselben Zeitstempel tragen,
+   gewinnt lokal zwar die Anzeige, es würde aber nie hochgeschoben — und die
+   nächste Neuinstallation holte sich 'gym' zurück. Diese beiden Helfer schieben
+   den berechneten Wert einmalig hoch und verhindern, dass ein Default-Wert aus
+   der Cloud eine berechnete Abteilung überschreibt. */
+function _domainNeedsRepush(local, remote) {
+  const localDomain = local && local.domain;
+  if (!localDomain || localDomain === 'gym') return false;   // 'gym' ist der Default, nichts zu reparieren
+  const remoteDomain = remote && remote.domain;
+  return remoteDomain == null || remoteDomain === 'gym';
+}
+
+// Ein 'gym' aus der Cloud darf ein lokal berechnetes 'mobility'/'mixed' nicht
+// plattmachen; jeder andere Remote-Wert stammt von einem aktuellen Client.
+function _mergeDomain(incomingDomain, localDomain) {
+  if (localDomain && localDomain !== 'gym' && (!incomingDomain || incomingDomain === 'gym')) {
+    return localDomain;
+  }
+  return incomingDomain || localDomain || 'gym';
+}
+
 // Mapping definition: local camelCase -> Supabase snake_case
 const SYNC_MAPPINGS = {
   exercises: {
@@ -10,6 +35,9 @@ const SYNC_MAPPINGS = {
       name: item.name,
       category: item.category,
       notes: item.notes || null,
+      // Abteilung (gym | mobility). Fällt auf die Herleitung aus der Kategorie
+      // zurück, falls ein Objekt das Feld noch nicht trägt.
+      domain: item.domain || (typeof getExerciseDomain === 'function' ? getExerciseDomain(item) : 'gym'),
       updated_at: Number(item.updated_at || Date.now())
     }),
     toLocal: dbItem => ({
@@ -17,6 +45,7 @@ const SYNC_MAPPINGS = {
       name: dbItem.name,
       category: dbItem.category,
       notes: dbItem.notes,
+      domain: dbItem.domain || 'gym',
       updated_at: Number(dbItem.updated_at)
     }),
     getLocalId: item => item.id,
@@ -37,6 +66,7 @@ const SYNC_MAPPINGS = {
       template_id: item.templateId != null ? String(item.templateId) : null,
       template_name: item.templateName || null,
       notes: item.notes || null,
+      domain: item.domain || (typeof resolveWorkoutDomain === 'function' ? resolveWorkoutDomain(item) : 'gym'),
       updated_at: Number(item.updated_at || item.date || Date.now())
     }),
     toLocal: dbItem => ({
@@ -48,6 +78,7 @@ const SYNC_MAPPINGS = {
       templateId: dbItem.template_id != null ? String(dbItem.template_id) : null,
       templateName: dbItem.template_name || null,
       notes: dbItem.notes,
+      domain: dbItem.domain || 'gym',
       updated_at: Number(dbItem.updated_at)
     }),
     getLocalId: item => item.id,
@@ -62,11 +93,18 @@ const SYNC_MAPPINGS = {
     // hooks repair that in place.
     needsRepush: (local, remote) =>
       !!((local.templateId && remote.template_id == null) ||
-         (local.templateName && remote.template_name == null)),
+         (local.templateName && remote.template_name == null) ||
+         // Die domain-Spalte kam mit Default 'gym' dazu: jede Zeile, die vor
+         // der Migration existierte, liest sich als 'gym'. Lokal wird die
+         // Abteilung aber aus den geloggten Blöcken berechnet. Ohne diese
+         // Reparatur trügen beide Seiten denselben Zeitstempel, nichts würde je
+         // hochgeschoben — und eine Neuinstallation holte sich 'gym' zurück.
+         _domainNeedsRepush(local, remote)),
     // A remote row that predates the columns must never blank out a local link.
     mergeLocal: (incoming, local) => {
       if (!incoming.templateId && local.templateId) incoming.templateId = local.templateId;
       if (!incoming.templateName && local.templateName) incoming.templateName = local.templateName;
+      incoming.domain = _mergeDomain(incoming.domain, local.domain);
       return incoming;
     }
   },
@@ -76,6 +114,7 @@ const SYNC_MAPPINGS = {
       name: item.name,
       type: item.type,
       exercise_ids: item.exerciseIds,
+      domain: item.domain || (typeof resolveDomainForExerciseIds === 'function' ? resolveDomainForExerciseIds(item.exerciseIds) : 'gym'),
       updated_at: Number(item.updated_at || Date.now())
     }),
     toLocal: dbItem => ({
@@ -83,11 +122,18 @@ const SYNC_MAPPINGS = {
       name: dbItem.name,
       type: dbItem.type,
       exerciseIds: dbItem.exercise_ids,
+      domain: dbItem.domain || 'gym',
       updated_at: Number(dbItem.updated_at)
     }),
     getLocalId: item => item.id,
     getDbId: dbItem => dbItem.id,
-    getTimestamp: item => Number(item.updated_at || Date.now())
+    getTimestamp: item => Number(item.updated_at || Date.now()),
+    // Wie bei den Workouts: Zeilen von vor der Migration lesen sich als 'gym'.
+    needsRepush: (local, remote) => _domainNeedsRepush(local, remote),
+    mergeLocal: (incoming, local) => {
+      incoming.domain = _mergeDomain(incoming.domain, local.domain);
+      return incoming;
+    }
   },
   programs: {
     toDb: item => ({
@@ -306,10 +352,90 @@ const SYNC_MAPPINGS = {
     getLocalId: item => item.id,
     getDbId: dbItem => dbItem.id,
     getTimestamp: item => Number(item.updated_at || Date.now())
+  },
+  // Ernährungspläne. Lagen bis Schema-Version 5 als einzelner Textblock rein
+  // lokal in `db.mealPlanText` und gingen beim Gerätewechsel verloren.
+  meal_plans: {
+    toDb: item => ({
+      id: item.id,
+      name: item.name || 'Mein Plan',
+      content: item.content || '',
+      active: item.active === true,
+      sort_order: Number(item.sortOrder || 0),
+      updated_at: Number(item.updated_at || Date.now())
+    }),
+    toLocal: dbItem => ({
+      id: dbItem.id,
+      name: dbItem.name,
+      content: dbItem.content || '',
+      active: dbItem.active === true,
+      sortOrder: Number(dbItem.sort_order || 0),
+      updated_at: Number(dbItem.updated_at)
+    }),
+    getLocalId: item => item.id,
+    getDbId: dbItem => dbItem.id,
+    getTimestamp: item => Number(item.updated_at || Date.now())
   }
 };
 
 // Map Table Names to Local db.js structures
+/* =============================================
+   SICHERHEITSNETZ: fehlende Spalten in der Cloud
+
+   Der Client kann vor der SQL-Migration ausgerollt werden (oder ein Nutzer
+   öffnet eine gecachte neue Version, bevor die Migration lief). PostgREST
+   lehnt den ganzen Upsert ab, wenn auch nur eine Spalte fehlt — damit würden
+   Übungen, Vorlagen und Workouts komplett nicht mehr synchronisieren, also
+   genau die Daten, die geschützt werden sollen.
+
+   Deshalb: erkennt eine fehlende Spalte, entfernt sie aus der Nutzlast und
+   schickt den Upsert erneut. Sobald die Migration läuft, greift das nie wieder.
+   ============================================= */
+const OPTIONAL_COLUMNS = ['domain', 'current_workout', 'current_workout_at'];  // erst ab Migration 20260917
+const _missingColumns = new Set();     // pro Sitzung gemerkt, spart Fehlversuche
+
+function _isMissingColumnError(error) {
+  if (!error) return null;
+  // PostgREST: PGRST204 (Spalte im Schema-Cache unbekannt), Postgres: 42703
+  const msg = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`;
+  const m = msg.match(/'([^']+)' column|column "([^"]+)"/i);
+  const name = m ? (m[1] || m[2]) : null;
+  if (error.code === 'PGRST204' || error.code === '42703' || /column/i.test(msg)) {
+    return name || (OPTIONAL_COLUMNS.find(c => msg.includes(c)) || null);
+  }
+  return null;
+}
+
+function _stripKnownMissing(payload) {
+  const strip = row => {
+    if (!row || typeof row !== 'object') return row;
+    const copy = Object.assign({}, row);
+    _missingColumns.forEach(c => { delete copy[c]; });
+    return copy;
+  };
+  return Array.isArray(payload) ? payload.map(strip) : strip(payload);
+}
+
+/* Upsert mit einem Wiederholungsversuch ohne die fehlende Spalte. */
+async function safeUpsert(table, payload, options) {
+  const send = body => options
+    ? window.supabaseClient.from(table).upsert(body, options)
+    : window.supabaseClient.from(table).upsert(body);
+
+  let body = _missingColumns.size ? _stripKnownMissing(payload) : payload;
+  let { error } = await send(body);
+  if (!error) return { error: null };
+
+  const missing = _isMissingColumnError(error);
+  if (!missing || !OPTIONAL_COLUMNS.includes(missing)) return { error };
+
+  console.warn(`[Sync] Spalte "${missing}" fehlt in der Cloud — bitte die SQL-Migration ausführen. ` +
+               `Es wird vorerst ohne diese Spalte synchronisiert.`);
+  _missingColumns.add(missing);
+  const retry = await send(_stripKnownMissing(payload));
+  return { error: retry.error };
+}
+
 const LOCAL_DB_KEYS = {
   exercises: 'exercises',
   workouts: 'workouts',
@@ -321,7 +447,8 @@ const LOCAL_DB_KEYS = {
   supplement_log: 'supplementLog',
   achievements: 'achievements',
   nutrition_logs: 'nutritionLog',
-  food_library: 'foodLibrary'
+  food_library: 'foodLibrary',
+  meal_plans: 'mealPlans'
 };
 
 async function syncAll() {
@@ -353,10 +480,53 @@ async function syncAll() {
     if (typeof _persistDb === 'function') _persistDb();
   }
 
+  // Theme und Sprache können aus der Cloud gekommen sein (profiles.settings) —
+  // erst anwenden, dann neu rendern, damit beides sofort greift.
+  try {
+    if (db.settings && db.settings.lang && typeof lang !== 'undefined' && db.settings.lang !== lang) {
+      lang = db.settings.lang;
+      localStorage.setItem('gymLang', lang);
+      if (typeof applyTranslations === 'function') applyTranslations();
+    }
+    if (db.settings && db.settings.theme) {
+      localStorage.setItem('gymtrack_theme', db.settings.theme);
+    }
+    if (typeof applyStoredTheme === 'function') applyStoredTheme();
+  } catch (e) {
+    console.warn('[Sync] Theme/Sprache konnten nicht angewendet werden:', e);
+  }
+
   // Reload current page/UI elements if function exists
   if (typeof initUI === 'function') {
     initUI();
   }
+}
+
+/* Laufende Session aus der Cloud übernehmen.
+
+   Eine laufende Session ist der einzige Datensatz, bei dem ein blindes
+   "remote gewinnt" schaden würde: sie darf ein bereits beendetes Training nicht
+   wiederbeleben und ein laufendes nicht überschreiben. Übernommen wird deshalb
+   nur, wenn hier gerade nichts läuft, das Training nicht längst abgeschlossen
+   in der Historie steht und es frisch genug ist, um plausibel noch zu laufen. */
+const CURRENT_WORKOUT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function _adoptRemoteCurrentWorkout(remoteProfile) {
+  const remoteCw = remoteProfile && remoteProfile.current_workout;
+  if (!remoteCw || typeof remoteCw !== 'object') return false;
+
+  // Hier läuft bereits ein Training — das gewinnt immer.
+  if (db.currentWorkout) return false;
+
+  // Bereits beendet: liegt schon als abgeschlossenes Workout in der Historie.
+  if (remoteCw.id && (db.workouts || []).some(w => String(w.id) === String(remoteCw.id))) return false;
+
+  const startedAt = Number(remoteCw.startTime || remoteProfile.current_workout_at || 0);
+  if (!startedAt || Date.now() - startedAt > CURRENT_WORKOUT_MAX_AGE_MS) return false;
+
+  db.currentWorkout = remoteCw;
+  console.log('[Sync] Laufende Session vom anderen Gerät übernommen:', remoteCw.id);
+  return true;
 }
 
 async function syncUserProfile(userId) {
@@ -399,22 +569,23 @@ async function syncUserProfile(userId) {
       // Merge settings so keys the remote doesn't carry keep their local
       // defaults (barWeight, plates, …) instead of becoming undefined.
       if (remoteProfile.settings != null) db.settings = Object.assign({}, db.settings, remoteProfile.settings);
+      _adoptRemoteCurrentWorkout(remoteProfile);
       localStorage.setItem('gym_profile_updated_at', String(remoteProfile.updated_at));
       save(); // local save
     } else if (localNeedsPush) {
       console.log('[Sync] Pushing profile updates to remote');
       const now = Date.now();
-      const { error: upsertError } = await window.supabaseClient
-        .from('profiles')
-        .upsert({
+      const { error: upsertError } = await safeUpsert('profiles', {
           id: userId,
           active_program_id: db.activeProgram?.id || null,
           week_status: db.weekStatus || {"weekKey": 0, "mode": "normal"},
           custom_categories: db.customCategories || {},
           exercise_flags: db.exerciseFlags || {},
           settings: db.settings || {},
+          current_workout: db.currentWorkout || null,
+          current_workout_at: db.currentWorkout ? now : null,
           updated_at: now
-        });
+      });
       if (upsertError) throw upsertError;
       localStorage.setItem('gym_profile_updated_at', String(now));
     }
@@ -576,10 +747,8 @@ async function syncTable(table, userId) {
   if (upsertQueue.length > 0) {
     console.log(`[Sync] Pushing ${upsertQueue.length} records to ${table}`);
     const rows = upsertQueue.map(row => ({ ...row, user_id: userId }));
-    const { error: upsertError } = await window.supabaseClient
-      .from(table)
-      .upsert(rows);
-    
+    const { error: upsertError } = await safeUpsert(table, rows);
+
     if (upsertError) throw upsertError;
   }
 }
@@ -662,12 +831,9 @@ async function syncTableItem(tableName, item) {
   console.log(`[Sync Background] Upserting item into ${tableName}:`, dbItem.id);
   
   // Asynchronous background call
-  window.supabaseClient
-    .from(tableName)
-    .upsert(dbItem)
-    .then(({ error }) => {
-      if (error) console.error(`[Sync Background Error] Table ${tableName}:`, error);
-    });
+  safeUpsert(tableName, dbItem).then(({ error }) => {
+    if (error) console.error(`[Sync Background Error] Table ${tableName}:`, error);
+  });
 }
 
 // Background Sync Trigger for user profile updates
@@ -678,15 +844,18 @@ async function syncProfileUpdate() {
 
   console.log(`[Sync Background] Upserting profile data`);
   
-  window.supabaseClient
-    .from('profiles')
-    .upsert({
+  safeUpsert('profiles', {
       id: userId,
       active_program_id: db.activeProgram?.id || null,
       week_status: db.weekStatus || {"weekKey": 0, "mode": "normal"},
       custom_categories: db.customCategories || {},
       exercise_flags: db.exerciseFlags || {},
       settings: db.settings || {},
+      // Laufende Session mitschreiben: ein Gerätewechsel mitten im Training
+      // kostet sie dadurch nicht mehr. null räumt sie auf allen Geräten ab,
+      // sobald das Training beendet oder verworfen wurde.
+      current_workout: db.currentWorkout || null,
+      current_workout_at: db.currentWorkout ? now : null,
       updated_at: now
     })
     .then(({ error }) => {

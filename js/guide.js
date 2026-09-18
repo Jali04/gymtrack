@@ -435,8 +435,9 @@ const GUIDE_CONTENT = {
 // Guide Card list for Interactive Menu rendering
 const GUIDE_TOUR_ITEMS = {
   de: [
-    { id: 'log', icon: '🏋️‍♂️', title: 'Training & Timer', text: 'Workouts starten, Sätze loggen und Pausentimer einstellen.' },
-    { id: 'gymlab', icon: '🧪', title: 'GymLab (Vorlagen)', text: 'Vorlagen & Programme über Wochen hinweg planen.' },
+    { id: 'log', icon: '🏋️', title: 'Gym — Training & Timer', text: 'Workouts starten, Sätze loggen und Pausentimer einstellen.' },
+    { id: 'gymlab', icon: '📋', title: 'Gym — Pläne & Übungen', text: 'Vorlagen, Programme und deine Übungsbibliothek an einem Ort.' },
+    { id: 'mobility', icon: '🧘', title: 'Mobility', text: 'Dehn- und Mobility-Routinen — auch mitten in einer Gym-Einheit.' },
     { id: 'aicoach', icon: '🤖', title: 'AI Coach', text: 'Chatte mit dem Coach, um Pläne per Klick zu importieren.' },
     { id: 'calendar', icon: '📅', title: 'Kalender & Verlauf', text: 'Trainingskalender, Streaks, Verlauf bearbeiten und löschen.' },
     { id: 'supps', icon: '💊', title: 'Supplements', text: 'Tägliche Einnahmen planen, loggen und Vorrat verwalten.' },
@@ -444,8 +445,9 @@ const GUIDE_TOUR_ITEMS = {
     { id: 'progress', icon: '📈', title: 'Fortschritt & Fotos', text: 'Gewichtsverlauf und PIN-gesicherte Progress-Fotos.' }
   ],
   en: [
-    { id: 'log', icon: '🏋️‍♂️', title: 'Workout & Timer', text: 'Start workouts, log sets, and set the rest timer.' },
-    { id: 'gymlab', icon: '🧪', title: 'GymLab (Templates)', text: 'Schedule templates and structured programs.' },
+    { id: 'log', icon: '🏋️', title: 'Gym — Workout & Timer', text: 'Start workouts, log sets, and set the rest timer.' },
+    { id: 'gymlab', icon: '📋', title: 'Gym — Plans & Exercises', text: 'Templates, programs and your exercise library in one place.' },
+    { id: 'mobility', icon: '🧘', title: 'Mobility', text: 'Stretching and mobility routines — even inside a gym session.' },
     { id: 'aicoach', icon: '🤖', title: 'AI Coach', text: 'Chat with the coach to generate importable plans.' },
     { id: 'calendar', icon: '📅', title: 'Calendar & History', text: 'Streak calendars, workout history editing, and statistics.' },
     { id: 'supps', icon: '💊', title: 'Supplements', text: 'Schedule supplements intake and track stock.' },

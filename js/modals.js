@@ -254,7 +254,8 @@ function openSettingsHub() {
   const wl = document.getElementById('settingWakeLock');
   if (wl) wl.checked = !(db.settings && db.settings.wakeLock === false);
   const rs = document.getElementById('settingRestSound');
-  if (rs) rs.checked = !(db.restTimer && db.restTimer.sound === false);
+  const _restCfg = (typeof _getRestCfg === 'function') ? _getRestCfg() : (db.settings && db.settings.restTimer) || {};
+  if (rs) rs.checked = _restCfg.sound !== false;
   const rir = document.getElementById('settingRir');
   if (rir) rir.checked = !!(db.settings && db.settings.rir);
   const unitBtn = document.getElementById('btnSettingsUnit');
