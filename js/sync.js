@@ -2,6 +2,31 @@
    GYMTRACK / DSCPLN — Synchronization Layer
    ============================================= */
 
+/* Reparatur der Abteilung nach der domain-Migration.
+
+   Die Spalte kam mit `not null default 'gym'` dazu, also liest sich jede Zeile,
+   die vorher existierte, als 'gym'. Die echte Abteilung berechnet der Client
+   aus den enthaltenen Übungen. Da beide Seiten denselben Zeitstempel tragen,
+   gewinnt lokal zwar die Anzeige, es würde aber nie hochgeschoben — und die
+   nächste Neuinstallation holte sich 'gym' zurück. Diese beiden Helfer schieben
+   den berechneten Wert einmalig hoch und verhindern, dass ein Default-Wert aus
+   der Cloud eine berechnete Abteilung überschreibt. */
+function _domainNeedsRepush(local, remote) {
+  const localDomain = local && local.domain;
+  if (!localDomain || localDomain === 'gym') return false;   // 'gym' ist der Default, nichts zu reparieren
+  const remoteDomain = remote && remote.domain;
+  return remoteDomain == null || remoteDomain === 'gym';
+}
+
+// Ein 'gym' aus der Cloud darf ein lokal berechnetes 'mobility'/'mixed' nicht
+// plattmachen; jeder andere Remote-Wert stammt von einem aktuellen Client.
+function _mergeDomain(incomingDomain, localDomain) {
+  if (localDomain && localDomain !== 'gym' && (!incomingDomain || incomingDomain === 'gym')) {
+    return localDomain;
+  }
+  return incomingDomain || localDomain || 'gym';
+}
+
 // Mapping definition: local camelCase -> Supabase snake_case
 const SYNC_MAPPINGS = {
   exercises: {
@@ -68,11 +93,18 @@ const SYNC_MAPPINGS = {
     // hooks repair that in place.
     needsRepush: (local, remote) =>
       !!((local.templateId && remote.template_id == null) ||
-         (local.templateName && remote.template_name == null)),
+         (local.templateName && remote.template_name == null) ||
+         // Die domain-Spalte kam mit Default 'gym' dazu: jede Zeile, die vor
+         // der Migration existierte, liest sich als 'gym'. Lokal wird die
+         // Abteilung aber aus den geloggten Blöcken berechnet. Ohne diese
+         // Reparatur trügen beide Seiten denselben Zeitstempel, nichts würde je
+         // hochgeschoben — und eine Neuinstallation holte sich 'gym' zurück.
+         _domainNeedsRepush(local, remote)),
     // A remote row that predates the columns must never blank out a local link.
     mergeLocal: (incoming, local) => {
       if (!incoming.templateId && local.templateId) incoming.templateId = local.templateId;
       if (!incoming.templateName && local.templateName) incoming.templateName = local.templateName;
+      incoming.domain = _mergeDomain(incoming.domain, local.domain);
       return incoming;
     }
   },
@@ -95,7 +127,13 @@ const SYNC_MAPPINGS = {
     }),
     getLocalId: item => item.id,
     getDbId: dbItem => dbItem.id,
-    getTimestamp: item => Number(item.updated_at || Date.now())
+    getTimestamp: item => Number(item.updated_at || Date.now()),
+    // Wie bei den Workouts: Zeilen von vor der Migration lesen sich als 'gym'.
+    needsRepush: (local, remote) => _domainNeedsRepush(local, remote),
+    mergeLocal: (incoming, local) => {
+      incoming.domain = _mergeDomain(incoming.domain, local.domain);
+      return incoming;
+    }
   },
   programs: {
     toDb: item => ({
