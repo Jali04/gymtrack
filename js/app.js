@@ -82,6 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error("Error in initUI:", e);
   }
 
+  // Hinweis auf knappe Supplement-Vorräte, einmal pro Tag. Verzögert, damit er
+  // nicht gegen den Splash-Screen läuft.
+  setTimeout(() => {
+    try {
+      if (typeof maybeShowSupplyNotice === 'function') maybeShowSupplyNotice();
+    } catch (e) {
+      console.error("Error in maybeShowSupplyNotice:", e);
+    }
+  }, 2500);
+
   // Nach einem Neuladen die zuletzt gewählte Abteilung wiederherstellen und die
   // laufende Einheit dort einhängen, wo sie gestartet wurde.
   try {

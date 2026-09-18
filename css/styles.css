@@ -3888,3 +3888,12 @@ body.light-mode .dept-subtab.active {
     padding: 8px 0;
   }
 }
+
+/* Supplement mit leerem Vorrat: sichtbar nicht abhakbar. Der Klick bleibt
+   bewusst aktiv — er führt zum Auffüllen statt ins Leere. */
+.supp-check-card.supp-out-of-stock {
+  opacity: 0.55;
+}
+.supp-check-card.supp-out-of-stock .supp-check-dot {
+  border-style: dashed;
+}
