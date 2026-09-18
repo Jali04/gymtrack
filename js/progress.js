@@ -307,6 +307,82 @@ function _pinError(msg) {
   }
 }
 
+/* Das Körpergewicht, das zu einem Foto gehört: die Messung, die zeitlich am
+   nächsten liegt. Ein Foto ohne Zahl daneben sagt wenig — erst "78,4 kg" macht
+   den Vergleich zweier Aufnahmen lesbar. Mehr als 14 Tage Abstand zählen nicht
+   mehr als dasselbe Datum. */
+const PIC_WEIGHT_MAX_GAP_MS = 14 * 86400000;
+
+function getWeightForDate(ts) {
+  if (!db.measurements || !db.measurements.length) return null;
+  let best = null, bestGap = Infinity;
+  db.measurements.forEach(m => {
+    const mts = new Date(m.date).getTime();
+    if (isNaN(mts)) return;
+    const gap = Math.abs(mts - ts);
+    if (gap < bestGap) { bestGap = gap; best = m; }
+  });
+  if (!best || bestGap > PIC_WEIGHT_MAX_GAP_MS) return null;
+  return Number(best.weight) || null;
+}
+
+/* Die beiden Eckpunkte der Transformation: ältestes und neuestes Foto.
+   Genau das schaut man sich tatsächlich an. */
+function getTransformationPair() {
+  const pics = (db.progressPics || []).filter(p => p.dataUrl).slice().sort((a, b) => a.date - b.date);
+  if (pics.length < 2) return null;
+  const first = pics[0], last = pics[pics.length - 1];
+  const wFirst = getWeightForDate(first.date);
+  const wLast  = getWeightForDate(last.date);
+  return {
+    first, last,
+    weightFirst: wFirst, weightLast: wLast,
+    weightDelta: (wFirst != null && wLast != null) ? (wLast - wFirst) : null,
+    days: Math.round((last.date - first.date) / 86400000)
+  };
+}
+
+function _picDateStr(ts) {
+  const d = new Date(ts);
+  return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
+}
+
+/* Vorher-Nachher nebeneinander, jeweils mit Datum und Gewicht im Bild. */
+function _buildTransformationHtml() {
+  const pair = getTransformationPair();
+  if (!pair) return '';
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+  const fmtW = v => v == null ? '' : ((typeof fmtWeight === 'function') ? fmtWeight(v) : `${v} kg`);
+
+  const side = (pic, weight, label) => `
+    <div class="transform-side" onclick="openPic('${pic.id}')">
+      <img src="${pic.dataUrl}" alt="${label}">
+      <div class="transform-caption">
+        <span class="transform-label">${label}</span>
+        <span class="transform-date">${_picDateStr(pic.date)}</span>
+        ${weight != null ? `<span class="transform-weight">${fmtW(weight)}</span>` : ''}
+      </div>
+    </div>`;
+
+  let delta = '';
+  if (pair.weightDelta != null && Math.abs(pair.weightDelta) >= 0.1) {
+    const up = pair.weightDelta > 0;
+    delta = `<span class="transform-delta">${up ? '+' : ''}${fmtW(pair.weightDelta)}</span>`;
+  }
+
+  return `
+    <div class="card transform-card">
+      <div class="transform-head">
+        <span>${en ? 'Your transformation' : 'Deine Transformation'}</span>
+        <span class="transform-span">${pair.days} ${en ? 'days' : 'Tage'} ${delta}</span>
+      </div>
+      <div class="transform-pair">
+        ${side(pair.first, pair.weightFirst, en ? 'Before' : 'Vorher')}
+        ${side(pair.last,  pair.weightLast,  en ? 'Now' : 'Jetzt')}
+      </div>
+    </div>`;
+}
+
 function renderProgressPics() {
   const container = document.getElementById('photoGalleryContainer');
   if (!container) return;
@@ -356,7 +432,7 @@ function renderProgressPics() {
     galleryGridHtml = `<div id="progressGallery" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${itemsHtml}</div>`;
   }
   
-  container.innerHTML = uploadBtnHtml + galleryGridHtml;
+  container.innerHTML = uploadBtnHtml + _buildTransformationHtml() + galleryGridHtml;
 }
 
 let activePicId = null;
@@ -367,7 +443,10 @@ function openPic(id) {
   activePicId = id;
   
   const d = new Date(p.date);
-  document.getElementById('viewPicDate').textContent = `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
+  const w = getWeightForDate(p.date);
+  const wStr = w != null ? ` · ${(typeof fmtWeight === 'function') ? fmtWeight(w) : w + ' kg'}` : '';
+  document.getElementById('viewPicDate').textContent =
+    `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}${wStr}`;
   document.getElementById('viewPicImg').src = p.dataUrl;
   
   openModal('viewPicModal');
@@ -569,6 +648,7 @@ function renderWeeklyVolume() {
 
 function renderExerciseProgressTracker() {
   renderWeeklyVolume();
+  if (typeof renderStagnationSection === 'function') renderStagnationSection();
   const progList  = document.getElementById('exerciseProgressTracker');
   if(!progList) return;
   const de = lang !== 'en';
@@ -903,7 +983,21 @@ const EX_GRAPH_METRICS = {
     { key: 'e1rm', de: 'e1RM', en: 'e1RM', unit: () => unitLabel(),
       val: e => { const b = (typeof _bestE1rm === 'function') ? _bestE1rm(e.sets) : 0; return b > 0 ? Number(fmtWeightNum(b)) : 0; } },
     { key: 'reps', de: 'Wdh. gesamt', en: 'Total reps', unit: () => '',
-      val: e => (e.sets || []).reduce((a, s) => a + (Number(s.reps) || 0), 0) }
+      val: e => (e.sets || []).reduce((a, s) => a + (Number(s.reps) || 0), 0) },
+    // Tatsächliche Satzpause (Median), nicht die eingestellte Timer-Dauer: die
+    // wird ohnehin oft übersprungen. Gemessen wird der Abstand zwischen zwei
+    // abgehakten Sätzen — erst seit dieser Version vorhanden, ältere Einheiten
+    // liefern 0 und fallen aus dem Graphen.
+    { key: 'rest', de: 'Satzpause (Median)', en: 'Rest between sets (median)', unit: () => 's',
+      val: e => {
+        const gaps = (e.sets || [])
+          .map(s => Number(s.restActualSec) || 0)
+          .filter(v => v > 0 && v < 1800);   // > 30 min ist keine Pause, das ist eine Unterbrechung
+        if (!gaps.length) return 0;
+        gaps.sort((a, b) => a - b);
+        const mid = Math.floor(gaps.length / 2);
+        return gaps.length % 2 ? gaps[mid] : Math.round((gaps[mid - 1] + gaps[mid]) / 2);
+      } }
   ],
   cardio: [
     { key: 'km', de: 'Max. Distanz', en: 'Max distance', unit: () => 'km',
@@ -1040,3 +1134,7 @@ window.openExGraph = function(exId, dayKey) {
   openModal('exGraphModal');
 };
 window.setExGraphMetric = setExGraphMetric;
+
+
+window.getWeightForDate      = getWeightForDate;
+window.getTransformationPair = getTransformationPair;

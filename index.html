@@ -135,7 +135,10 @@
           </div>
         </div>
 
-        <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;"
+        <!-- Deload-Signal: hier, wo entschieden wird, was heute gemacht wird -->
+      <div id="deloadBanner"></div>
+
+      <div id="activeProgramBanner" class="card" style="display:none;margin-bottom:12px;cursor:pointer;"
           onclick="startNextProgramDay()">
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Aktuelles Programm
           </div>
@@ -387,7 +390,8 @@
     <!-- Sub-navigation tabs at the top -->
     <div class="progress-subtabs">
       <button class="progress-subtab active" onclick="switchProgressSubTab('calendar-stats')" id="tabProgCalendar">Kalender</button>
-      <button class="progress-subtab" onclick="switchProgressSubTab('body-photos')" id="tabProgBody">Körper & Fotos</button>
+      <button class="progress-subtab" onclick="switchProgressSubTab('muscles')" id="tabProgMuscles">Muskeln</button>
+      <button class="progress-subtab" onclick="switchProgressSubTab('body-photos')" id="tabProgBody">Körper</button>
       <button class="progress-subtab" onclick="switchProgressSubTab('exercise-charts')" id="tabProgExercises">Übungen</button>
     </div>
 
@@ -417,6 +421,11 @@
     </div>
 
     <!-- SUBPAGE 2: Body Metrics & Photos (Weight progress graph, entries list, PIN progress pics) -->
+    <!-- SUBPAGE: Muskelkarte -->
+    <div id="prog-subpage-muscles" class="progress-subpage-content" style="display:none;">
+      <div id="muscleMapSection"></div>
+    </div>
+
     <div id="prog-subpage-body-photos" class="progress-subpage-content" style="display:none;">
       <!-- Weight Section -->
       <div class="progress-section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -442,6 +451,7 @@
 
     <!-- SUBPAGE 3: Exercise Progress Charts -->
     <div id="prog-subpage-exercise-charts" class="progress-subpage-content" style="display:none;">
+      <div id="stagnationSection"></div>
       <div id="weeklyVolumeSection" style="margin-bottom:16px;"></div>
       <div id="exerciseProgressTracker" style="display:flex;flex-direction:column;gap:12px;">
         <!-- Accordions injected here -->
@@ -2162,43 +2172,53 @@
       });
     }
     function _postSwMsg(msg) {
-      // Prefer active SW from registration, fall back to controller
-      const target = (_swReg && _swReg.active) || navigator.serviceWorker.controller;
-      if (target) target.postMessage(msg);
+      // Prefer active SW from registration, fall back to controller.
+      // navigator.serviceWorker fehlt ausserhalb sicherer Kontexte (kein HTTPS,
+      // manche Privatmodi). Ungeschützt riss der Zugriff hier den Aufrufer mit —
+      // und damit den Pausentimer, der diese Funktion beim Satz-Haken aufruft.
+      try {
+        const sw = (typeof navigator !== 'undefined') ? navigator.serviceWorker : null;
+        const target = (_swReg && _swReg.active) || (sw && sw.controller);
+        if (target) target.postMessage(msg);
+      } catch (e) {
+        console.warn('[SW] Nachricht konnte nicht zugestellt werden:', e);
+      }
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-  <script src="js/db.js?v=5.00"></script>
-  <script src="js/i18n.js?v=5.00"></script>
-  <script src="js/modals.js?v=5.00"></script>
-  <script src="js/nav.js?v=5.00"></script>
-  <script src="js/workout.js?v=5.00"></script>
-  <script src="js/exercises.js?v=5.00"></script>
-  <script src="js/categories.js?v=5.00"></script>
-  <script src="js/history.js?v=5.00"></script>
-  <script src="js/stats.js?v=5.00"></script>
-  <script src="js/templates.js?v=5.00"></script>
-  <script src="js/calendar.js?v=5.00"></script>
-  <script src="js/editWorkout.js?v=5.00"></script>
-  <script src="js/timer.js?v=5.00"></script>
-  <script src="js/ui.js?v=5.00"></script>
-  <script src="js/wakelock.js?v=5.00"></script>
-  <script src="js/splash.js?v=5.00"></script>
-  <script src="js/progress.js?v=5.00"></script>
-  <script src="js/programs.js?v=5.00"></script>
-  <script src="js/mobility.js?v=5.00"></script>
-  <script src="js/supplements.js?v=5.00"></script>
+  <script src="js/db.js?v=5.10"></script>
+  <script src="js/i18n.js?v=5.10"></script>
+  <script src="js/modals.js?v=5.10"></script>
+  <script src="js/nav.js?v=5.10"></script>
+  <script src="js/workout.js?v=5.10"></script>
+  <script src="js/exercises.js?v=5.10"></script>
+  <script src="js/categories.js?v=5.10"></script>
+  <script src="js/history.js?v=5.10"></script>
+  <script src="js/stats.js?v=5.10"></script>
+  <script src="js/templates.js?v=5.10"></script>
+  <script src="js/calendar.js?v=5.10"></script>
+  <script src="js/editWorkout.js?v=5.10"></script>
+  <script src="js/timer.js?v=5.10"></script>
+  <script src="js/ui.js?v=5.10"></script>
+  <script src="js/wakelock.js?v=5.10"></script>
+  <script src="js/splash.js?v=5.10"></script>
+  <script src="js/progress.js?v=5.10"></script>
+  <script src="js/programs.js?v=5.10"></script>
+  <script src="js/mobility.js?v=5.10"></script>
+  <script src="js/muscles.js?v=5.10"></script>
+  <script src="js/insights.js?v=5.10"></script>
+  <script src="js/supplements.js?v=5.10"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="js/nutrition.js?v=5.00"></script>
-  <script src="js/tools.js?v=5.00"></script>
-  <script src="js/guide.js?v=5.00"></script>
-  <script src="js/achievements.js?v=5.00"></script>
-  <script src="js/app.js?v=5.00"></script>
-  <script src="js/aiCoach.js?v=5.00"></script>
+  <script src="js/nutrition.js?v=5.10"></script>
+  <script src="js/tools.js?v=5.10"></script>
+  <script src="js/guide.js?v=5.10"></script>
+  <script src="js/achievements.js?v=5.10"></script>
+  <script src="js/app.js?v=5.10"></script>
+  <script src="js/aiCoach.js?v=5.10"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.6"></script>
-  <script src="js/config.js?v=5.00"></script>
-  <script src="js/auth.js?v=5.00"></script>
-  <script src="js/sync.js?v=5.00"></script>
+  <script src="js/config.js?v=5.10"></script>
+  <script src="js/auth.js?v=5.10"></script>
+  <script src="js/sync.js?v=5.10"></script>
 
 </body>
 

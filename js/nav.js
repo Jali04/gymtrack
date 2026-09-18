@@ -82,6 +82,7 @@ function switchProgressSubTab(subTabId) {
   renderProgressDomainChips();
   document.querySelectorAll('.progress-subtab').forEach(btn => {
     const isTarget = (subTabId === 'calendar-stats' && btn.id === 'tabProgCalendar') ||
+                     (subTabId === 'muscles' && btn.id === 'tabProgMuscles') ||
                      (subTabId === 'body-photos' && btn.id === 'tabProgBody') ||
                      (subTabId === 'exercise-charts' && btn.id === 'tabProgExercises');
     btn.classList.toggle('active', isTarget);
@@ -94,6 +95,8 @@ function switchProgressSubTab(subTabId) {
   if (subTabId === 'calendar-stats') {
     if (typeof renderCalendar === 'function') renderCalendar();
     if (typeof renderStats === 'function') renderStats();
+  } else if (subTabId === 'muscles') {
+    if (typeof renderMuscleMap === 'function') renderMuscleMap();
   } else if (subTabId === 'body-photos') {
     if (typeof renderMeasurements === 'function') renderMeasurements();
     if (typeof renderProgressPics === 'function') renderProgressPics();

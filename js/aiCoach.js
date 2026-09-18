@@ -633,6 +633,46 @@ function compileAiContext(provider = aiProvider) {
     if (mixed) context += `- Einheiten, die Kraft und Mobility kombinieren: ${mixed}\n`;
   }
 
+  // Muskelabdeckung und Trainings-Signale — damit der Coach konkret werden kann,
+  // statt allgemeine Ratschläge zu geben.
+  if (typeof getMuscleFrequency === 'function') {
+    const freq = getMuscleFrequency();
+    const under = MUSCLE_IDS.filter(m => freq[m].sessionsPerWeek < MUSCLE_FREQ_TARGET);
+    context += `\nMUSKELABDECKUNG (Einheiten/Woche, Ziel ${MUSCLE_FREQ_TARGET}x):\n`;
+    MUSCLE_IDS.forEach(m => {
+      context += `- ${muscleLabel(m)}: ${freq[m].sessionsPerWeek.toFixed(1)}x, ${Math.round(freq[m].setsPerWeek)} Sätze/Woche\n`;
+    });
+    if (under.length) context += `- Unter dem Ziel: ${under.map(muscleLabel).join(', ')}\n`;
+  }
+
+  if (typeof getMuscleStrengthChange === 'function') {
+    const g = getMuscleStrengthChange();
+    const withData = MUSCLE_IDS.filter(m => g[m].hasData);
+    if (withData.length) {
+      context += `\nKRAFTENTWICKLUNG (letzte 4 Wochen vs. die 4 davor):\n`;
+      withData.forEach(m => { context += `- ${muscleLabel(m)}: ${g[m].pct >= 0 ? '+' : ''}${g[m].pct.toFixed(1)}%\n`; });
+    }
+  }
+
+  if (typeof getStagnatingExercises === 'function') {
+    const stag = getStagnatingExercises();
+    if (stag.length) {
+      context += `\nSTAGNIERENDE ÜBUNGEN:\n`;
+      stag.slice(0, 5).forEach(({ ex, stag: st }) => {
+        context += `- ${ex.name}: seit ${st.sessions} Einheiten / ${st.days} Tagen kein neuer Bestwert (Peak e1RM ${st.peak})\n`;
+      });
+    }
+  }
+
+  if (typeof getDeloadSignal === 'function') {
+    const d = getDeloadSignal();
+    if (d) {
+      context += `\nERMÜDUNGSSIGNAL: ${d.level === 'high'
+        ? `Deload empfohlen — Volumen +${d.volPct}% über ${d.weeks} Wochen, Leistung ${d.perfPct}%`
+        : `Belastung steigt — Volumen +${d.volPct}% über ${d.weeks} Wochen`}\n`;
+    }
+  }
+
   // Nutrition & Calories context
   context += `\nERNÄHRUNG & KALORIEN ZIELE:\n`;
   if (db.nutritionGoals) {
