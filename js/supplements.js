@@ -108,6 +108,85 @@ function _getSupplyRemaining(sup) {
   return Math.max(0, sup.supplySize - (takenSinceRefill * sup.dosage));
 }
 
+/* =============================================
+   VORRAT — Reichweite und Warnungen
+
+   "120 g übrig" sagt einem nichts, solange man nicht im Kopf durch die Dosis
+   und die Einnahme-Frequenz teilt. Entscheidend ist die Frage: wie lange
+   reicht das noch? Genau die beantworten diese Helfer — und sie sind die
+   Grundlage dafür, dass eine Einnahme blockiert wird, sobald der Vorrat
+   physisch nicht mehr dafür reicht.
+   ============================================= */
+
+// Warnschwelle: eine Woche Vorlauf reicht, um nachzubestellen.
+const SUPPLY_LOW_DAYS = 7;
+
+// Wie viele volle Einnahmen der Rest noch hergibt.
+function _getSupplyIntakesLeft(sup) {
+  const remaining = _getSupplyRemaining(sup);
+  if (remaining === null) return null;           // kein Vorrat gepflegt
+  const dose = Number(sup.dosage) || 0;
+  if (dose <= 0) return null;                    // ohne Dosis nicht berechenbar
+  return Math.floor(remaining / dose);
+}
+
+// Einnahmen pro Woche laut Frequenz — die Brücke von Einnahmen zu Tagen.
+function _getIntakesPerWeek(sup) {
+  if (sup.frequency === 'weekdays') return (sup.frequencyDays || []).length;
+  if (sup.frequency === 'every_x_days') {
+    const every = Number(sup.frequencyValue) || 1;
+    return 7 / Math.max(1, every);
+  }
+  return 7; // täglich (und alles ohne gesetzte Frequenz)
+}
+
+// Reichweite in Tagen, oder null wenn nicht berechenbar.
+function _getSupplyDaysLeft(sup) {
+  const intakes = _getSupplyIntakesLeft(sup);
+  if (intakes === null) return null;
+  const perWeek = _getIntakesPerWeek(sup);
+  if (!perWeek || perWeek <= 0) return null;     // z.B. Wochentage ohne Auswahl
+  return Math.floor((intakes * 7) / perWeek);
+}
+
+/* Der Vorratsstatus eines Supplements.
+   level: 'none'  — kein Vorrat gepflegt, es gilt keine Grenze
+          'ok'    — reicht noch
+          'low'   — weniger als SUPPLY_LOW_DAYS Tage
+          'empty' — kein voller Dosis-Rest mehr da */
+function getSupplyStatus(sup) {
+  const remaining = _getSupplyRemaining(sup);
+  if (remaining === null) return { level: 'none', remaining: null, intakesLeft: null, daysLeft: null };
+
+  const intakesLeft = _getSupplyIntakesLeft(sup);
+  const daysLeft = _getSupplyDaysLeft(sup);
+
+  // Ohne verwertbare Dosis kann nichts blockiert werden — sonst sperrte ein
+  // unvollständig gepflegtes Supplement den Nutzer dauerhaft aus.
+  if (intakesLeft === null) return { level: 'ok', remaining, intakesLeft: null, daysLeft: null };
+
+  let level = 'ok';
+  if (intakesLeft < 1) level = 'empty';
+  else if (daysLeft !== null && daysLeft <= SUPPLY_LOW_DAYS) level = 'low';
+
+  return { level, remaining, intakesLeft, daysLeft };
+}
+
+// Alle aktiven Supplements, die zur Neige gehen — dringendste zuerst.
+function getLowSupplies() {
+  return (db.supplements || [])
+    .filter(s => s.active !== false)
+    .map(s => ({ sup: s, status: getSupplyStatus(s) }))
+    .filter(x => x.status.level === 'low' || x.status.level === 'empty')
+    .sort((a, b) => {
+      if (a.status.level !== b.status.level) return a.status.level === 'empty' ? -1 : 1;
+      return (a.status.daysLeft ?? 0) - (b.status.daysLeft ?? 0);
+    });
+}
+
+window.getSupplyStatus = getSupplyStatus;
+window.getLowSupplies  = getLowSupplies;
+
 function _getSuppStreak(supId) {
   const today = new Date(); today.setHours(0,0,0,0);
   const sup = db.supplements.find(s => s.id === supId);
@@ -166,6 +245,54 @@ function _freqLabel(sup) {
   return '';
 }
 
+/* Warnbanner über den fälligen Supplements. Zeigt die Reichweite in Tagen —
+   das ist die Zahl, nach der man handelt, nicht "noch 40 g". */
+function _buildSupplyWarningHtml() {
+  const low = getLowSupplies();
+  if (low.length === 0) return '';
+
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+  const empty = low.filter(x => x.status.level === 'empty');
+  const running = low.filter(x => x.status.level === 'low');
+
+  const line = ({ sup, status }) => {
+    const isEmpty = status.level === 'empty';
+    const reach = isEmpty
+      ? (en ? 'empty' : 'leer')
+      : (status.daysLeft === null
+          ? (en ? 'running low' : 'wird knapp')
+          : status.daysLeft <= 1
+            ? (en ? 'last dose' : 'letzte Dosis')
+            : (en ? `approx. ${status.daysLeft} days left` : `noch ca. ${status.daysLeft} Tage`));
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;">
+        <div style="min-width:0;">
+          <span style="font-weight:600;font-size:13.5px;color:var(--text);">${isEmpty ? '🚫' : '⚠️'} ${sup.name}</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:6px;">${reach}</span>
+        </div>
+        <button class="supp-refill-btn" style="flex-shrink:0;" onclick="event.stopPropagation();refillSupplement('${sup.id}')">🔄 ${t('suppRefill')}</button>
+      </div>`;
+  };
+
+  const headline = empty.length
+    ? (en ? `${empty.length} supplement${empty.length > 1 ? 's' : ''} out of stock`
+          : `${empty.length} Supplement${empty.length > 1 ? 's' : ''} aufgebraucht`)
+    : (en ? `${running.length} supplement${running.length > 1 ? 's' : ''} running low`
+          : `${running.length} Supplement${running.length > 1 ? 's' : ''} wird knapp`);
+
+  const accent = empty.length ? 'rgba(208,2,27,0.35)' : 'rgba(245,166,35,0.35)';
+  const tint   = empty.length ? 'rgba(208,2,27,0.10)' : 'rgba(245,166,35,0.10)';
+
+  return `
+    <div class="card" style="margin-bottom:16px;background:${tint};border:1px solid ${accent};border-radius:14px;padding:12px 14px;">
+      <div style="font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:0.8px;color:var(--muted);margin-bottom:4px;">
+        ${en ? 'Stock' : 'Vorrat'}
+      </div>
+      <div style="font-weight:700;font-size:14.5px;margin-bottom:4px;">${headline}</div>
+      ${empty.map(line).join('')}
+      ${running.map(line).join('')}
+    </div>`;
+}
+
 /* ---- Render ---- */
 function renderSupplements() {
   const page = document.getElementById('page-supps');
@@ -213,11 +340,16 @@ function renderSupplements() {
       supps.forEach(s => {
         const taken = _isTakenOn(s.id, targetDateKey);
         const streak = _getSuppStreak(s.id);
-        const supply = _getSupplyRemaining(s);
-        const supplyWarn = supply !== null && supply <= s.dosage * 5;
+        const supplyStatus = getSupplyStatus(s);
+        // Bei leerem Vorrat lässt sich nicht abhaken (siehe toggleSuppTaken).
+        // Bereits gesetzte Haken bleiben normal bedienbar, damit ein Versehen
+        // zurücknehmbar bleibt.
+        const supplyBlocked = supplyStatus.level === 'empty' && !taken;
 
         todayHtml += `
-          <div class="supp-check-card ${taken ? 'supp-taken' : ''}" onclick="toggleSuppTaken('${s.id}')">
+          <div class="supp-check-card ${taken ? 'supp-taken' : ''}${supplyBlocked ? ' supp-out-of-stock' : ''}"
+               ${supplyBlocked ? `title="${lang === 'en' ? 'Out of stock — refill first' : 'Vorrat leer — bitte erst auffüllen'}"` : ''}
+               onclick="toggleSuppTaken('${s.id}')">
             <div class="supp-check-left">
               <div class="supp-check-dot" style="background:${taken ? s.color : 'transparent'};border-color:${s.color};">
                 ${taken ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
@@ -229,7 +361,11 @@ function renderSupplements() {
             </div>
             <div class="supp-check-right">
               ${streak >= 2 ? `<span class="supp-streak-mini">🔥${streak}</span>` : ''}
-              ${supplyWarn ? `<span class="supp-supply-warn">⚠️</span>` : ''}
+              ${supplyStatus.level === 'empty'
+                  ? `<span class="supp-supply-warn" title="${lang === 'en' ? 'Out of stock' : 'Vorrat leer'}">🚫</span>`
+                  : supplyStatus.level === 'low'
+                    ? `<span class="supp-supply-warn" title="${supplyStatus.daysLeft !== null ? (lang === 'en' ? `approx. ${supplyStatus.daysLeft} days left` : `noch ca. ${supplyStatus.daysLeft} Tage`) : ''}">⚠️</span>`
+                    : ''}
             </div>
           </div>`;
       });
@@ -246,8 +382,9 @@ function renderSupplements() {
   if (db.supplements.length > 0) {
     listHtml = db.supplements.map(s => {
       const adherence = _getAdherence(s.id, 30);
-      const supply = _getSupplyRemaining(s);
-      const supplyWarn = supply !== null && supply <= s.dosage * 5;
+      const listStatus = getSupplyStatus(s);
+      const supply = listStatus.remaining;
+      const supplyWarn = listStatus.level === 'low' || listStatus.level === 'empty';
       const streak = _getSuppStreak(s.id);
 
       let supplyHtml = '';
@@ -256,7 +393,11 @@ function renderSupplements() {
         supplyHtml = `
           <div class="supp-supply-row">
             <div class="supp-supply-bar"><div class="supp-supply-fill${supplyWarn ? ' supply-low' : ''}" style="width:${supplyPct}%;"></div></div>
-            <span class="supp-supply-text${supplyWarn ? ' supply-low-text' : ''}">${Math.round(supply)} ${s.dosageUnit} ${t('suppLeft')}</span>
+            <span class="supp-supply-text${supplyWarn ? ' supply-low-text' : ''}">${Math.round(supply)} ${s.dosageUnit} ${t('suppLeft')}${
+              listStatus.daysLeft !== null && listStatus.level !== 'empty'
+                ? ` · ${lang === 'en' ? `~${listStatus.daysLeft}d` : `~${listStatus.daysLeft} Tage`}`
+                : (listStatus.level === 'empty' ? ` · ${lang === 'en' ? 'empty' : 'leer'}` : '')
+            }</span>
             <button class="supp-refill-btn" onclick="event.stopPropagation();refillSupplement('${s.id}')">🔄 ${t('suppRefill')}</button>
           </div>`;
       }
@@ -322,6 +463,7 @@ function renderSupplements() {
       ${todayLabel}
     </div>
     ${dateNavHtml}
+    ${_buildSupplyWarningHtml()}
     ${filterHtml}
     ${todayHtml}
     <div class="divider"></div>
@@ -345,8 +487,28 @@ function toggleSuppTaken(supId) {
   const key = _dateKey(currentSuppsDate);
   const existing = db.supplementLog.findIndex(l => l.date === key && l.supId === supId && l.taken);
   if (existing !== -1) {
+    // Abwählen ist IMMER erlaubt, auch bei leerem Vorrat: sonst liesse sich ein
+    // versehentlicher Haken nicht mehr zurücknehmen.
     db.supplementLog.splice(existing, 1);
   } else {
+    // Eine Einnahme, für die der Vorrat nicht mehr reicht, hat nicht
+    // stattgefunden — sie würde die Adhärenz und die Vorratsrechnung
+    // verfälschen. Statt still zu erlauben: blockieren und zum Auffüllen führen.
+    const sup = db.supplements.find(x => x.id === supId);
+    if (sup) {
+      const status = getSupplyStatus(sup);
+      if (status.level === 'empty') {
+        haptic('warning');
+        showToast(lang === 'en'
+          ? `${sup.name}: out of stock — refill first`
+          : `${sup.name}: Vorrat leer — bitte erst auffüllen`);
+        if (typeof refillSupplement === 'function') {
+          // Direkt zum Auffüllen, statt den Nutzer suchen zu lassen.
+          setTimeout(() => refillSupplement(supId), 400);
+        }
+        return;
+      }
+    }
     let takenAt = Date.now();
     if (key !== _todayKey()) {
       const d = new Date(currentSuppsDate);
@@ -396,6 +558,51 @@ function _formatSuppDate(date) {
     return target.toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' });
   }
 }
+
+/* Einmal pro Tag beim Öffnen der App auf knappe Vorräte hinweisen.
+
+   Bewusst nur einmal täglich und per Toast statt Modal: eine Warnung, die bei
+   jedem Start aufpoppt, wird ignoriert — und ein Modal, das man wegklicken
+   muss, bevor man sein Training loggt, ist genau das Falsche.
+   Die Quittung liegt absichtlich in localStorage und nicht in db.settings:
+   der Hinweis gilt pro Gerät, und die Erinnerung auf dem Handy soll nicht
+   verschwinden, weil man die App am Tablet offen hatte. */
+const SUPPLY_NOTICE_KEY = 'dscpln_supply_notice_day';
+
+function maybeShowSupplyNotice() {
+  try {
+    if (typeof showToast !== 'function') return;
+    const today = _todayKey();
+    if (localStorage.getItem(SUPPLY_NOTICE_KEY) === today) return;
+
+    const low = getLowSupplies();
+    if (low.length === 0) return;
+
+    const en = (typeof lang !== 'undefined' && lang === 'en');
+    const empty = low.filter(x => x.status.level === 'empty');
+    const first = low[0];
+
+    let msg;
+    if (empty.length === 1 && low.length === 1) {
+      msg = en ? `🚫 ${first.sup.name} is out of stock` : `🚫 ${first.sup.name} ist aufgebraucht`;
+    } else if (empty.length > 0) {
+      msg = en ? `🚫 ${empty.length} supplements out of stock` : `🚫 ${empty.length} Supplements aufgebraucht`;
+    } else if (low.length === 1) {
+      const d = first.status.daysLeft;
+      msg = d !== null
+        ? (en ? `⚠️ ${first.sup.name}: approx. ${d} days left` : `⚠️ ${first.sup.name}: noch ca. ${d} Tage`)
+        : (en ? `⚠️ ${first.sup.name} is running low` : `⚠️ ${first.sup.name} wird knapp`);
+    } else {
+      msg = en ? `⚠️ ${low.length} supplements running low` : `⚠️ ${low.length} Supplements werden knapp`;
+    }
+
+    localStorage.setItem(SUPPLY_NOTICE_KEY, today);
+    showToast(msg);
+  } catch (e) {
+    console.warn('[Supplements] Vorrats-Hinweis fehlgeschlagen:', e);
+  }
+}
+window.maybeShowSupplyNotice = maybeShowSupplyNotice;
 
 /* ---- Nav Badge ---- */
 function updateSuppNavBadge() {

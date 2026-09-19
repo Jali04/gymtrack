@@ -83,6 +83,7 @@ function renderLog() {
 
   _updateQuickMetrics();
   _renderCoachTip();
+  if (typeof renderDeloadBanner === 'function') renderDeloadBanner();
 }
 
 const COACH_TIPS_DE = [
@@ -1028,10 +1029,37 @@ function _nextSupersetPartnerName(i) {
 
 function toggleSetDone(i, k, checked) {
   const we = _we(i); if (!we || !we.sets[k]) return;
-  we.sets[k].done = checked;
+  const set = we.sets[k];
+  set.done = checked;
+
+  if (checked) {
+    // Zeitstempel für die tatsächliche Satzpause. Der Abstand zum vorigen Satz
+    // ist die Zahl, die man hinterher vergleichen kann — nicht die eingestellte
+    // Timer-Dauer, die ohnehin oft übersprungen wird.
+    set.doneAt = Date.now();
+    const prev = we.sets[k - 1];
+    if (prev && prev.doneAt) {
+      set.restActualSec = Math.round((set.doneAt - prev.doneAt) / 1000);
+    }
+  } else {
+    delete set.doneAt;
+    delete set.restActualSec;
+  }
+
+  // Rekord prüfen, BEVOR gespeichert wird: die Prüfung vergleicht mit allen
+  // abgeschlossenen Workouts, das laufende zählt nicht gegen sich selbst.
+  let pr = null;
+  if (checked && typeof checkSetForPR === 'function') {
+    try { pr = checkSetForPR(we, set); } catch (e) { console.warn('[PR]', e); }
+  }
+
   save();
   renderActiveWorkout();
   if (checked) {
+    if (pr && typeof celebratePR === 'function') {
+      celebratePR(we, set, pr);
+      save();
+    }
     haptic('success');
     const partner = _nextSupersetPartnerName(i);
     if (partner) {

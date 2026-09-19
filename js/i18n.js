@@ -105,7 +105,8 @@ const TR = {
     ttlTools: 'Rechner & Tools', lbl1RmDesc: '1RM Rechner (Epley)',
     plateEnterTarget: 'Geben Sie ein Zielgewicht ein', plateInvalid: 'Ziel muss größer oder gleich Hantel sein', plateEmptyBar: 'Nur Stange erforderlich',
     // Progress & Pics
-    navProgress: 'Progress', ttlProgress: 'Fortschritt',
+    navProgress: 'Fortschritt', ttlProgress: 'Fortschritt',
+    navGym: 'Gym', navMobility: 'Mobility',
     lblMeasureWeight: 'Körpergewicht (kg)', lblMeasureBf: 'Körperfettanteil (%) - optional',
     lblMeasureNote: 'Notiz', invalidInput: 'Ungültige Eingabe', confirmDel: 'Eintrag löschen?',
     // Programs
@@ -119,7 +120,7 @@ const TR = {
     noSearchResults: 'Keine Treffer',
     weekDays: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
     // Supplements
-    navSupps: 'Supps', suppToday: 'Heute fällig', suppMySupps: 'Meine Supplements',
+    navSupps: 'Ernährung', suppToday: 'Heute fällig', suppMySupps: 'Meine Supplements',
     suppNew: 'Supplement hinzufügen', suppEdit: 'Supplement bearbeiten',
     suppTaken: 'genommen', suppNoneDue: 'Heute keine Supplements fällig',
     suppEmpty: 'Noch keine Supplements angelegt', suppAdherence: 'Treue 30d',
@@ -292,6 +293,7 @@ const TR = {
     plateEnterTarget: 'Enter a target weight', plateInvalid: 'Target must be ≥ barbell', plateEmptyBar: 'Only the bar is needed',
     // Progress & Pics
     navProgress: 'Progress', ttlProgress: 'Progress',
+    navGym: 'Gym', navMobility: 'Mobility',
     lblMeasureWeight: 'Body Weight (kg)', lblMeasureBf: 'Body Fat (%) - optional',
     lblMeasureNote: 'Notes', invalidInput: 'Invalid Input', confirmDel: 'Delete Entry?',
     // Programs
@@ -305,7 +307,7 @@ const TR = {
     noSearchResults: 'No results',
     weekDays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     // Supplements
-    navSupps: 'Supps', suppToday: 'Due Today', suppMySupps: 'My Supplements',
+    navSupps: 'Nutrition', suppToday: 'Due Today', suppMySupps: 'My Supplements',
     suppNew: 'Add Supplement', suppEdit: 'Edit Supplement',
     suppTaken: 'taken', suppNoneDue: 'No supplements due today',
     suppEmpty: 'No supplements added yet', suppAdherence: 'Adherence 30d',
@@ -430,7 +432,9 @@ function applyTranslations() {
   const sp = (id, key) => { const el = document.getElementById(id); if (el) el.placeholder  = t(key); };
 
   // Nav
-  const navMap = { log: 'navTraining', gymlab: 'navGymLab', calendar: 'navCalendar', stats: 'navStats', supps: 'navSupps', progress: 'navProgress' };
+  // Die vier Abteilungen. log/gymlab bleiben für alte Verweise erhalten.
+  const navMap = { gym: 'navGym', mobility: 'navMobility', supps: 'navSupps', progress: 'navProgress',
+                   log: 'navTraining', gymlab: 'navGymLab', calendar: 'navCalendar', stats: 'navStats' };
   document.querySelectorAll('.nav-btn').forEach(btn => {
     const pg = btn.dataset.page;
     if (!pg || !navMap[pg]) return;
