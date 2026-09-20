@@ -86,6 +86,45 @@ const CATEGORY_MUSCLES = {
 /* Die Muskelanteile einer Übung. Reihenfolge: Übersteuerung -> Name -> Kategorie.
    Die Übersteuerung liegt in db.exerciseFlags, das bereits über profiles.exercise_flags
    synchronisiert wird — es braucht also keine neue Spalte. */
+/* Vom Nutzer gesetzte Zuordnung einer (eigenen) Kategorie.
+   Liegt in db.settings und wandert damit über profiles.settings in die Cloud —
+   ohne neue Spalte und ohne Migration. */
+function getCategoryMuscles(category) {
+  const map = (db.settings && db.settings.categoryMuscles) || {};
+  const m = map[category];
+  return (m && typeof m === 'object' && Object.keys(m).length) ? m : null;
+}
+
+function setCategoryMuscles(category, muscles) {
+  if (!db.settings) db.settings = {};
+  if (!db.settings.categoryMuscles) db.settings.categoryMuscles = {};
+  if (muscles && Object.keys(muscles).length) {
+    db.settings.categoryMuscles[category] = muscles;
+  } else {
+    delete db.settings.categoryMuscles[category];
+  }
+  save();
+}
+
+// Eine umbenannte Kategorie darf ihre Zuordnung nicht verlieren.
+function renameCategoryMuscles(oldName, newName) {
+  const map = db.settings && db.settings.categoryMuscles;
+  if (!map || !map[oldName] || oldName === newName) return;
+  map[newName] = map[oldName];
+  delete map[oldName];
+}
+
+/* Die Muskelanteile einer Übung.
+
+   Rangfolge: Ausdrückliches schlägt Geratenes.
+     1. Zuordnung an dieser Übung          (der Nutzer meinte genau sie)
+     2. Zuordnung ihrer Kategorie          (der Nutzer hat die Kategorie angelegt)
+     3. Schlagwort im Übungsnamen          (Heuristik)
+     4. Standard-Kategorie                 (Heuristik)
+
+   Ohne Schritt 2 fiel jede eigene Kategorie durch: die Übung wurde geloggt,
+   zählte im Volumen — war auf der Muskelkarte aber unsichtbar. Die Karte
+   behauptete dann, eine Muskelgruppe werde nicht trainiert, obwohl doch. */
 function getExerciseMuscles(ex) {
   if (!ex) return {};
 
@@ -94,12 +133,28 @@ function getExerciseMuscles(ex) {
     return flags.muscles;
   }
 
+  const fromCategory = getCategoryMuscles(ex.category);
+  if (fromCategory) return fromCategory;
+
   const name = (ex.name || '').toLowerCase();
   for (const [keys, muscles] of MUSCLE_KEYWORDS) {
     if (keys.some(k => name.includes(k))) return muscles;
   }
 
   return CATEGORY_MUSCLES[ex.category] || {};
+}
+
+/* Übungen, die auf der Karte nirgends einzahlen. Cardio und Mobility zählen
+   nicht dazu — die sollen bewusst nicht auf die Muskelkarte einzahlen. */
+function getUnmappedExercises() {
+  return (db.exercises || [])
+    .filter(ex => !(typeof isArchivedEx === 'function' && isArchivedEx(ex.id)))
+    .filter(ex => typeof getExerciseDomain !== 'function' || getExerciseDomain(ex) === DOMAIN_GYM)
+    .filter(ex => {
+      const type = (typeof getCatType === 'function') ? getCatType(ex.category) : 'strength';
+      if (type === 'cardio' || type === 'stretch') return false;
+      return Object.keys(getExerciseMuscles(ex)).length === 0;
+    });
 }
 
 function setExerciseMuscles(exId, muscles) {
@@ -222,6 +277,10 @@ window.MUSCLES                  = MUSCLES;
 window.MUSCLE_IDS               = MUSCLE_IDS;
 window.muscleLabel              = muscleLabel;
 window.getExerciseMuscles       = getExerciseMuscles;
+window.getCategoryMuscles       = getCategoryMuscles;
+window.setCategoryMuscles       = setCategoryMuscles;
+window.renameCategoryMuscles    = renameCategoryMuscles;
+window.getUnmappedExercises     = getUnmappedExercises;
 window.setExerciseMuscles       = setExerciseMuscles;
 window.getMuscleFrequency       = getMuscleFrequency;
 window.getMuscleStrengthChange  = getMuscleStrengthChange;
@@ -274,85 +333,80 @@ function _mixHex(a, b, t) {
   return `#${m(ar, br)}${m(ag, bg)}${m(ab, bb)}`;
 }
 
-/* Die Grundsilhouette (eine Hälfte, wird gespiegelt): Schultern breit, Taille
-   schmal, Arme leicht abgespreizt. Sie liefert die Körperform; die Muskelfelder
-   liegen darin und färben sich ein. Die Innenkante endet bei x=59.6 statt 60,
-   damit sich die gespiegelten Hälften minimal überlappen und keine Naht zeigen. */
-const BODY_BASE_HALF = [
-  // Rumpf und Bein
-  `M59.6 40 Q71 41 77 47 Q87 52 88.5 64 Q87.5 79 82 89
-   Q76 99 74 107 Q78 113 79 121 Q80.5 142 77 162
-   Q75.5 172 73.5 177 Q72.5 193 70.5 207 Q69.5 219 68 229
-   L60.5 230 Q61.5 210 61.2 190 Q61 178 60.8 174
-   Q60.2 150 59.6 121 Z`,
-  // Arm, vom Deltamuskel abgespreizt bis zum Handgelenk
-  `M88.5 62 Q97 69 98 82 Q99 96 97.5 106
-   Q99.5 121 98.5 137 Q98 146 97 151 L90 149.5
-   Q91.5 134 90.7 119 Q90.3 111 89.5 105
-   Q87.5 95 87 82 Q86.5 70 86 65 Z`
-];
+/* =============================================
+   ZUORDNUNG: anatomische Region -> Muskelgruppe
 
-// Muskelfelder je Ansicht — sie folgen der Silhouette, statt sie zu überdecken.
-const BODY_HALF = {
-  front: [
-    ['traps',     'M60 41.5 Q70 42.5 76.5 47.5 L73.5 54 Q67 49.8 60 49 Z'],
-    ['shoulders', 'M77 47.5 Q86.8 52 88.2 63.5 Q88.4 68 87.6 71.5 L79.6 68.5 Q79 56.5 74.2 50.5 Z'],
-    ['chest',     'M60 50 Q71.5 51 78.5 56 Q81.5 64.5 79.8 73.5 Q70 78.5 60 76.5 Z'],
-    ['biceps',    'M87.6 70 Q95 76 96.2 89 Q96.4 97.5 95.4 102.5 L88.4 100.5 Q88.2 86 85.4 76 Z'],
-    ['forearms',  'M95.6 106 Q98.8 119.5 98 135.5 Q97.6 143.5 96.8 148 L90 146 Q91.4 130 90.6 116 Q90.4 110 89.6 105 Z'],
-    ['abs',       'M60 79.5 Q69.5 79.8 75.8 82.5 Q77 95 73.8 106.5 Q67.5 110.5 60 110.5 Z'],
-    ['quads',     'M60 114.5 Q71.5 115.5 78 119.5 Q80 141 77.5 168 L61.4 169.5 Q60.6 140 60 118.5 Z'],
-    ['calves',    'M60.9 173 Q70.5 174 74.6 178 Q73.6 195 70.8 212 L61.2 212.8 Q60.9 194 60.8 175.5 Z']
-  ],
-  back: [
-    ['traps',     'M60 40.5 Q71.5 41.5 77.5 47.5 Q79.8 56 78 63.5 Q69.5 58.5 60 57.5 Z'],
-    ['shoulders', 'M78 47.5 Q87.6 52 88.8 63.5 Q89 68 88.2 71.5 L80.2 68.5 Q80 56.5 77.4 50.5 Z'],
-    ['back',      'M60 59.5 Q71.5 60.5 78.6 66.5 Q80 80 76.2 92.5 Q68.8 97.5 60 97.5 Z'],
-    ['triceps',   'M87.6 70 Q95 76 96.2 89 Q96.4 97.5 95.4 102.5 L88.4 100.5 Q88.2 86 85.4 76 Z'],
-    ['forearms',  'M95.6 106 Q98.8 119.5 98 135.5 Q97.6 143.5 96.8 148 L90 146 Q91.4 130 90.6 116 Q90.4 110 89.6 105 Z'],
-    ['glutes',    'M60 100.5 Q71.5 101.5 77.8 106.5 Q79.8 114.5 78 122.5 Q69.5 127 60 126.5 Z'],
-    ['hamstrings','M60 129.5 Q71.5 130.5 78 134.5 Q79 151 76.5 168 L61.4 169.5 Q60.6 148 60 132.5 Z'],
-    ['calves',    'M60.9 173 Q70.5 174 74.6 178 Q73.6 195 70.8 212 L61.2 212.8 Q60.9 194 60.8 175.5 Z']
-  ]
-};
+   Die Grafik (js/bodyPaths.js) kennt 89 einzelne Regionen, die App rechnet mit
+   12 Gruppen. Hier wird beides verbunden. Regionen, die nicht auftauchen —
+   Kopf, Hände, Füße, Knie, Wirbelsäule — bleiben dauerhaft neutral eingefärbt;
+   sie sind keine trainierbaren Gruppen und dürfen nicht so aussehen.
+   ============================================= */
+const REGION_TO_MUSCLE = {};
+const _mapRegions = (muscleId, ids) => ids.forEach(id => { REGION_TO_MUSCLE[id] = muscleId; });
 
-/* Erzeugt eine Silhouette. `colorFor(muscleId)` liefert die Füllfarbe,
+_mapRegions('chest', ['chest-upper-left', 'chest-upper-right', 'chest-lower-left', 'chest-lower-right']);
+_mapRegions('shoulders', ['shoulder-front-left', 'shoulder-front-right', 'shoulder-side-left', 'shoulder-side-right',
+                          'deltoid-rear-left', 'deltoid-rear-right']);
+_mapRegions('biceps', ['biceps-left', 'biceps-right']);
+_mapRegions('triceps', ['triceps-long-left', 'triceps-long-right', 'triceps-lateral-left', 'triceps-lateral-right']);
+_mapRegions('forearms', ['forearm-left', 'forearm-right',
+                         'forearm-flexors-left', 'forearm-flexors-right',
+                         'forearm-extensors-left', 'forearm-extensors-right']);
+// Serratus und Obliques laufen bei den Bauchübungen mit.
+_mapRegions('abs', ['abs-upper-left', 'abs-upper-right', 'abs-lower-left', 'abs-lower-right',
+                    'obliques-left', 'obliques-right',
+                    'serratus-anterior-left', 'serratus-anterior-right']);
+// Lats und die untere Rückenstrecker-Kette zählen zusammen als "Rücken".
+_mapRegions('back', ['lats-upper-left', 'lats-upper-right', 'lats-mid-left', 'lats-mid-right',
+                     'lats-lower-left', 'lats-lower-right',
+                     'lower-back-erectors-left', 'lower-back-erectors-right',
+                     'lower-back-ql-left', 'lower-back-ql-right']);
+_mapRegions('traps', ['traps-upper-left', 'traps-upper-right', 'traps-mid-left', 'traps-mid-right',
+                      'traps-lower-left', 'traps-lower-right']);
+// Adduktoren und Hüftbeuger laufen bei Kniebeugen und Beinpresse mit.
+_mapRegions('quads', ['quads-left', 'quads-right', 'adductors-left', 'adductors-right',
+                      'hip-flexor-left', 'hip-flexor-right']);
+_mapRegions('glutes', ['gluteus-maximus-left', 'gluteus-maximus-right',
+                       'gluteus-medius-left', 'gluteus-medius-right']);
+_mapRegions('hamstrings', ['hamstrings-medial-left', 'hamstrings-medial-right',
+                           'hamstrings-lateral-left', 'hamstrings-lateral-right']);
+// Schienbein gehört sichtbar zum Unterschenkel.
+_mapRegions('calves', ['calves-gastroc-medial-left', 'calves-gastroc-medial-right',
+                       'calves-gastroc-lateral-left', 'calves-gastroc-lateral-right',
+                       'calves-soleus-left', 'calves-soleus-right',
+                       'tibialis-anterior-left', 'tibialis-anterior-right']);
+
+// Farbe für Regionen ohne Muskelgruppe (Kopf, Hände, Füße, Knie, Wirbelsäule).
+function _neutralRegionColor() {
+  return _isLightMode() ? '#e4e4e7' : '#232327';
+}
+
+/* Erzeugt eine Ansicht. `colorFor(muscleId)` liefert die Füllfarbe,
    `titleFor(muscleId)` den Tooltip-Text. */
 function buildBodySvg(view, colorFor, titleFor) {
-  const base = BODY_BASE_HALF.map(d => `<path d="${d}"/>`).join('');
-  const baseClip = BODY_BASE_HALF.map(d =>
-    `<path d="${d}"/><path d="${d}" transform="translate(120,0) scale(-1,1)"/>`
-  ).join('');
-  const regions = (BODY_HALF[view] || []).map(([mid, d]) =>
-    `<path class="muscle-region" data-m="${mid}" d="${d}" fill="${colorFor(mid)}"><title>${titleFor(mid)}</title></path>`
-  ).join('');
+  const paths = view === 'back' ? BODY_PATHS_BACK : BODY_PATHS_FRONT;
+  const en = (typeof lang !== 'undefined' && lang === 'en');
 
-  const mirrored = inner => `<g>${inner}</g><g transform="translate(120,0) scale(-1,1)">${inner}</g>`;
-
-  // Eindeutige clipPath-Id: auf einer Seite stehen mehrere Figuren nebeneinander.
-  const clipId = `bodyclip-${view}-${(buildBodySvg._n = (buildBodySvg._n || 0) + 1)}`;
+  const regions = paths.map(r => {
+    const muscle = REGION_TO_MUSCLE[r.id];
+    if (!muscle) {
+      return `<path class="body-region-inert" d="${r.d}" fill="${_neutralRegionColor()}"/>`;
+    }
+    return `<path class="muscle-region" data-m="${muscle}" d="${r.d}" fill="${colorFor(muscle)}">` +
+           `<title>${titleFor(muscle)}</title></path>`;
+  }).join('');
 
   return `
-    <svg viewBox="0 0 120 244" class="body-map-svg" role="img"
+    <svg viewBox="${BODY_VIEWBOX[view] || BODY_VIEWBOX.front}" class="body-map-svg" role="img"
          aria-label="${view === 'front'
-            ? (lang === 'en' ? 'Front view muscle map' : 'Muskelkarte Vorderansicht')
-            : (lang === 'en' ? 'Back view muscle map'  : 'Muskelkarte Rückansicht')}">
-      <defs>
-        <!-- In einem clipPath sind nur Formelemente erlaubt; ein <g> wird
-             ignoriert und der Beschnitt wäre leer. Die Spiegelung sitzt
-             deshalb direkt auf den Pfaden. -->
-        <clipPath id="${clipId}">${baseClip}</clipPath>
-      </defs>
-      <g class="body-base">
-        <ellipse cx="60" cy="20" rx="12" ry="14"/>
-        <path d="M53.8 32.5 h12.4 v7 q0 3.2 -6.2 5.2 q-6.2-2 -6.2-5.2 z"/>
-        ${mirrored(base)}
-      </g>
-      <g clip-path="url(#${clipId})">${mirrored(regions)}</g>
+            ? (en ? 'Front view muscle map' : 'Muskelkarte Vorderansicht')
+            : (en ? 'Back view muscle map'  : 'Muskelkarte Rückansicht')}">
+      ${regions}
     </svg>`;
 }
 
 window.buildBodySvg          = buildBodySvg;
+window.REGION_TO_MUSCLE      = REGION_TO_MUSCLE;
 window.muscleRampColor       = muscleRampColor;
 window.muscleDivergingColor  = muscleDivergingColor;
 
@@ -450,7 +504,22 @@ function renderMuscleMap() {
     : (en ? 'Change in estimated 1RM: last 4 weeks against the 4 weeks before.'
           : 'Veränderung des geschätzten 1RM: letzte 4 Wochen gegen die 4 Wochen davor.');
 
-  host.innerHTML = `
+  /* Nicht zugeordnete Übungen sichtbar machen. Ohne diesen Hinweis bliebe die
+     Lücke unbemerkt: die Übung wird geloggt, zählt im Volumen — und die Karte
+     behauptet still, die Muskelgruppe werde nicht trainiert. */
+  const unmapped = getUnmappedExercises();
+  const unmappedHtml = unmapped.length ? `
+    <div class="muscle-unmapped">
+      <div class="muscle-unmapped-text">
+        ⚠️ ${en
+          ? `${unmapped.length} exercise${unmapped.length > 1 ? 's are' : ' is'} not assigned to a muscle group and ${unmapped.length > 1 ? 'do' : 'does'} not count on this map.`
+          : `${unmapped.length} ${unmapped.length > 1 ? 'Übungen zählen' : 'Übung zählt'} auf dieser Karte nicht mit — noch keiner Muskelgruppe zugeordnet.`}
+        <div style="color:var(--muted);margin-top:3px;font-size:11.5px;">${unmapped.slice(0, 4).map(e => e.name).join(', ')}${unmapped.length > 4 ? ' …' : ''}</div>
+      </div>
+      <button class="close-btn insight-row-btn" onclick="openCategoryManager()">${en ? 'Assign' : 'Zuordnen'}</button>
+    </div>` : '';
+
+  host.innerHTML = unmappedHtml + `
     <div class="muscle-mode-tabs">
       <button class="muscle-mode-tab ${mode === 'frequency' ? 'active' : ''}" onclick="setMuscleMapMode('frequency')">${en ? 'Frequency' : 'Frequenz'}</button>
       <button class="muscle-mode-tab ${mode === 'growth' ? 'active' : ''}" onclick="setMuscleMapMode('growth')">${en ? 'Strength' : 'Kraft'}</button>
@@ -474,3 +543,68 @@ function renderMuscleMap() {
 window.renderMuscleMap   = renderMuscleMap;
 window.getMuscleMapMode  = getMuscleMapMode;
 window.setMuscleMapMode  = setMuscleMapMode;
+
+/* =============================================
+   MUSKEL-AUSWAHL (Kategorie-Editor und Übungs-Editor)
+
+   Eine Reihe von Umschaltern statt eines Mehrfach-Auswahlfelds: auf dem Handy
+   ist ein <select multiple> praktisch nicht bedienbar. Primär/sekundär wird
+   durch wiederholtes Antippen durchlaufen — aus/primär/sekundär —, damit auch
+   die anteilige Belastung setzbar ist, ohne ein zweites Bedienelement.
+   ============================================= */
+
+// Arbeitsstand, während ein Editor offen ist.
+let _musclePickerState = {};
+
+function _cycleMuscleWeight(w) {
+  if (!w) return 1;          // aus  -> primär
+  if (w === 1) return 0.5;   // primär -> sekundär
+  return 0;                  // sekundär -> aus
+}
+
+function _muscleWeightLabel(w) {
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+  if (w === 1) return en ? 'primary' : 'primär';
+  if (w === 0.5) return en ? 'secondary' : 'sekundär';
+  return '';
+}
+
+function renderMusclePicker(hostId) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+
+  host.innerHTML = MUSCLE_IDS.map(mid => {
+    const w = _musclePickerState[mid] || 0;
+    const cls = w === 1 ? ' mp-primary' : (w === 0.5 ? ' mp-secondary' : '');
+    const sub = _muscleWeightLabel(w);
+    return `<button type="button" class="muscle-pick${cls}" data-mp="${mid}"
+              onclick="toggleMusclePick('${mid}','${hostId}')">
+              ${muscleLabel(mid)}${sub ? `<span class="muscle-pick-sub">${sub}</span>` : ''}
+            </button>`;
+  }).join('') +
+  `<div class="muscle-pick-hint">${en
+    ? 'Tap once for primary, twice for secondary (counts half), a third time to clear.'
+    : 'Einmal tippen = primär, zweimal = sekundär (zählt halb), dreimal = aus.'}</div>`;
+}
+
+function toggleMusclePick(mid, hostId) {
+  _musclePickerState[mid] = _cycleMuscleWeight(_musclePickerState[mid] || 0);
+  if (!_musclePickerState[mid]) delete _musclePickerState[mid];
+  renderMusclePicker(hostId);
+  if (typeof haptic === 'function') haptic('light');
+}
+
+function initMusclePicker(hostId, current) {
+  _musclePickerState = Object.assign({}, current || {});
+  renderMusclePicker(hostId);
+}
+
+function getMusclePickerValue() {
+  return Object.assign({}, _musclePickerState);
+}
+
+window.renderMusclePicker = renderMusclePicker;
+window.toggleMusclePick   = toggleMusclePick;
+window.initMusclePicker   = initMusclePicker;
+window.getMusclePickerValue = getMusclePickerValue;

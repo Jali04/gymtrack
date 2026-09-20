@@ -187,6 +187,14 @@ function openCategoryEditor(encodedCat) {
   document.getElementById('btnSaveCategory').textContent = t('save');
   document.getElementById('btnCancelCategory').textContent = t('cancel');
 
+  // Muskelzuordnung: bei einer neuen Kategorie leer, sonst die gesetzte.
+  const lblMus = document.getElementById('lblCatEditMuscles');
+  if (lblMus) lblMus.textContent = _L('Muskelgruppen (für die Muskelkarte)', 'Muscle groups (for the muscle map)');
+  if (typeof initMusclePicker === 'function') {
+    initMusclePicker('catEditMusclePicker', (!isNew && typeof getCategoryMuscles === 'function')
+      ? (getCategoryMuscles(cat) || {}) : {});
+  }
+
   _renderCategoryDeleteGroup(false);
   openModal('categoryEditModal');
 }
@@ -239,6 +247,7 @@ async function confirmDeleteCategory() {
   }
 
   const moved = deleteCategory(cat, target);
+  if (typeof setCategoryMuscles === 'function') setCategoryMuscles(cat, null);
   save();
   closeModal('categoryEditModal');
   renderCategoryManager();
@@ -263,6 +272,9 @@ async function saveCategoryEdit() {
       return;
     }
     setCategoryType(newName, newType);
+    if (typeof setCategoryMuscles === 'function') {
+      setCategoryMuscles(newName, getMusclePickerValue());
+    }
     save();
     closeModal('categoryEditModal');
     renderCategoryManager();
@@ -299,9 +311,20 @@ async function saveCategoryEdit() {
 
   if (merging) {
     deleteCategory(cat, newName);
+    // Beim Zusammenführen gilt die Zuordnung der Zielkategorie weiter; die der
+    // aufgelösten wird entfernt, damit keine Karteileiche zurückbleibt.
+    if (typeof setCategoryMuscles === 'function') setCategoryMuscles(cat, null);
   } else {
-    if (renamed) renameCategory(cat, newName);
+    if (renamed) {
+      renameCategory(cat, newName);
+      // Die Zuordnung hängt am Namen — ohne Mitziehen wäre sie nach dem
+      // Umbenennen verloren und die Übungen fielen von der Karte.
+      if (typeof renameCategoryMuscles === 'function') renameCategoryMuscles(cat, newName);
+    }
     setCategoryType(renamed ? newName : cat, newType);
+    if (typeof setCategoryMuscles === 'function') {
+      setCategoryMuscles(renamed ? newName : cat, getMusclePickerValue());
+    }
   }
 
   save();
