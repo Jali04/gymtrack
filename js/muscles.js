@@ -86,6 +86,45 @@ const CATEGORY_MUSCLES = {
 /* Die Muskelanteile einer Übung. Reihenfolge: Übersteuerung -> Name -> Kategorie.
    Die Übersteuerung liegt in db.exerciseFlags, das bereits über profiles.exercise_flags
    synchronisiert wird — es braucht also keine neue Spalte. */
+/* Vom Nutzer gesetzte Zuordnung einer (eigenen) Kategorie.
+   Liegt in db.settings und wandert damit über profiles.settings in die Cloud —
+   ohne neue Spalte und ohne Migration. */
+function getCategoryMuscles(category) {
+  const map = (db.settings && db.settings.categoryMuscles) || {};
+  const m = map[category];
+  return (m && typeof m === 'object' && Object.keys(m).length) ? m : null;
+}
+
+function setCategoryMuscles(category, muscles) {
+  if (!db.settings) db.settings = {};
+  if (!db.settings.categoryMuscles) db.settings.categoryMuscles = {};
+  if (muscles && Object.keys(muscles).length) {
+    db.settings.categoryMuscles[category] = muscles;
+  } else {
+    delete db.settings.categoryMuscles[category];
+  }
+  save();
+}
+
+// Eine umbenannte Kategorie darf ihre Zuordnung nicht verlieren.
+function renameCategoryMuscles(oldName, newName) {
+  const map = db.settings && db.settings.categoryMuscles;
+  if (!map || !map[oldName] || oldName === newName) return;
+  map[newName] = map[oldName];
+  delete map[oldName];
+}
+
+/* Die Muskelanteile einer Übung.
+
+   Rangfolge: Ausdrückliches schlägt Geratenes.
+     1. Zuordnung an dieser Übung          (der Nutzer meinte genau sie)
+     2. Zuordnung ihrer Kategorie          (der Nutzer hat die Kategorie angelegt)
+     3. Schlagwort im Übungsnamen          (Heuristik)
+     4. Standard-Kategorie                 (Heuristik)
+
+   Ohne Schritt 2 fiel jede eigene Kategorie durch: die Übung wurde geloggt,
+   zählte im Volumen — war auf der Muskelkarte aber unsichtbar. Die Karte
+   behauptete dann, eine Muskelgruppe werde nicht trainiert, obwohl doch. */
 function getExerciseMuscles(ex) {
   if (!ex) return {};
 
@@ -94,12 +133,28 @@ function getExerciseMuscles(ex) {
     return flags.muscles;
   }
 
+  const fromCategory = getCategoryMuscles(ex.category);
+  if (fromCategory) return fromCategory;
+
   const name = (ex.name || '').toLowerCase();
   for (const [keys, muscles] of MUSCLE_KEYWORDS) {
     if (keys.some(k => name.includes(k))) return muscles;
   }
 
   return CATEGORY_MUSCLES[ex.category] || {};
+}
+
+/* Übungen, die auf der Karte nirgends einzahlen. Cardio und Mobility zählen
+   nicht dazu — die sollen bewusst nicht auf die Muskelkarte einzahlen. */
+function getUnmappedExercises() {
+  return (db.exercises || [])
+    .filter(ex => !(typeof isArchivedEx === 'function' && isArchivedEx(ex.id)))
+    .filter(ex => typeof getExerciseDomain !== 'function' || getExerciseDomain(ex) === DOMAIN_GYM)
+    .filter(ex => {
+      const type = (typeof getCatType === 'function') ? getCatType(ex.category) : 'strength';
+      if (type === 'cardio' || type === 'stretch') return false;
+      return Object.keys(getExerciseMuscles(ex)).length === 0;
+    });
 }
 
 function setExerciseMuscles(exId, muscles) {
@@ -222,6 +277,10 @@ window.MUSCLES                  = MUSCLES;
 window.MUSCLE_IDS               = MUSCLE_IDS;
 window.muscleLabel              = muscleLabel;
 window.getExerciseMuscles       = getExerciseMuscles;
+window.getCategoryMuscles       = getCategoryMuscles;
+window.setCategoryMuscles       = setCategoryMuscles;
+window.renameCategoryMuscles    = renameCategoryMuscles;
+window.getUnmappedExercises     = getUnmappedExercises;
 window.setExerciseMuscles       = setExerciseMuscles;
 window.getMuscleFrequency       = getMuscleFrequency;
 window.getMuscleStrengthChange  = getMuscleStrengthChange;
@@ -445,7 +504,22 @@ function renderMuscleMap() {
     : (en ? 'Change in estimated 1RM: last 4 weeks against the 4 weeks before.'
           : 'Veränderung des geschätzten 1RM: letzte 4 Wochen gegen die 4 Wochen davor.');
 
-  host.innerHTML = `
+  /* Nicht zugeordnete Übungen sichtbar machen. Ohne diesen Hinweis bliebe die
+     Lücke unbemerkt: die Übung wird geloggt, zählt im Volumen — und die Karte
+     behauptet still, die Muskelgruppe werde nicht trainiert. */
+  const unmapped = getUnmappedExercises();
+  const unmappedHtml = unmapped.length ? `
+    <div class="muscle-unmapped">
+      <div class="muscle-unmapped-text">
+        ⚠️ ${en
+          ? `${unmapped.length} exercise${unmapped.length > 1 ? 's are' : ' is'} not assigned to a muscle group and ${unmapped.length > 1 ? 'do' : 'does'} not count on this map.`
+          : `${unmapped.length} ${unmapped.length > 1 ? 'Übungen zählen' : 'Übung zählt'} auf dieser Karte nicht mit — noch keiner Muskelgruppe zugeordnet.`}
+        <div style="color:var(--muted);margin-top:3px;font-size:11.5px;">${unmapped.slice(0, 4).map(e => e.name).join(', ')}${unmapped.length > 4 ? ' …' : ''}</div>
+      </div>
+      <button class="close-btn insight-row-btn" onclick="openCategoryManager()">${en ? 'Assign' : 'Zuordnen'}</button>
+    </div>` : '';
+
+  host.innerHTML = unmappedHtml + `
     <div class="muscle-mode-tabs">
       <button class="muscle-mode-tab ${mode === 'frequency' ? 'active' : ''}" onclick="setMuscleMapMode('frequency')">${en ? 'Frequency' : 'Frequenz'}</button>
       <button class="muscle-mode-tab ${mode === 'growth' ? 'active' : ''}" onclick="setMuscleMapMode('growth')">${en ? 'Strength' : 'Kraft'}</button>
@@ -469,3 +543,68 @@ function renderMuscleMap() {
 window.renderMuscleMap   = renderMuscleMap;
 window.getMuscleMapMode  = getMuscleMapMode;
 window.setMuscleMapMode  = setMuscleMapMode;
+
+/* =============================================
+   MUSKEL-AUSWAHL (Kategorie-Editor und Übungs-Editor)
+
+   Eine Reihe von Umschaltern statt eines Mehrfach-Auswahlfelds: auf dem Handy
+   ist ein <select multiple> praktisch nicht bedienbar. Primär/sekundär wird
+   durch wiederholtes Antippen durchlaufen — aus/primär/sekundär —, damit auch
+   die anteilige Belastung setzbar ist, ohne ein zweites Bedienelement.
+   ============================================= */
+
+// Arbeitsstand, während ein Editor offen ist.
+let _musclePickerState = {};
+
+function _cycleMuscleWeight(w) {
+  if (!w) return 1;          // aus  -> primär
+  if (w === 1) return 0.5;   // primär -> sekundär
+  return 0;                  // sekundär -> aus
+}
+
+function _muscleWeightLabel(w) {
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+  if (w === 1) return en ? 'primary' : 'primär';
+  if (w === 0.5) return en ? 'secondary' : 'sekundär';
+  return '';
+}
+
+function renderMusclePicker(hostId) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  const en = (typeof lang !== 'undefined' && lang === 'en');
+
+  host.innerHTML = MUSCLE_IDS.map(mid => {
+    const w = _musclePickerState[mid] || 0;
+    const cls = w === 1 ? ' mp-primary' : (w === 0.5 ? ' mp-secondary' : '');
+    const sub = _muscleWeightLabel(w);
+    return `<button type="button" class="muscle-pick${cls}" data-mp="${mid}"
+              onclick="toggleMusclePick('${mid}','${hostId}')">
+              ${muscleLabel(mid)}${sub ? `<span class="muscle-pick-sub">${sub}</span>` : ''}
+            </button>`;
+  }).join('') +
+  `<div class="muscle-pick-hint">${en
+    ? 'Tap once for primary, twice for secondary (counts half), a third time to clear.'
+    : 'Einmal tippen = primär, zweimal = sekundär (zählt halb), dreimal = aus.'}</div>`;
+}
+
+function toggleMusclePick(mid, hostId) {
+  _musclePickerState[mid] = _cycleMuscleWeight(_musclePickerState[mid] || 0);
+  if (!_musclePickerState[mid]) delete _musclePickerState[mid];
+  renderMusclePicker(hostId);
+  if (typeof haptic === 'function') haptic('light');
+}
+
+function initMusclePicker(hostId, current) {
+  _musclePickerState = Object.assign({}, current || {});
+  renderMusclePicker(hostId);
+}
+
+function getMusclePickerValue() {
+  return Object.assign({}, _musclePickerState);
+}
+
+window.renderMusclePicker = renderMusclePicker;
+window.toggleMusclePick   = toggleMusclePick;
+window.initMusclePicker   = initMusclePicker;
+window.getMusclePickerValue = getMusclePickerValue;

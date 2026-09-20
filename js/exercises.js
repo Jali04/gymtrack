@@ -243,8 +243,33 @@ function openAddExercise() {
   const hintGroup = document.getElementById('categoryHint');
   if (hintGroup) hintGroup.style.display = 'block';
 
+  _initExerciseMusclePicker(null);
+
   updateCategoryHint();
   openModal('addExerciseModal');
+}
+
+/* Die Auswahl zeigt die Übersteuerung dieser Übung. Leer heisst: die Kategorie
+   entscheidet. Das Etikett sagt, was gerade greift, damit niemand glaubt, eine
+   leere Auswahl bedeute "zählt nirgends". */
+function _initExerciseMusclePicker(ex) {
+  const lbl = document.getElementById('lblExMuscles');
+  const flags = ex ? (db.exerciseFlags || {})[ex.id] : null;
+  const own = (flags && flags.muscles) ? flags.muscles : {};
+
+  if (lbl) {
+    const en = (typeof lang !== 'undefined' && lang === 'en');
+    let inherited = '';
+    if (!Object.keys(own).length && ex) {
+      const eff = (typeof getExerciseMuscles === 'function') ? getExerciseMuscles(ex) : {};
+      const names = Object.keys(eff).map(m => muscleLabel(m)).join(', ');
+      inherited = names
+        ? (en ? ` — currently from the category: ${names}` : ` — aktuell über die Kategorie: ${names}`)
+        : (en ? ' — not assigned yet' : ' — noch nicht zugeordnet');
+    }
+    lbl.textContent = (en ? 'Muscle groups (optional)' : 'Muskelgruppen (optional)') + inherited;
+  }
+  if (typeof initMusclePicker === 'function') initMusclePicker('exMusclePicker', own);
 }
 
 function openEditExercise(id) {
@@ -265,6 +290,8 @@ function openEditExercise(id) {
   if (customGroup) customGroup.style.display = 'none';
   const hintGroup = document.getElementById('categoryHint');
   if (hintGroup) hintGroup.style.display = 'block';
+
+  _initExerciseMusclePicker(ex);
 
   updateCategoryHint();
   _updateExerciseAiAnalysis(id);
@@ -348,6 +375,20 @@ async function saveExercise() {
     db.exercises.push({ id: newId, name, category, notes });
     if (typeof setBodyweightEx === 'function') setBodyweightEx(newId, bodyweight);
   }
+  // Muskel-Übersteuerung dieser Übung. Leer = löschen, dann entscheidet wieder
+  // die Kategorie; sonst bliebe eine einmal gesetzte Auswahl für immer kleben.
+  if (typeof getMusclePickerValue === 'function') {
+    const picked = getMusclePickerValue();
+    const targetId = newId || editingExId;
+    if (targetId) {
+      if (!db.exerciseFlags) db.exerciseFlags = {};
+      const flags = Object.assign({}, db.exerciseFlags[targetId]);
+      if (Object.keys(picked).length) flags.muscles = picked;
+      else delete flags.muscles;
+      db.exerciseFlags[targetId] = flags;
+    }
+  }
+
   const context = window._openedFromPickerContext || (window._openedFromPicker ? 'workout' : null);
   window._openedFromPickerContext = null;
   window._openedFromPicker = false;

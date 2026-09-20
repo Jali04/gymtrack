@@ -4018,3 +4018,35 @@ body.light-mode .muscle-mode-tab.active { color: #fff; }
 .transform-weight {
   font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700; color: var(--accent);
 }
+
+/* Muskel-Auswahl: Umschalter statt <select multiple>, das auf dem Handy
+   praktisch unbedienbar ist. */
+.muscle-pick {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 1px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px; font-weight: 600; line-height: 1.2;
+  padding: 7px 11px; margin: 0 6px 6px 0; border-radius: 9px;
+  cursor: pointer; transition: all .15s ease;
+}
+.muscle-pick:hover { border-color: var(--border-hover); color: var(--text); }
+.muscle-pick.mp-primary {
+  background: var(--accent); border-color: var(--accent); color: #09090b;
+}
+body.light-mode .muscle-pick.mp-primary { color: #fff; }
+.muscle-pick.mp-secondary {
+  background: rgba(200, 241, 53, 0.16); border-color: rgba(200, 241, 53, 0.45); color: var(--text);
+}
+.muscle-pick-sub {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .5px; opacity: .75; font-weight: 700;
+}
+.muscle-pick-hint {
+  font-size: 11px; color: var(--muted); line-height: 1.45; margin-top: 4px;
+}
+/* Hinweis auf nicht zugeordnete Übungen */
+.muscle-unmapped {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: rgba(245,166,35,0.10); border: 1px solid rgba(245,166,35,0.28);
+  border-radius: 12px; padding: 11px 13px; margin-bottom: 12px;
+}
+.muscle-unmapped-text { font-size: 12.5px; line-height: 1.45; color: var(--text); }
