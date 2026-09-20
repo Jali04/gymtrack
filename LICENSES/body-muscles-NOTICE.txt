@@ -1,0 +1,23 @@
+Body Muscles
+Copyright 2024 Ivan Vulović
+https://github.com/vulovix/body-muscles
+
+This product includes software developed by Ivan Vulović.
+
+Licensed under the Apache License, Version 2.0 (see
+body-muscles-APACHE-2.0.txt).
+
+-------------------------------------------------------------------------
+Änderungen durch GYMTRACK / DSCPLN (Apache License 2.0, Abschnitt 4b):
+
+Aus dem npm-Paket "body-muscles" (Version 1.0.0) wurden ausschliesslich die
+SVG-Pfaddaten der anatomischen Regionen übernommen (FRONT_MUSCLES und
+BACK_MUSCLES). Sie liegen in js/bodyPaths.js.
+
+Nicht übernommen wurden die Render- und Interaktionskomponenten des Pakets;
+das Zeichnen, Einfärben und die Zuordnung der Regionen zu Muskelgruppen sind
+eigene Implementierungen in js/muscles.js.
+
+Die Pfaddaten selbst sind inhaltlich unverändert; sie wurden lediglich aus den
+ES-Modulen des Pakets in eine einzelne Datei ohne Build-Schritt überführt.
+-------------------------------------------------------------------------

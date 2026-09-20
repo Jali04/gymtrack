@@ -3915,9 +3915,12 @@ body.light-mode .muscle-mode-tab.active { color: #fff; }
 
 .muscle-map-card { padding: 14px 12px 12px; }
 .muscle-bodies { display: flex; justify-content: center; gap: 4px; }
-.body-map-svg { width: 47%; max-width: 168px; height: auto; }
-.body-base { fill: var(--surface2); stroke: var(--border-hover); stroke-width: .7; }
-.muscle-region { stroke: var(--border-hover); stroke-width: .6; transition: fill .25s ease; }
+.body-map-svg { width: 48%; max-width: 172px; height: auto; }
+/* Die anatomischen Pfade sind fein; eine dünne Kontur trennt benachbarte
+   Regionen, ohne die Figur zu einem Drahtgitter zu machen. */
+.muscle-region { stroke: var(--border-hover); stroke-width: .12; transition: fill .25s ease; }
+/* Kopf, Hände, Füße, Knie, Wirbelsäule: keine trainierbaren Gruppen. */
+.body-region-inert { stroke: var(--border); stroke-width: .12; }
 
 .muscle-view-labels {
   display: flex; justify-content: center; gap: 4px; margin-top: 2px;
